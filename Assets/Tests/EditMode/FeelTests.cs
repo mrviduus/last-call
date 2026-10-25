@@ -20,7 +20,7 @@ public class FeelTests
     [Test]
     public void JumpLandsAfterArc()
     {
-        var p = Game.Spawn(0, Color.green, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         p.Jump();
         int frames = 0;
         while (p.state == State.Jump && frames < 120) { Game.Simulate(); frames++; }
@@ -33,8 +33,8 @@ public class FeelTests
     [Test]
     public void JabHurtsSmashLaunches()
     {
-        var p = Game.Spawn(0, Color.green, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Color.red, new Vector2(55f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
 
         p.Attack(false);
         Run(Feel.PunchStartup);
@@ -52,8 +52,8 @@ public class FeelTests
     [Test]
     public void NoHitOutsideDepthBand()
     {
-        var p = Game.Spawn(0, Color.green, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Color.red, new Vector2(55f, -70f + Feel.DepthBand + 1f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f + Feel.DepthBand + 1f), 10);
         Assert.IsFalse(p.InReach(e, Feel.PunchReach));
 
         e.ground.y = -70f;
@@ -63,7 +63,7 @@ public class FeelTests
     [Test]
     public void HitstopFreezesEveryone()
     {
-        var p = Game.Spawn(0, Color.green, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         p.Jump();
         Game.Simulate();
         float h = p.height;

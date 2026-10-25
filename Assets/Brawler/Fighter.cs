@@ -6,7 +6,7 @@ public enum State { Idle, Walk, Jump, Attack, Hurt, Launched, Down, GetUp, Dead 
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
 public class Fighter : MonoBehaviour
 {
-    const float Width = 16f, Height = 32f, LyingHeight = 10f;
+    const float Width = 16f;
 
     public int team;
     public int maxHealth = 5;
@@ -23,32 +23,31 @@ public class Fighter : MonoBehaviour
     int flashFrames, invulnFrames;
     bool bounced;
     SpriteRenderer body, shadow, fist;
-    Color color;
+    Art.Frames art;
 
     public bool CanAct => state == State.Idle || state == State.Walk;
     public bool Alive => health > 0;
     public bool CanBeHit => Alive && invulnFrames == 0
         && state != State.Launched && state != State.Down && state != State.GetUp;
 
-    public void Init(int team, Color c, Vector2 start)
+    public void Init(int team, string palette, Vector2 start)
     {
         this.team = team;
-        color = c;
         ground = start;
         health = maxHealth;
-        shadow = MakeSprite("Shadow", new Color(0f, 0f, 0f, 0.35f), new Vector2(18f, 5f));
-        body = MakeSprite("Body", c, new Vector2(Width, Height));
-        fist = MakeSprite("Fist", Color.Lerp(c, Color.black, 0.3f), Vector2.one);
+        art = Art.For(palette);
+        shadow = MakeSprite("Shadow", Art.Shadow);
+        body = MakeSprite("Body", art.Stand);
+        fist = MakeSprite("Fist", art.Fist);
+        fist.transform.localScale = new Vector3(2f, 2f, 1f);
     }
 
-    SpriteRenderer MakeSprite(string name, Color c, Vector2 scale)
+    SpriteRenderer MakeSprite(string name, Sprite sprite)
     {
         var go = new GameObject(name);
         go.transform.SetParent(transform, false);
-        go.transform.localScale = scale;
         var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite = Game.Square;
-        sr.color = c;
+        sr.sprite = sprite;
         return sr;
     }
 
@@ -194,20 +193,31 @@ public class Fighter : MonoBehaviour
         if (body == null) return;
         transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y), 0f);
 
-        bool lying = state == State.Down || state == State.Dead;
-        var size = lying ? new Vector2(Height, LyingHeight) : new Vector2(Width, Height);
         float h = Mathf.Round(height);
-        body.transform.localScale = size;
-        body.transform.localPosition = new Vector3(0f, h + size.y / 2f, 0f);
-        body.transform.localRotation = Quaternion.Euler(0f, 0f, state == State.Launched ? 30f * facing : 0f);
-        body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
-        body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? Color.white : Alive ? color : Color.gray;
+        bool punching = state == State.Attack && stateFrames >= Feel.PunchStartup
+            && stateFrames < Feel.PunchStartup + Feel.PunchActive + 6;
+        body.sprite = state switch
+        {
+            State.Walk => Game.Frame / 8 % 2 == 0 ? art.Walk : art.Stand,
+            State.Jump or State.GetUp => art.Air,
+            State.Attack => punching ? art.Punch : art.Stand,
+            State.Hurt or State.Launched => art.Hurt,
+            _ => art.Stand,
+        };
+        body.flipX = facing < 0;
 
-        fist.enabled = state == State.Attack && stateFrames >= Feel.PunchStartup
-            && stateFrames < Feel.PunchStartup + Feel.PunchActive + 4;
-        float fistSize = smash ? 16f : 6f;
-        fist.transform.localScale = new Vector3(fistSize, fistSize, 1f);
-        fist.transform.localPosition = new Vector3(facing * (Width + fistSize) / 2f, h + Height * 0.65f, 0f);
+        // lying = sprite rotated 90 degrees around its feet, head pointing backwards
+        bool lying = state == State.Down || state == State.Dead;
+        body.transform.localPosition = lying ? new Vector3(16f * facing, 8f, 0f) : new Vector3(0f, h, 0f);
+        float tilt = lying ? 90f : state == State.Launched ? 30f : 0f;
+        body.transform.localRotation = Quaternion.Euler(0f, 0f, tilt * facing);
+        body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
+        body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
+            : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
+
+        fist.enabled = smash && punching;
+        fist.flipX = facing < 0;
+        fist.transform.localPosition = new Vector3(facing * 18f, h + 17f, 0f);
 
         // nearer to the camera (lower depth) draws on top; shadows under everything
         int order = -Mathf.RoundToInt(ground.y) * 2;

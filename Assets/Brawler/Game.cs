@@ -14,9 +14,6 @@ public class Game : MonoBehaviour
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames;
 
-    static Sprite square;
-    public static Sprite Square => square != null ? square : square = MakeSquare();
-
     Camera cam;
     float camX = ScreenW / 2f;
     int wave;
@@ -25,14 +22,6 @@ public class Game : MonoBehaviour
     static void Boot()
     {
         if (FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
-    }
-
-    static Sprite MakeSquare()
-    {
-        var tex = new Texture2D(1, 1) { filterMode = FilterMode.Point };
-        tex.SetPixel(0, 0, Color.white);
-        tex.Apply();
-        return Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
     }
 
     public static void Reset()
@@ -58,11 +47,11 @@ public class Game : MonoBehaviour
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
     }
 
-    public static Fighter Spawn(int team, Color c, Vector2 pos, int hp)
+    public static Fighter Spawn(int team, string palette, Vector2 pos, int hp)
     {
         var f = new GameObject(team == 0 ? "Player" : "Enemy").AddComponent<Fighter>();
         f.maxHealth = hp;
-        f.Init(team, c, pos);
+        f.Init(team, palette, pos);
         Fighters.Add(f);
         return f;
     }
@@ -89,22 +78,23 @@ public class Game : MonoBehaviour
         bars.backgroundColor = Color.black;
         bars.depth = -100;
 
-        MakeRect(new Vector2(1900f, -74f), new Vector2(4200f, 84f), new Color(0.3f, 0.25f, 0.2f), -20000);
-        MakeRect(new Vector2(1900f, 0f), new Vector2(4200f, 64f), new Color(0.22f, 0.18f, 0.3f), -20000);
-        for (int x = 0; x < 4000; x += 64) // markers so scrolling is visible
-            MakeRect(new Vector2(x, -74f), new Vector2(2f, 84f), new Color(0.25f, 0.2f, 0.15f), -19999);
+        // street: brick wall from the sidewalk up past the top of the screen, street below
+        MakeBackdrop(Art.Bricks, new Vector2(1900f, 40f), new Vector2(4200f, 144f), -20000);
+        MakeBackdrop(Art.Street, new Vector2(1900f, -74f), new Vector2(4200f, 84f), -20000);
+        for (int i = 0; i < 40; i++)
+            MakeBackdrop(Art.Window(i % 3 == 1), new Vector2(48f + i * 96f, 50f), new Vector2(24f, 32f), -19999);
 
         Restart();
     }
 
-    static void MakeRect(Vector2 pos, Vector2 scale, Color c, int order)
+    static void MakeBackdrop(Sprite sprite, Vector2 pos, Vector2 size, int order)
     {
-        var sr = new GameObject("Rect").AddComponent<SpriteRenderer>();
-        sr.sprite = Square;
-        sr.color = c;
+        var sr = new GameObject("Backdrop").AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.drawMode = SpriteDrawMode.Tiled;
+        sr.size = size;
         sr.sortingOrder = order;
         sr.transform.position = pos;
-        sr.transform.localScale = scale;
     }
 
     void Restart()
@@ -113,7 +103,7 @@ public class Game : MonoBehaviour
         Reset();
         wave = 0;
         camX = ScreenW / 2f;
-        Hero = Spawn(0, new Color(0.3f, 0.8f, 0.3f), new Vector2(40f, -70f), 10);
+        Hero = Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         Hero.gameObject.AddComponent<Player>();
     }
 
@@ -124,7 +114,7 @@ public class Game : MonoBehaviour
         {
             float side = i % 2 == 0 ? 1f : -1f;
             var pos = new Vector2(camX + side * (ScreenW / 2f + 20f), Random.Range(MinDepth, MaxDepth));
-            var e = Spawn(1, Color.HSVToRGB(Random.Range(0f, 0.1f), 0.7f, 0.8f), pos, 3);
+            var e = Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, 3);
             e.gameObject.AddComponent<Enemy>();
         }
     }
