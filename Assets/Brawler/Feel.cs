@@ -18,6 +18,7 @@ public static class Feel
     public const float SmashReach = 30f;          // guess
     public const float DepthBand = 6f;            // guess
     public const float HeightBand = 20f;          // guess
+    public const float BodyGap = 12f;             // guess, closest two bodies can stand on one lane
 
     public const int Hitstop = 4;                 // guess
     public const int SmashHitstop = 10;           // guess

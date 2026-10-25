@@ -11,7 +11,31 @@ public static class Art
     public const string GruntA = "K1a1020 H9030b0 B2a2a2a Sd09070 sa06040 Wffffff Tc07820 t8a5414 P4a4a52 p34343a O202020";
     public const string GruntB = "K1a1020 Hd0d0d0 B3060c0 S8a5a40 s6a4028 Wffffff T3a4a8a t283460 P6a3a2a p4a2818 O181818";
 
-    static readonly string[] Head =
+    public static readonly string[] PunkHead =
+    {
+        ".......HH.......",
+        "......HHHH......",
+        ".....KHHHHK.....",
+        "....KSSSSSSK....",
+        "....KSSSSKWK....",
+        "....KSSSSSSK....",
+        ".....KSSssK.....",
+        "......KssK......",
+    };
+
+    public static readonly string[] BruiserHead =
+    {
+        "......KKKK......",
+        ".....KSSSSK.....",
+        "....KSSSSSSK....",
+        "....KSSSSSSK....",
+        "....KSSSKKWK....",
+        "....KHSSSSSK....",
+        ".....KHHHHK.....",
+        "......KHHK......",
+    };
+
+    public static readonly string[] HeroHead =
     {
         "......KKKK......",
         ".....KHHHHK.....",
@@ -129,20 +153,21 @@ public static class Art
     static readonly Dictionary<string, Frames> cache = new Dictionary<string, Frames>();
     static readonly Vector2 Feet = new Vector2(0.5f, 0f), Center = new Vector2(0.5f, 0.5f);
 
-    public static Frames For(string palette)
+    public static Frames For(string palette, string[] head)
     {
-        if (cache.TryGetValue(palette, out var f)) return f;
+        string key = palette + string.Concat(head);
+        if (cache.TryGetValue(key, out var f)) return f;
         var pal = ParsePalette(palette);
         f = new Frames
         {
-            Stand = FromRows(Join(Head, TorsoIdle, LegsStand), pal, Feet),
-            Walk = FromRows(Join(Head, TorsoIdle, LegsWalk), pal, Feet),
-            Punch = FromRows(Join(Head, TorsoPunch, LegsStand), pal, Feet),
-            Hurt = FromRows(Join(Head, TorsoHurt, LegsStand), pal, Feet),
-            Air = FromRows(Join(Head, TorsoIdle, LegsAir), pal, Feet),
+            Stand = FromRows(Join(head, TorsoIdle, LegsStand), pal, Feet),
+            Walk = FromRows(Join(head, TorsoIdle, LegsWalk), pal, Feet),
+            Punch = FromRows(Join(head, TorsoPunch, LegsStand), pal, Feet),
+            Hurt = FromRows(Join(head, TorsoHurt, LegsStand), pal, Feet),
+            Air = FromRows(Join(head, TorsoIdle, LegsAir), pal, Feet),
             Fist = FromRows(BigFist, pal, Center),
         };
-        return cache[palette] = f;
+        return cache[key] = f;
     }
 
     static string[] Join(params string[][] parts) => parts.SelectMany(p => p).ToArray();

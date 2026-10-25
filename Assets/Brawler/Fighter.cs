@@ -27,15 +27,16 @@ public class Fighter : MonoBehaviour
 
     public bool CanAct => state == State.Idle || state == State.Walk;
     public bool Alive => health > 0;
+    public bool Solid => Alive && height <= 0f && state != State.Launched && state != State.Down;
     public bool CanBeHit => Alive && invulnFrames == 0
         && state != State.Launched && state != State.Down && state != State.GetUp;
 
-    public void Init(int team, string palette, Vector2 start)
+    public void Init(int team, string palette, string[] head, Vector2 start)
     {
         this.team = team;
         ground = start;
         health = maxHealth;
-        art = Art.For(palette);
+        art = Art.For(palette, head);
         shadow = MakeSprite("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000; // under every body
         body = MakeSprite("Body", art.Stand);

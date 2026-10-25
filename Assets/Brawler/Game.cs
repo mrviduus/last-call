@@ -47,14 +47,32 @@ public class Game : MonoBehaviour
         if (freezeFrames > 0) { freezeFrames--; return; }
         SimFrame++;
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
+        Separate();
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].ResolveStrike();
     }
 
-    public static Fighter Spawn(int team, string palette, Vector2 pos, int hp)
+    // standing bodies on the same lane push apart, so nobody stands inside anyone else
+    static void Separate()
+    {
+        for (int i = 0; i < Fighters.Count; i++)
+            for (int j = i + 1; j < Fighters.Count; j++)
+            {
+                Fighter a = Fighters[i], b = Fighters[j];
+                if (!a.Solid || !b.Solid || Mathf.Abs(a.ground.y - b.ground.y) >= Feel.DepthBand) continue;
+                float dx = b.ground.x - a.ground.x;
+                float overlap = Feel.BodyGap - Mathf.Abs(dx);
+                if (overlap <= 0f) continue;
+                float push = (dx != 0f ? Mathf.Sign(dx) : a.facing) * overlap / 2f;
+                a.ground.x -= push;
+                b.ground.x += push;
+            }
+    }
+
+    public static Fighter Spawn(int team, string palette, Vector2 pos, int hp, string[] head = null)
     {
         var f = new GameObject(team == 0 ? "Player" : "Enemy").AddComponent<Fighter>();
         f.maxHealth = hp;
-        f.Init(team, palette, pos);
+        f.Init(team, palette, head ?? Art.HeroHead, pos);
         Fighters.Add(f);
         return f;
     }
@@ -119,8 +137,11 @@ public class Game : MonoBehaviour
             float x = camX + (i % 2 == 0 ? 1f : -1f) * (ScreenW / 2f + 20f + i * 12f);
             if (x < MinX) x = camX + ScreenW / 2f + 20f + i * 12f;
             var pos = new Vector2(x, Random.Range(MinDepth, MaxDepth));
-            var e = Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, 3);
+            // punk: quick, fragile; bruiser: slow, takes more hits
+            bool bruiser = Random.value < 0.35f;
+            var e = bruiser ? Spawn(1, Art.GruntB, pos, 5, Art.BruiserHead) : Spawn(1, Art.GruntA, pos, 3, Art.PunkHead);
             e.gameObject.AddComponent<Enemy>();
+            if (bruiser) e.walkX = Feel.EnemyWalkX * 0.7f;
         }
     }
 
@@ -151,13 +172,26 @@ public class Game : MonoBehaviour
 
     void OnGUI()
     {
-        if (Event.current.type == EventType.Repaint)
-        {
-            int scale = Mathf.Max(1, Mathf.Min(Screen.width / ScreenW, Screen.height / ScreenH));
-            int w = ScreenW * scale, h = ScreenH * scale;
-            GUI.DrawTexture(new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h), PixelScreen);
-        }
-        GUI.Label(new Rect(10, 10, 400, 25), $"HP {Mathf.Max(Hero.health, 0)}   Wave {wave}");
-        if (Hero.state == State.Dead) GUI.Label(new Rect(10, 35, 400, 25), "GAME OVER - press J to restart");
+        int scale = Mathf.Max(1, Mathf.Min(Screen.width / ScreenW, Screen.height / ScreenH));
+        int w = ScreenW * scale, h = ScreenH * scale;
+        var view = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
+        if (Event.current.type == EventType.Repaint) GUI.DrawTexture(view, PixelScreen);
+
+        // HUD sized in game pixels, so it scales with the picture
+        hud ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
+        hud.fontSize = 8 * scale;
+        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"HP {Mathf.Max(Hero.health, 0)}    WAVE {wave}");
+        if (Hero.state == State.Dead)
+            Text(view.x + 72 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
+    }
+
+    GUIStyle hud;
+
+    void Text(float x, float y, int scale, string s)
+    {
+        hud.normal.textColor = Color.black;
+        GUI.Label(new Rect(x + scale, y + scale, 600, 40 * scale), s, hud);
+        hud.normal.textColor = Color.white;
+        GUI.Label(new Rect(x, y, 600, 40 * scale), s, hud);
     }
 }
