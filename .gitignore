@@ -1,0 +1,12 @@
+Library/
+Temp/
+Logs/
+obj/
+Build/
+UserSettings/
+*.csproj
+*.sln
+.DS_Store
+*.nes
+*.zip
+disasm/
