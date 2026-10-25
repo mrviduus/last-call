@@ -11,8 +11,11 @@ public static class Builds
     {
         if (!System.IO.File.Exists(Scene))
             EditorSceneManager.SaveScene(EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects), Scene);
-        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled; // plain http server can serve it
+        // uncompressed so a plain http server can serve it; restored so the build leaves no settings diff
+        var compression = PlayerSettings.WebGL.compressionFormat;
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
         var report = BuildPipeline.BuildPlayer(new[] { Scene }, "Build/WebGL", BuildTarget.WebGL, BuildOptions.None);
+        PlayerSettings.WebGL.compressionFormat = compression;
         if (report.summary.result != BuildResult.Succeeded) EditorApplication.Exit(1);
     }
 }

@@ -21,6 +21,8 @@ public class SmokeTest
         RenderTexture.active = Game.PixelScreen;
         tex.ReadPixels(new Rect(0, 0, Game.ScreenW, Game.ScreenH), 0, 0);
         RenderTexture.active = null;
+        Directory.CreateDirectory("Logs");
         File.WriteAllBytes("Logs/smoke.png", tex.EncodeToPNG());
+        Object.Destroy(tex);
     }
 }

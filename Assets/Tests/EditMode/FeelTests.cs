@@ -64,15 +64,33 @@ public class FeelTests
     public void HitstopFreezesEveryone()
     {
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(200f, -70f), 10);
         p.Jump();
+        e.Jump();
         Game.Simulate();
-        float h = p.height;
+        float hp = p.height, he = e.height;
 
         Game.Freeze(5, 0);
         Run(5);
-        Assert.AreEqual(h, p.height);
+        Assert.AreEqual(hp, p.height);
+        Assert.AreEqual(he, e.height);
 
         Run(1);
-        Assert.Greater(p.height, h);
+        Assert.Greater(p.height, hp);
+        Assert.Greater(e.height, he);
+    }
+
+    [Test]
+    public void SamePunchFrameTrades()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        e.facing = -1;
+        p.Attack(false);
+        e.Attack(false);
+
+        Run(Feel.PunchStartup);
+        Assert.AreEqual(State.Hurt, p.state);
+        Assert.AreEqual(State.Hurt, e.state);
     }
 }

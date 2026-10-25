@@ -9,7 +9,8 @@ public class Game : MonoBehaviour
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
     public static Fighter Hero;
-    public static int Frame;
+    public static int Frame;    // every fixed tick
+    public static int SimFrame; // ticks that actually simulated (hitstop excluded)
     public static bool RestartRequested;
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames;
@@ -28,7 +29,7 @@ public class Game : MonoBehaviour
     {
         Fighters.Clear();
         Hero = null;
-        Frame = freezeFrames = shakeFrames = 0;
+        Frame = SimFrame = freezeFrames = shakeFrames = 0;
         RestartRequested = false;
     }
 
@@ -44,7 +45,9 @@ public class Game : MonoBehaviour
         Frame++;
         if (shakeFrames > 0) shakeFrames--;
         if (freezeFrames > 0) { freezeFrames--; return; }
+        SimFrame++;
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
+        for (int i = 0; i < Fighters.Count; i++) Fighters[i].ResolveStrike();
     }
 
     public static Fighter Spawn(int team, string palette, Vector2 pos, int hp)
@@ -112,8 +115,10 @@ public class Game : MonoBehaviour
         wave++;
         for (int i = 0; i < Mathf.Min(1 + wave, 5); i++)
         {
-            float side = i % 2 == 0 ? 1f : -1f;
-            var pos = new Vector2(camX + side * (ScreenW / 2f + 20f), Random.Range(MinDepth, MaxDepth));
+            // alternate sides, each one further out so they don't stack; no room on the left -> right
+            float x = camX + (i % 2 == 0 ? 1f : -1f) * (ScreenW / 2f + 20f + i * 12f);
+            if (x < MinX) x = camX + ScreenW / 2f + 20f + i * 12f;
+            var pos = new Vector2(x, Random.Range(MinDepth, MaxDepth));
             var e = Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, 3);
             e.gameObject.AddComponent<Enemy>();
         }

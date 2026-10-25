@@ -24,11 +24,12 @@ public class Enemy : MonoBehaviour
         if (p == null || !p.Alive || !f.CanAct) return;
 
         Vector2 to = p.ground - f.ground;
-        float wantX = to.x - Mathf.Sign(to.x) * Feel.PunchReach * 0.7f;
+        int side = to.x > 0f ? 1 : to.x < 0f ? -1 : f.facing; // hero exactly on top: keep facing
+        float wantX = to.x - side * Feel.PunchReach * 0.7f;
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
             Mathf.Abs(to.y) > 2f ? Mathf.Sign(to.y) : 0f);
-        if (f.moveInput.x == 0f) f.facing = to.x > 0f ? 1 : -1;
+        if (f.moveInput.x == 0f) f.facing = side;
 
         if (cooldown == 0 && f.InReach(p, Feel.PunchReach))
         {

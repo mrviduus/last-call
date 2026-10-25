@@ -21,7 +21,7 @@ public class Fighter : MonoBehaviour
     public bool smash;
 
     int flashFrames, invulnFrames;
-    bool bounced;
+    bool bounced, strikePending;
     SpriteRenderer body, shadow, fist;
     Art.Frames art;
 
@@ -37,6 +37,7 @@ public class Fighter : MonoBehaviour
         health = maxHealth;
         art = Art.For(palette);
         shadow = MakeSprite("Shadow", Art.Shadow);
+        shadow.sortingOrder = -10000; // under every body
         body = MakeSprite("Body", art.Stand);
         fist = MakeSprite("Fist", art.Fist);
         fist.transform.localScale = new Vector3(2f, 2f, 1f);
@@ -119,7 +120,7 @@ public class Fighter : MonoBehaviour
                 if (landed) Enter(State.Idle);
                 break;
             case State.Attack:
-                if (stateFrames == Feel.PunchStartup) Strike();
+                if (stateFrames == Feel.PunchStartup) strikePending = true;
                 int recovery = smash ? Feel.SmashRecovery : Feel.PunchRecovery;
                 if (stateFrames >= Feel.PunchStartup + Feel.PunchActive + recovery) Enter(State.Idle);
                 break;
@@ -158,6 +159,14 @@ public class Fighter : MonoBehaviour
         return true;
     }
 
+    // called by Game after every fighter has stepped, so same-frame punches trade
+    public void ResolveStrike()
+    {
+        if (!strikePending) return;
+        strikePending = false;
+        Strike();
+    }
+
     void Strike()
     {
         bool hit = false;
@@ -178,7 +187,8 @@ public class Fighter : MonoBehaviour
         foreach (var o in Game.Fighters)
             if (o != this && o.team == team && o.CanBeHit
                 && Mathf.Abs(o.ground.x - ground.x) < Width
-                && Mathf.Abs(o.ground.y - ground.y) < Feel.DepthBand)
+                && Mathf.Abs(o.ground.y - ground.y) < Feel.DepthBand
+                && Mathf.Abs(o.height - height) < Feel.HeightBand)
                 o.TakeHit(1, dir, true);
     }
 
@@ -223,6 +233,5 @@ public class Fighter : MonoBehaviour
         int order = -Mathf.RoundToInt(ground.y) * 2;
         body.sortingOrder = order;
         fist.sortingOrder = order + 1;
-        shadow.sortingOrder = -10000;
     }
 }

@@ -34,8 +34,8 @@ public class Player : MonoBehaviour
 
         if (attackBuffer > 0 && f.CanAct)
         {
-            combo = Game.Frame - lastPunchFrame <= Feel.ComboWindow ? combo + 1 : 1;
-            lastPunchFrame = Game.Frame;
+            combo = Game.SimFrame - lastPunchFrame <= Feel.ComboWindow ? combo + 1 : 1;
+            lastPunchFrame = Game.SimFrame;
             bool smash = combo >= 3;
             if (smash) combo = 0;
             f.Attack(smash);
