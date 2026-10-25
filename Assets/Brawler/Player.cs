@@ -1,45 +1,53 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
-// WASD move, K / Space jump, J punch. Third punch of a combo = big smash.
+// WASD move, K / Space jump, J punch. Third punch of a quick combo = smash.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
-    const float ComboWindow = 0.45f, AttackCooldown = 0.2f, Reach = 1.1f;
-
     Fighter f;
-    int comboStep;
-    float lastAttack = -1f;
+    int combo, lastPunchFrame = -999, attackBuffer, jumpBuffer;
+    bool attackPressed, jumpPressed;
 
-    void Awake() => f = GetComponent<Fighter>();
-
-    void Update()
+    void Awake()
     {
-        if (f.Dead)
-        {
-            if (AttackPressed()) SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            return;
-        }
-
-        f.Move(ReadMove());
-        if (JumpPressed()) f.Jump();
-        if (AttackPressed() && !f.Stunned && Time.time - lastAttack > AttackCooldown) Attack();
+        f = GetComponent<Fighter>();
+        f.Think = Think;
     }
 
-    void Attack()
+    // keys are polled every rendered frame and consumed by the next fixed step
+    void Update()
     {
-        comboStep = Time.time - lastAttack < ComboWindow ? comboStep + 1 : 1;
-        lastAttack = Time.time;
-        bool smash = comboStep >= 3;
-        if (smash) comboStep = 0;
+        attackPressed |= AttackPressed();
+        jumpPressed |= JumpPressed();
+        if (f.state == State.Dead && attackPressed) Game.RestartRequested = true;
+    }
 
-        f.ShowFist(smash ? 3f : 1f, 0.15f);
-        foreach (var e in Game.Enemies)
-            if (f.InReach(e, smash ? Reach * 1.5f : Reach))
-                e.TakeHit(smash ? 2 : 1, f.facing, smash ? 12f : 2f);
+    void Think()
+    {
+        f.moveInput = ReadMove();
+        if (attackPressed) attackBuffer = Feel.InputBuffer;
+        if (jumpPressed) jumpBuffer = Feel.InputBuffer;
+        attackPressed = jumpPressed = false;
+
+        if (attackBuffer > 0 && f.CanAct)
+        {
+            combo = Game.Frame - lastPunchFrame <= Feel.ComboWindow ? combo + 1 : 1;
+            lastPunchFrame = Game.Frame;
+            bool smash = combo >= 3;
+            if (smash) combo = 0;
+            f.Attack(smash);
+            attackBuffer = 0;
+        }
+        else if (jumpBuffer > 0 && f.CanAct)
+        {
+            f.Jump();
+            jumpBuffer = 0;
+        }
+        if (attackBuffer > 0) attackBuffer--;
+        if (jumpBuffer > 0) jumpBuffer--;
     }
 
 #if ENABLE_INPUT_SYSTEM
