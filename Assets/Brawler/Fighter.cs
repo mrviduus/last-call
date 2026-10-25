@@ -19,11 +19,17 @@ public class Fighter : MonoBehaviour
     public float height, heightVel;
     public int health, facing = 1;
     public bool smash;
+    public bool whip; // long reach, slow telegraphed wind-up
 
     int flashFrames, invulnFrames;
     bool bounced, strikePending;
-    SpriteRenderer body, shadow, fist;
+    SpriteRenderer body, shadow, fist, whipLine;
     Art.Frames art;
+
+    int Startup => whip ? Feel.WhipStartup : Feel.PunchStartup;
+    int Active => whip ? Feel.WhipActive : Feel.PunchActive;
+    int Recovery => whip ? Feel.WhipRecovery : smash ? Feel.SmashRecovery : Feel.PunchRecovery;
+    bool WindingUp => state == State.Attack && stateFrames < Startup;
 
     public bool CanAct => state == State.Idle || state == State.Walk;
     public bool Alive => health > 0;
@@ -42,6 +48,7 @@ public class Fighter : MonoBehaviour
         body = MakeSprite("Body", art.Stand);
         fist = MakeSprite("Fist", art.Fist);
         fist.transform.localScale = new Vector3(2f, 2f, 1f);
+        whipLine = MakeSprite("Whip", Art.Whip);
     }
 
     SpriteRenderer MakeSprite(string name, Sprite sprite)
@@ -68,13 +75,14 @@ public class Fighter : MonoBehaviour
         Enter(State.Jump);
     }
 
-    public void TakeHit(int damage, int dir, bool launch)
+    public void TakeHit(int damage, int dir, bool launch, float push = Feel.JabPush)
     {
         if (!CanBeHit) return;
+        bool countered = whip && WindingUp; // punished mid wind-up: knocked flying
         health -= damage;
         flashFrames = 8;
         facing = -dir;
-        if (launch || !Alive || height > 0f)
+        if (launch || countered || !Alive || height > 0f)
         {
             Enter(State.Launched);
             bounced = false;
@@ -84,7 +92,7 @@ public class Fighter : MonoBehaviour
         else
         {
             Enter(State.Hurt);
-            vel = new Vector2(dir * Feel.JabPush, 0f);
+            vel = new Vector2(dir * push, 0f);
         }
     }
 
@@ -121,9 +129,8 @@ public class Fighter : MonoBehaviour
                 if (landed) Enter(State.Idle);
                 break;
             case State.Attack:
-                if (stateFrames == Feel.PunchStartup) strikePending = true;
-                int recovery = smash ? Feel.SmashRecovery : Feel.PunchRecovery;
-                if (stateFrames >= Feel.PunchStartup + Feel.PunchActive + recovery) Enter(State.Idle);
+                if (stateFrames == Startup) strikePending = true;
+                if (stateFrames >= Startup + Active + Recovery) Enter(State.Idle);
                 break;
             case State.Hurt:
                 if (stateFrames >= Feel.Hitstun) Enter(State.Idle);
@@ -171,10 +178,11 @@ public class Fighter : MonoBehaviour
     void Strike()
     {
         bool hit = false;
+        float reach = whip ? Feel.WhipReach : smash ? Feel.SmashReach : Feel.PunchReach;
         foreach (var t in Game.Fighters)
-            if (t.team != team && InReach(t, smash ? Feel.SmashReach : Feel.PunchReach))
+            if (t.team != team && InReach(t, reach))
             {
-                t.TakeHit(smash ? 2 : 1, facing, smash);
+                t.TakeHit(smash ? 2 : 1, facing, smash, whip ? Feel.WhipPush : Feel.JabPush);
                 hit = true;
             }
         if (hit) Game.Freeze(smash ? Feel.SmashHitstop : Feel.Hitstop, smash ? Feel.SmashShake : 0);
@@ -205,13 +213,13 @@ public class Fighter : MonoBehaviour
         transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y), 0f);
 
         float h = Mathf.Round(height);
-        bool punching = state == State.Attack && stateFrames >= Feel.PunchStartup
-            && stateFrames < Feel.PunchStartup + Feel.PunchActive + 6;
+        bool striking = state == State.Attack && stateFrames >= Startup && stateFrames < Startup + Active + 6;
         body.sprite = state switch
         {
             State.Walk => Game.Frame / 8 % 2 == 0 ? art.Walk : art.Stand,
             State.Jump or State.GetUp => art.Air,
-            State.Attack => punching ? art.Punch : art.Stand,
+            State.Attack when whip && WindingUp => art.Hurt, // arms raised = whip wound back
+            State.Attack => striking ? art.Punch : art.Stand,
             State.Hurt or State.Launched => art.Hurt,
             _ => art.Stand,
         };
@@ -223,16 +231,23 @@ public class Fighter : MonoBehaviour
         float tilt = lying ? 90f : state == State.Launched ? 30f : 0f;
         body.transform.localRotation = Quaternion.Euler(0f, 0f, tilt * facing);
         body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
+        bool telegraph = whip && WindingUp && stateFrames / 3 % 2 == 0;
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
+            : telegraph ? new Color(1f, 1f, 0.45f)
             : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
 
-        fist.enabled = smash && punching;
+        fist.enabled = smash && striking;
         fist.flipX = facing < 0;
         fist.transform.localPosition = new Vector3(facing * 18f, h + 17f, 0f);
+
+        whipLine.enabled = whip && striking;
+        whipLine.transform.localScale = new Vector3(facing, 1f, 1f);
+        whipLine.transform.localPosition = new Vector3(facing * 10f, h + 19f, 0f);
 
         // nearer to the camera (lower depth) draws on top; shadows under everything
         int order = -Mathf.RoundToInt(ground.y) * 2;
         body.sortingOrder = order;
         fist.sortingOrder = order + 1;
+        whipLine.sortingOrder = order + 1;
     }
 }

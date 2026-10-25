@@ -15,9 +15,13 @@ public class Game : MonoBehaviour
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames;
 
+    public static int RequestedStage; // debug jump (keys 1/2)
+    const int StreetWaves = 3;
+
     Camera cam;
     float camX = ScreenW / 2f;
-    int wave;
+    int stage, stageWave, bannerFrames;
+    readonly List<GameObject> backdrop = new List<GameObject>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot()
@@ -31,6 +35,7 @@ public class Game : MonoBehaviour
         Hero = null;
         Frame = SimFrame = freezeFrames = shakeFrames = 0;
         RestartRequested = false;
+        RequestedStage = 0;
     }
 
     public static void Freeze(int frames, int shake)
@@ -99,16 +104,35 @@ public class Game : MonoBehaviour
         bars.backgroundColor = Color.black;
         bars.depth = -100;
 
-        // street: brick wall from the sidewalk up past the top of the screen, street below
-        MakeBackdrop(Art.Bricks, new Vector2(1900f, 40f), new Vector2(4200f, 144f), -20000);
-        MakeBackdrop(Art.Street, new Vector2(1900f, -74f), new Vector2(4200f, 84f), -20000);
-        for (int i = 0; i < 40; i++)
-            MakeBackdrop(Art.Window(i % 3 == 1), new Vector2(48f + i * 96f, 50f), new Vector2(24f, 32f), -19999);
-
         Restart();
     }
 
-    static void MakeBackdrop(Sprite sprite, Vector2 pos, Vector2 size, int order)
+    void BuildBackdrop()
+    {
+        foreach (var g in backdrop) Destroy(g);
+        backdrop.Clear();
+        if (stage == 1)
+        {
+            // street: brick wall from the sidewalk up past the top of the screen, road below
+            MakeBackdrop(Art.Bricks, new Vector2(1900f, 40f), new Vector2(4200f, 144f), -20000);
+            MakeBackdrop(Art.Street, new Vector2(1900f, -74f), new Vector2(4200f, 84f), -20000);
+            for (int i = 0; i < 40; i++)
+                MakeBackdrop(Art.Window(i % 3 == 1), new Vector2(48f + i * 96f, 50f), new Vector2(24f, 32f), -19999);
+        }
+        else
+        {
+            // rooftop at night: sky, skyline behind the ledge, water tanks and neon signs
+            MakeBackdrop(Art.NightSky, new Vector2(1900f, 40f), new Vector2(4200f, 144f), -20002);
+            MakeBackdrop(Art.Skyline, new Vector2(1900f, 4f), new Vector2(4200f, 72f), -20001);
+            MakeBackdrop(Art.Roof, new Vector2(1900f, -74f), new Vector2(4200f, 84f), -20000);
+            for (int i = 0; i < 14; i++)
+                MakeBackdrop(Art.Tank, new Vector2(150f + i * 300f, -6f), new Vector2(28f, 44f), -19999);
+            for (int i = 0; i < 10; i++)
+                MakeBackdrop(Art.Neon, new Vector2(300f + i * 400f, 64f), new Vector2(56f, 22f), -19999);
+        }
+    }
+
+    void MakeBackdrop(Sprite sprite, Vector2 pos, Vector2 size, int order)
     {
         var sr = new GameObject("Backdrop").AddComponent<SpriteRenderer>();
         sr.sprite = sprite;
@@ -116,30 +140,54 @@ public class Game : MonoBehaviour
         sr.size = size;
         sr.sortingOrder = order;
         sr.transform.position = pos;
+        backdrop.Add(sr.gameObject);
+    }
+
+    void SetStage(int s)
+    {
+        stage = s;
+        stageWave = 0;
+        bannerFrames = 150;
+        BuildBackdrop();
+    }
+
+    void ClearEnemies()
+    {
+        for (int i = Fighters.Count - 1; i >= 0; i--)
+            if (Fighters[i].team != 0)
+            {
+                Destroy(Fighters[i].gameObject);
+                Fighters.RemoveAt(i);
+            }
     }
 
     void Restart()
     {
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
         Reset();
-        wave = 0;
         camX = ScreenW / 2f;
         Hero = Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         Hero.gameObject.AddComponent<Player>();
+        SetStage(1);
     }
 
     void SpawnWave()
     {
-        wave++;
-        for (int i = 0; i < Mathf.Min(1 + wave, 5); i++)
+        stageWave++;
+        for (int i = 0; i < Mathf.Min(1 + stageWave, 5); i++)
         {
             // alternate sides, each one further out so they don't stack; no room on the left -> right
             float x = camX + (i % 2 == 0 ? 1f : -1f) * (ScreenW / 2f + 20f + i * 12f);
             if (x < MinX) x = camX + ScreenW / 2f + 20f + i * 12f;
             var pos = new Vector2(x, Random.Range(MinDepth, MaxDepth));
-            // punk: quick, fragile; bruiser: slow, takes more hits
-            bool bruiser = Random.value < 0.35f;
-            var e = bruiser ? Spawn(1, Art.GruntB, pos, 5, Art.BruiserHead) : Spawn(1, Art.GruntA, pos, 3, Art.PunkHead);
+
+            // rooftop: every other enemy is a whip fighter; punk: quick, fragile; bruiser: slow, tough
+            bool lasher = stage == 2 && i % 2 == 0;
+            bool bruiser = !lasher && Random.value < 0.35f;
+            var e = lasher ? Spawn(1, Art.Lasher, pos, 4, Art.PonytailHead)
+                : bruiser ? Spawn(1, Art.GruntB, pos, 5, Art.BruiserHead)
+                : Spawn(1, Art.GruntA, pos, 3, Art.PunkHead);
+            e.whip = lasher;
             e.gameObject.AddComponent<Enemy>();
             if (bruiser) e.walkX = Feel.EnemyWalkX * 0.7f;
         }
@@ -148,6 +196,13 @@ public class Game : MonoBehaviour
     void FixedUpdate()
     {
         if (RestartRequested) Restart();
+        if (RequestedStage > 0)
+        {
+            ClearEnemies();
+            SetStage(RequestedStage);
+            RequestedStage = 0;
+        }
+        if (bannerFrames > 0) bannerFrames--;
         Simulate();
 
         for (int i = Fighters.Count - 1; i >= 0; i--)
@@ -159,7 +214,11 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (Hero.Alive && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (Hero.Alive && !Fighters.Exists(f => f.team != 0))
+        {
+            if (stage == 1 && stageWave >= StreetWaves) SetStage(2);
+            SpawnWave();
+        }
 
         camX = Mathf.Max(ScreenW / 2f, camX + (Hero.ground.x - camX) * 0.1f);
     }
@@ -180,7 +239,9 @@ public class Game : MonoBehaviour
         // HUD sized in game pixels, so it scales with the picture
         hud ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
         hud.fontSize = 8 * scale;
-        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"HP {Mathf.Max(Hero.health, 0)}    WAVE {wave}");
+        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VOLT  HP {Mathf.Max(Hero.health, 0)}    STAGE {stage}-{stageWave}");
+        if (bannerFrames > 0)
+            Text(view.x + 60 * scale, view.y + 80 * scale, scale, stage == 1 ? "STAGE 1   THE STREET" : "STAGE 2   NEON ROOFTOP");
         if (Hero.state == State.Dead)
             Text(view.x + 72 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
     }

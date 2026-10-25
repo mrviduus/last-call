@@ -33,6 +33,13 @@ public static class Feel
     public const int GetUpFrames = 20;            // guess
     public const int GetUpInvuln = 30;            // guess
 
+    public const int WhipStartup = 18;            // guess, telegraph window to dodge or counter
+    public const int WhipActive = 4;              // guess
+    public const int WhipRecovery = 22;           // guess
+    public const float WhipReach = 52f;           // guess
+    public const float WhipPush = 3f;             // guess
+    public const int WhipCooldown = 90;           // guess
+
     public const float EnemyWalkX = 0.8f;         // guess
     public const int EnemyAttackCooldown = 70;    // guess
     public const int CorpseFrames = 60;

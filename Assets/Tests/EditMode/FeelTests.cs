@@ -93,4 +93,37 @@ public class FeelTests
         Assert.AreEqual(State.Hurt, p.state);
         Assert.AreEqual(State.Hurt, e.state);
     }
+
+    static Fighter Lasher(float x)
+    {
+        var w = Game.Spawn(1, Art.Lasher, new Vector2(x, -70f), 10, Art.PonytailHead);
+        w.whip = true;
+        w.facing = -1;
+        return w;
+    }
+
+    [Test]
+    public void WhipHitsFromBeyondPunchRange()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var w = Lasher(40f + 45f);
+        Assert.Greater(45f, Feel.PunchReach);
+
+        w.Attack(false);
+        Run(Feel.WhipStartup);
+        Assert.AreEqual(State.Hurt, p.state);
+    }
+
+    [Test]
+    public void PunchDuringWhipWindupLaunches()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var w = Lasher(55f);
+        w.Attack(false);
+        Run(2);
+
+        p.Attack(false);
+        Run(Feel.PunchStartup);
+        Assert.AreEqual(State.Launched, w.state);
+    }
 }

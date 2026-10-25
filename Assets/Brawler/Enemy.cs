@@ -25,16 +25,18 @@ public class Enemy : MonoBehaviour
 
         Vector2 to = p.ground - f.ground;
         int side = to.x > 0f ? 1 : to.x < 0f ? -1 : f.facing; // hero exactly on top: keep facing
-        float wantX = to.x - side * Feel.PunchReach * 0.7f;
+        // whip fighters hang back at whip range instead of walking in
+        float reach = f.whip ? Feel.WhipReach : Feel.PunchReach;
+        float wantX = to.x - side * reach * (f.whip ? 0.8f : 0.7f);
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
             Mathf.Abs(to.y) > 2f ? Mathf.Sign(to.y) : 0f);
         if (f.moveInput.x == 0f) f.facing = side;
 
-        if (cooldown == 0 && f.InReach(p, Feel.PunchReach))
+        if (cooldown == 0 && f.InReach(p, reach))
         {
             f.Attack(false);
-            cooldown = Feel.EnemyAttackCooldown + Random.Range(0, 30);
+            cooldown = (f.whip ? Feel.WhipCooldown : Feel.EnemyAttackCooldown) + Random.Range(0, 30);
         }
     }
 }
