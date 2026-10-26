@@ -321,7 +321,7 @@ public class Fighter : MonoBehaviour
         bool grounded = height <= 0f && heightVel <= 0f;
         if (grounded && !CanAct) vel.x = Mathf.MoveTowards(vel.x, 0f, Feel.Friction);
         ground += vel;
-        ground.x = Mathf.Max(ground.x, Game.MinX);
+        ground.x = Mathf.Clamp(ground.x, Game.MinX, Game.MaxX);
         ground.y = Mathf.Clamp(ground.y, Game.MinDepth, Game.MaxDepth);
         if (grounded) return false;
 

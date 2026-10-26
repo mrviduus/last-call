@@ -1,11 +1,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Boots itself in any scene: 60 Hz fixed loop, 256x224 pixel screen, floor, player, enemy waves.
+// Boots itself in any scene: 60 Hz fixed loop, 384x240 pixel screen, the ORBIT 9 bar level, player, enemy waves.
 public class Game : MonoBehaviour
 {
     public const int ScreenW = 384, ScreenH = 240;
-    public const float MinX = 16f, MinDepth = -105f, MaxDepth = 10f; // the street's sidewalk and road
+    public const float LevelW = 1152f;                                   // three screens of bar
+    public const float MinX = 16f, MaxX = LevelW - 16f;
+    public const float MinDepth = -105f, MaxDepth = 10f;                 // the bar floor
+    const bool EnemyWaves = false;                                       // bar slice step 1: look at the bar first
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
     public static readonly List<Prop> Props = new List<Prop>();
@@ -16,13 +19,12 @@ public class Game : MonoBehaviour
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames, flashFrames;
 
-    public static int RequestedStage; // debug jump (keys 1/2)
-    const int StreetWaves = 3;
-
     Camera cam;
     float camX = ScreenW / 2f;
-    int stage, stageWave, bannerFrames;
-    readonly List<GameObject> backdrop = new List<GameObject>();
+    int wave;
+
+    // layers that scroll at their own speed: < 1 is further away, > 1 is in front of the fighters
+    readonly List<(Transform layer, float speed, float x)> parallax = new List<(Transform, float, float)>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot()
@@ -37,7 +39,6 @@ public class Game : MonoBehaviour
         Hero = null;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = 0;
         RestartRequested = false;
-        RequestedStage = 0;
     }
 
     public static void Freeze(int frames, int shake)
@@ -88,6 +89,14 @@ public class Game : MonoBehaviour
         return f;
     }
 
+    public static Prop SpawnProp(Prop.Kind kind, Vector2 pos)
+    {
+        var p = new GameObject(kind.ToString()).AddComponent<Prop>();
+        p.Init(kind, pos);
+        Props.Add(p);
+        return p;
+    }
+
     void Awake()
     {
         Time.fixedDeltaTime = 1f / 60f;
@@ -100,7 +109,7 @@ public class Game : MonoBehaviour
         cam.orthographic = true;
         cam.orthographicSize = ScreenH / 2f;
         cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.15f, 0.1f, 0.25f);
+        cam.backgroundColor = new Color(0.02f, 0.02f, 0.05f);
         cam.targetTexture = PixelScreen;
 
         // the window itself needs a camera to clear it; this one draws nothing
@@ -110,68 +119,39 @@ public class Game : MonoBehaviour
         bars.backgroundColor = Color.black;
         bars.depth = -100;
 
+        BuildBar();
         Restart();
     }
 
-    void BuildBackdrop()
+    // ORBIT 9: layers from Resources/Art/Bar, placed by their pixel rows (screen top = y 120, floor from row 112)
+    void BuildBar()
     {
-        foreach (var g in backdrop) Destroy(g);
-        backdrop.Clear();
-        foreach (var p in Props) Destroy(p.gameObject);
-        Props.Clear();
-        foreach (var f in Fighters) f.held = null;
-        if (stage == 1)
-        {
-            // street panorama, bottom on the screen edge; its sidewalk and road are the walkable area
-            cam.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
-            MakeBackdrop(Art.StreetScene, new Vector2(1200f * 2f, 0f), new Vector2(1200f * 4f, 240f), -20000);
-        }
-        else
-        {
-            // space bar: counter along the back wall, chairs and bottles to fight with on the floor
-            cam.backgroundColor = new Color(0.03f, 0.03f, 0.08f);
-            MakeBackdrop(Art.SpaceBar, new Vector2(2400f, 0f), new Vector2(4800f, 240f), -20000);
-            for (int i = 0; i < 30; i++)
-                SpawnProp(i % 3 == 2 ? Prop.Kind.Bottle : Prop.Kind.Chair,
-                    new Vector2(120f + i * 70f + Random.Range(-15f, 15f), Random.Range(MinDepth + 10f, MaxDepth - 10f)));
-        }
+        Layer(Art.BarSpace, new Vector2(LevelW / 2f, 120f - 2f - 28f), -20004, 0.5f); // seen through the window
+        Layer(Art.BarBack, new Vector2(LevelW / 2f, 120f - 56f), -20003);
+        Layer(Art.BarCounter, new Vector2(600f, 120f - 64f - 24f), -20002);
+        Layer(Art.BarFloor, new Vector2(LevelW / 2f, 120f - 112f - 64f), -20001);
+        foreach (float x in new[] { 250f, 900f })
+            Layer(Art.BarPillar, new Vector2(x, 0f), 30000, 1.25f);                    // in front of everyone
     }
 
-    public static Prop SpawnProp(Prop.Kind kind, Vector2 pos)
+    void Layer(Sprite sprite, Vector2 pos, int order, float speed = 1f)
     {
-        var p = new GameObject(kind.ToString()).AddComponent<Prop>();
-        p.Init(kind, pos);
-        Props.Add(p);
-        return p;
-    }
-
-    void MakeBackdrop(Sprite sprite, Vector2 pos, Vector2 size, int order)
-    {
-        var sr = new GameObject("Backdrop").AddComponent<SpriteRenderer>();
+        var sr = new GameObject("Layer").AddComponent<SpriteRenderer>();
         sr.sprite = sprite;
-        sr.drawMode = SpriteDrawMode.Tiled;
-        sr.size = size;
         sr.sortingOrder = order;
         sr.transform.position = pos;
-        backdrop.Add(sr.gameObject);
+        if (speed != 1f) parallax.Add((sr.transform, speed, pos.x));
     }
 
-    void SetStage(int s)
+    // chairs and bottles where a bar would have them: by the tables and along the counter
+    static void SpawnBarProps()
     {
-        stage = s;
-        stageWave = 0;
-        bannerFrames = 150;
-        BuildBackdrop();
-    }
-
-    void ClearEnemies()
-    {
-        for (int i = Fighters.Count - 1; i >= 0; i--)
-            if (Fighters[i].team != 0)
-            {
-                Destroy(Fighters[i].gameObject);
-                Fighters.RemoveAt(i);
-            }
+        SpawnProp(Prop.Kind.Chair, new Vector2(170f, -40f));
+        SpawnProp(Prop.Kind.Chair, new Vector2(480f, -70f));
+        SpawnProp(Prop.Kind.Bottle, new Vector2(560f, -15f));
+        SpawnProp(Prop.Kind.Chair, new Vector2(700f, -90f));
+        SpawnProp(Prop.Kind.Bottle, new Vector2(840f, -50f));
+        SpawnProp(Prop.Kind.Chair, new Vector2(1010f, -60f));
     }
 
     void Restart()
@@ -179,24 +159,26 @@ public class Game : MonoBehaviour
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
         foreach (var p in Props) if (p != null) Destroy(p.gameObject);
         Reset();
-        camX = ScreenW / 2f;
-        Hero = Spawn(0, Art.Hero, new Vector2(60f, -50f), 10);
+        wave = 0;
+        Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), 10); // at the counter
         Hero.gameObject.AddComponent<Player>();
-        SetStage(1);
+        camX = CameraX(Hero.ground.x);
+        SpawnBarProps();
     }
+
+    static float CameraX(float target) => Mathf.Clamp(target, ScreenW / 2f, LevelW - ScreenW / 2f);
 
     void SpawnWave()
     {
-        stageWave++;
-        for (int i = 0; i < Mathf.Min(1 + stageWave, 5); i++)
+        wave++;
+        for (int i = 0; i < Mathf.Min(1 + wave, 5); i++)
         {
-            // alternate sides, each one further out so they don't stack; no room on the left -> right
+            // alternate sides, each one further out so they don't stack; clamp into the bar
             float x = camX + (i % 2 == 0 ? 1f : -1f) * (ScreenW / 2f + 20f + i * 12f);
-            if (x < MinX) x = camX + ScreenW / 2f + 20f + i * 12f;
-            var pos = new Vector2(x, Random.Range(MinDepth, MaxDepth));
+            var pos = new Vector2(Mathf.Clamp(x, MinX, MaxX), Random.Range(MinDepth, MaxDepth));
 
-            // rooftop: every other enemy is a whip fighter; others: quick and fragile, or slow and tough
-            bool lasher = stage == 2 && i % 2 == 0;
+            // every other enemy is a whip fighter; others: quick and fragile, or slow and tough
+            bool lasher = i % 2 == 0;
             bool bruiser = !lasher && Random.value < 0.35f;
             var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
                 : bruiser ? Spawn(1, Art.GruntB, pos, 5)
@@ -210,13 +192,6 @@ public class Game : MonoBehaviour
     void FixedUpdate()
     {
         if (RestartRequested) Restart();
-        if (RequestedStage > 0)
-        {
-            ClearEnemies();
-            SetStage(RequestedStage);
-            RequestedStage = 0;
-        }
-        if (bannerFrames > 0) bannerFrames--;
         Simulate();
 
         for (int i = Fighters.Count - 1; i >= 0; i--)
@@ -228,19 +203,19 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (Hero.Alive && !Fighters.Exists(f => f.team != 0))
-        {
-            if (stage == 1 && stageWave >= StreetWaves) SetStage(2);
-            SpawnWave();
-        }
+        if (EnemyWaves && Hero.Alive && !Fighters.Exists(f => f.team != 0)) SpawnWave();
 
-        camX = Mathf.Max(ScreenW / 2f, camX + (Hero.ground.x - camX) * 0.1f);
+        camX += (CameraX(Hero.ground.x) - camX) * 0.1f;
     }
 
     void LateUpdate()
     {
+        float x = Mathf.Round(camX);
         float shake = shakeFrames > 0 ? (Frame % 2 == 0 ? 2f : -2f) : 0f;
-        cam.transform.position = new Vector3(Mathf.Round(camX), shake, -10f);
+        cam.transform.position = new Vector3(x, shake, -10f);
+        // a layer at speed s moves s times as fast as the floor; authored positions match the start of the level
+        foreach (var (layer, speed, baseX) in parallax)
+            layer.position = new Vector3(Mathf.Round(baseX + (x - ScreenW / 2f) * (1f - speed)), layer.position.y, 0f);
     }
 
     void OnGUI()
@@ -268,11 +243,9 @@ public class Game : MonoBehaviour
             GUI.DrawTexture(new Rect(view.x, view.y, view.width, 20 * scale), Texture2D.whiteTexture);
             GUI.color = Color.white;
         }
-        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}    STAGE {stage}-{stageWave}");
-        if (bannerFrames > 0)
-            Text(view.x + 60 * scale, view.y + 80 * scale, scale, stage == 1 ? "STAGE 1   THE STREET" : "STAGE 2   SPACE BAR");
+        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}");
         if (Hero.state == State.Dead)
-            Text(view.x + 72 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
+            Text(view.x + 120 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
     }
 
     GUIStyle hud;

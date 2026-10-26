@@ -37,8 +37,6 @@ public class Player : MonoBehaviour
         }
 
         if (f.state == State.Dead && attackPressed) Game.RestartRequested = true;
-        int stage = StagePressed();
-        if (stage > 0) Game.RequestedStage = stage;
     }
 
     void Think()
@@ -167,14 +165,7 @@ public class Player : MonoBehaviour
         return k.dKey.wasPressedThisFrame ? 1 : k.aKey.wasPressedThisFrame ? -1 : 0;
     }
 
-    static int StagePressed()
-    {
-        var k = Keyboard.current;
-        if (k == null) return 0;
-        return k.digit1Key.wasPressedThisFrame ? 1 : k.digit2Key.wasPressedThisFrame ? 2 : 0;
-    }
 #else
-    static int StagePressed() => Input.GetKeyDown(KeyCode.Alpha1) ? 1 : Input.GetKeyDown(KeyCode.Alpha2) ? 2 : 0;
     static Vector2 ReadMove() => new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
     static bool JumpPressed() => Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.Space);
     static bool AttackPressed() => Input.GetKeyDown(KeyCode.J);

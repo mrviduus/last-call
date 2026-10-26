@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Fighters and the street: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt). Variants are tinted copies.
-// Space bar stage, chair, bottle, whip and giant boot are drawn in code. 1 texel = 1 screen pixel.
+// Fighters: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt). Variants are tinted copies.
+// The ORBIT 9 bar is PNGs from Tools/make_bar_art.py; the whip and giant boot are drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
     // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
@@ -196,10 +196,10 @@ public static class Art
         return frames;
     }
 
-    static Sprite FromResource(string path)
+    static Sprite FromResource(string path, Vector2? pivot = null)
     {
         var tex = Load(path);
-        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Center, 1f, 0, SpriteMeshType.FullRect);
+        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), pivot ?? Center, 1f, 0, SpriteMeshType.FullRect);
     }
 
     // f(x, y) with y counted from the top
@@ -220,7 +220,7 @@ public static class Art
     static Color32 Mix(uint a, uint b, float t) => Color32.Lerp(C(a), C(b), t);
     static bool Speckle(int x, int y) => ((x * 73856093) ^ (y * 19349663)) % 7 == 0;
 
-    static Sprite streetScene, shadow, whip, spaceBar, chair, bottle;
+    static Sprite shadow, whip;
 
     static Sprite bigBoot;
 
@@ -238,8 +238,16 @@ public static class Art
     }, new Vector2(0f, 0.5f));
 
 
-    // 1200x240 street: buildings on top, sidewalk and road below
-    public static Sprite StreetScene => streetScene != null ? streetScene : streetScene = FromResource("Street/stage");
+    // ORBIT 9 bar, drawn by Tools/make_bar_art.py: separate layers and props (redraw the PNGs freely)
+    static Sprite barSpace, barBack, barCounter, barFloor, barPillar, chair, bottle;
+    static readonly Vector2 Feet = new Vector2(0.5f, 0f);
+    public static Sprite BarSpace => barSpace != null ? barSpace : barSpace = FromResource("Bar/bar_space");
+    public static Sprite BarBack => barBack != null ? barBack : barBack = FromResource("Bar/bar_back");
+    public static Sprite BarCounter => barCounter != null ? barCounter : barCounter = FromResource("Bar/bar_counter");
+    public static Sprite BarFloor => barFloor != null ? barFloor : barFloor = FromResource("Bar/bar_floor");
+    public static Sprite BarPillar => barPillar != null ? barPillar : barPillar = FromResource("Bar/bar_pillar");
+    public static Sprite Chair => chair != null ? chair : chair = FromResource("Bar/chair", Feet);
+    public static Sprite Bottle => bottle != null ? bottle : bottle = FromResource("Bar/bottle", Feet);
 
     public static Sprite Shadow => shadow != null ? shadow : shadow = FromResource("shadow");
 
@@ -247,57 +255,4 @@ public static class Art
     public static Sprite Whip => whip != null ? whip : whip = Paint(44, 3, (x, y) =>
         x >= 40 ? C(0xe0c080) : y == 1 ? C(0x6a3a1c) : Clear, new Vector2(0f, 0.5f));
 
-    // space bar, our own design: window onto space with a planet, neon, a shelf of glowing bottles,
-    // the counter, then a metal floor (the walkable area starts at row 112). Tiles horizontally.
-    public static Sprite SpaceBar => spaceBar != null ? spaceBar : spaceBar = Paint(256, 240, (x, y) =>
-    {
-        if (y >= 8 && y < 64 && x >= 24 && x < 232)
-        {
-            if (y == 8 || y == 63 || x == 24 || x == 231 || x == 128) return C(0x5a6078); // window frame
-            float dx = x - 190, dy = y - 70;
-            if (dx * dx + dy * dy < 46 * 46) return Mix(0x2a8c8c, 0x0c3a4a, (y - 24) / 46f); // planet
-            if (Speckle(x * 5, y * 3) && Speckle(x, y * 7)) return C(0xe8f0ff);             // stars
-            return Mix(0x050514, 0x14102e, y / 64f);
-        }
-        if (y < 70)
-        {
-            if (x % 32 == 0 || y % 34 == 0) return C(0x10121c);                // wall panel seams
-            return x % 32 == 2 && y % 17 == 3 ? C(0x3a3e52) : C(0x1c2030);     // rivets
-        }
-        if (y < 72) return x % 6 < 4 ? C(0xff4fd0) : C(0x401436);              // neon tube
-        if (y < 92)
-        {
-            if (y == 91) return C(0x6a6e84);                                   // shelf
-            int b = x / 9, bx = x % 9, top = 76 + b * 7 % 5;                   // bottles of different heights
-            if (bx >= 2 && bx <= 6 && y >= top && (y >= top + 3 || bx == 4))
-            {
-                uint[] glass = { 0x3ae0a0, 0xe0a03a, 0xa03ae0, 0x3aa0e0 };
-                return C(glass[b % 4]);
-            }
-            return C(0x181a28);
-        }
-        if (y < 96) return C(0xb0b4c8);                                         // counter top
-        if (y < 108) return y == 104 ? C(0x3ae0ff) : C(0x2a2e44);              // counter front, cyan strip
-        if (y < 112) return C(0x0c0e16);                                        // shadow under the counter
-        if (y % 16 == 0 || (x + y / 16 * 8) % 48 == 0) return C(0x2a2c3c);     // floor plates
-        return Speckle(x, y) ? C(0x40445a) : C(0x363a4e);
-    }, Center);
-
-    // bar stool: red cushions, metal legs and footrest; pivot at the feet
-    public static Sprite Chair => chair != null ? chair : chair = Paint(20, 28, (x, y) =>
-    {
-        if (y < 4) return x >= 3 && x <= 16 ? C(0xc0303a) : Clear;               // backrest cushion
-        if (y < 12) return x == 3 || x == 16 ? C(0x8a8ea4) : Clear;              // backrest posts
-        if (y < 15) return C(0xc0303a);                                          // seat
-        if (y == 15) return C(0x7a1c24);
-        if (y == 22 && x >= 2 && x <= 17) return C(0x6a6e84);                    // footrest
-        return x == 2 || x == 3 || x == 16 || x == 17 ? C(0x8a8ea4) : Clear;    // legs
-    }, new Vector2(0.5f, 0f));
-
-    // green glass bottle; pivot at the bottom
-    public static Sprite Bottle => bottle != null ? bottle : bottle = Paint(6, 16, (x, y) =>
-    {
-        if (y < 5) return x == 2 || x == 3 ? C(0x2a8a4a) : Clear;                // neck
-        return x == 1 ? C(0x9af0b0) : C(0x2a8a4a);                               // body with a highlight
-    }, new Vector2(0.5f, 0f));
 }

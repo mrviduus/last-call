@@ -6,15 +6,16 @@ using UnityEngine.TestTools;
 
 public class SmokeTest
 {
-    // Unattended run: enemies must spawn, walk in and hit the idle hero, with no errors logged.
+    // Unattended run: the bar loads with the hero by the counter and its chairs and bottles, no errors logged.
     [UnityTest]
-    public IEnumerator EnemiesReachAndHitHero()
+    public IEnumerator BarLoadsWithHeroAndProps()
     {
         if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
-        for (int i = 0; i < 900; i++) yield return new WaitForFixedUpdate();
+        for (int i = 0; i < 120; i++) yield return new WaitForFixedUpdate();
 
-        Assert.IsTrue(Game.Fighters.Exists(f => f.team != 0), "enemies spawned");
-        Assert.Less(Game.Hero.health, Game.Hero.maxHealth, "enemies hit the hero");
+        Assert.IsTrue(Game.Hero.Alive);
+        Assert.IsFalse(Game.Fighters.Exists(f => f.team != 0), "no enemies in this step");
+        Assert.AreEqual(6, Game.Props.Count, "chairs and bottles are in place");
 
         Camera.main.Render(); // batchmode has no end-of-frame, so draw the pixel screen by hand
         var tex = new Texture2D(Game.ScreenW, Game.ScreenH);
