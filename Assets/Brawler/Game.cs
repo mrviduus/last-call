@@ -183,7 +183,7 @@ public class Game : MonoBehaviour
             if (x < MinX) x = camX + ScreenW / 2f + 20f + i * 12f;
             var pos = new Vector2(x, Random.Range(MinDepth, MaxDepth));
 
-            // rooftop: every other enemy is a whip fighter; punk: quick, fragile; bruiser: slow, tough
+            // rooftop: every other enemy is a whip fighter; others: quick and fragile, or slow and tough
             bool lasher = stage == 2 && i % 2 == 0;
             bool bruiser = !lasher && Random.value < 0.35f;
             var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
@@ -250,7 +250,7 @@ public class Game : MonoBehaviour
         // HUD sized in game pixels, so it scales with the picture
         hud ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
         hud.fontSize = 8 * scale;
-        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VOLT  HP {Mathf.Max(Hero.health, 0)}    STAGE {stage}-{stageWave}");
+        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}    STAGE {stage}-{stageWave}");
         if (bannerFrames > 0)
             Text(view.x + 60 * scale, view.y + 80 * scale, scale, stage == 1 ? "STAGE 1   THE STREET" : "STAGE 2   NEON ROOFTOP");
         if (Hero.state == State.Dead)

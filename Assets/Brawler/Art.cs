@@ -6,9 +6,9 @@ using UnityEngine;
 public static class Art
 {
     // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
-    public const string Hero = "Girl";            // placeholder until Leha's VOLT
-    public const string GruntA = "Punk";          // punk
-    public const string GruntB = "Punk:9fb4ff";   // bruiser, blue tint
+    public const string Hero = "Punk";           // placeholder until Vasyl (blond, leather jacket) has frames
+    public const string GruntA = "Girl";          // street fighter
+    public const string GruntB = "Girl:c8a0ff";   // tougher fighter, violet tint
     public const string Lasher = "Girl:b0ffd8";   // whip fighter, teal tint
 
     public static Color Tint(string look)
