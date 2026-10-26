@@ -1,7 +1,7 @@
 using UnityEngine;
 
-public enum State { Idle, Walk, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held }
-public enum Move { Punch, Smash, Kick, JumpKick, Knee, Throw, Whip }
+public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried }
+public enum Move { Punch, Smash, Kick, JumpKick, DashKick, Pound, KneeDrop, Knee, Throw, Whip }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -25,31 +25,39 @@ public class Fighter : MonoBehaviour
 
     int flashFrames, invulnFrames;
     bool bounced, strikePending, punchAlt, airKick, airKickSpent;
-    SpriteRenderer body, shadow, whipLine;
+    SpriteRenderer body, shadow, whipLine, boot;
     Art.Frames art;
 
     int Startup => move switch
     {
-        Move.Kick => Feel.KickStartup, Move.Knee => Feel.KneeStartup,
+        Move.Kick => Feel.KickStartup, Move.DashKick => Feel.DashKickStartup,
+        Move.Pound => Feel.PoundStartup, Move.KneeDrop => Feel.KneeDropStartup, Move.Knee => Feel.KneeStartup,
         Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup, _ => Feel.PunchStartup,
     };
-    int Active => move switch { Move.Kick => Feel.KickActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive };
+    int Active => move switch
+    {
+        Move.Kick => Feel.KickActive, Move.DashKick => Feel.DashKickActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive,
+    };
     int Recovery => move switch
     {
-        Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery, Move.Knee => Feel.KneeRecovery,
+        Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery,
+        Move.DashKick => Feel.DashKickRecovery, Move.Pound => Feel.PoundRecovery,
+        Move.KneeDrop => Feel.KneeDropRecovery, Move.Knee => Feel.KneeRecovery,
         Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery, _ => Feel.PunchRecovery,
     };
     float Reach => move switch
     {
         Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach,
-        Move.JumpKick => Feel.JumpKickReach, Move.Whip => Feel.WhipReach, _ => Feel.PunchReach,
+        Move.JumpKick => Feel.JumpKickReach, Move.DashKick => Feel.DashKickReach, Move.Pound => Feel.PoundReach,
+        Move.KneeDrop => Feel.KneeDropReach,
+        Move.Whip => Feel.WhipReach, _ => Feel.PunchReach,
     };
     float Push => move switch { Move.Kick => Feel.KickPush, Move.Whip => Feel.WhipPush, _ => Feel.JabPush };
-    int Damage => move is Move.Punch or Move.Whip ? 1 : 2;
-    bool Launches => move is Move.Smash or Move.JumpKick;
+    int Damage => move switch { Move.Punch or Move.Whip => 1, Move.DashKick => 3, _ => 2 };
+    bool Launches => move is Move.Smash or Move.JumpKick or Move.DashKick;
     bool WindingUp => state == State.Attack && stateFrames < Startup;
 
-    public bool CanAct => state == State.Idle || state == State.Walk;
+    public bool CanAct => state == State.Idle || state == State.Walk || state == State.Run;
     public bool Alive => health > 0;
     public bool Solid => Alive && height <= 0f && state != State.Launched && state != State.Down;
     public bool CanBeHit => Alive && invulnFrames == 0
@@ -65,6 +73,7 @@ public class Fighter : MonoBehaviour
         shadow.sortingOrder = -10000; // under every body
         body = MakeSprite("Body", art.Idle[0]);
         whipLine = MakeSprite("Whip", Art.Whip);
+        boot = MakeSprite("BigBoot", Art.BigBoot);
     }
 
     SpriteRenderer MakeSprite(string name, Sprite sprite)
@@ -83,8 +92,28 @@ public class Fighter : MonoBehaviour
         if (!CanAct && !holding) return;
         move = m;
         punchAlt = !punchAlt;
-        vel = Vector2.zero;
+        if (m != Move.DashKick) vel = Vector2.zero; // a dash kick keeps the run's momentum and slides
+        if (m == Move.KneeDrop) heightVel = Feel.KneeDropHop;
         Enter(State.Attack);
+    }
+
+    public bool IsDownedEnemyInReach(float reach)
+    {
+        foreach (var t in Game.Fighters)
+        {
+            float dx = (t.ground.x - ground.x) * facing;
+            if (t.team != team && t.state == State.Down && dx > -4f && dx < reach
+                && Mathf.Abs(t.ground.y - ground.y) < Feel.DepthBand)
+                return true;
+        }
+        return false;
+    }
+
+    public void StartRun(int dir)
+    {
+        if (!CanAct) return;
+        facing = dir;
+        Enter(State.Run);
     }
 
     public void Jump()
@@ -136,6 +165,18 @@ public class Fighter : MonoBehaviour
         }
     }
 
+    // hammer stomp: driven into the ground up to the chest; a finishing blow knocks them flying instead
+    public void Bury(int damage, int dir)
+    {
+        if (!CanBeHit) return;
+        if (health <= damage) { TakeHit(damage, dir, true); return; }
+        Release();
+        health -= damage;
+        flashFrames = 8;
+        vel = Vector2.zero;
+        Enter(State.Buried);
+    }
+
     public bool InReach(Fighter t, float reach, float heightBand = Feel.HeightBand)
     {
         float dx = (t.ground.x - ground.x) * facing;
@@ -165,6 +206,11 @@ public class Fighter : MonoBehaviour
                 if (moveInput.x != 0f) facing = moveInput.x > 0f ? 1 : -1;
                 state = vel == Vector2.zero ? State.Idle : State.Walk;
                 break;
+            case State.Run:
+                // keeps running while the direction is held; letting go or turning stops it
+                vel = new Vector2(facing * Feel.RunX, moveInput.y * walkDepth);
+                if (moveInput.x * facing <= 0f) Enter(State.Idle);
+                break;
             case State.Jump:
                 if (airKick && !airKickSpent) strikePending = true;
                 if (landed) Enter(State.Idle);
@@ -181,6 +227,10 @@ public class Fighter : MonoBehaviour
                 break;
             case State.Held:
                 vel = Vector2.zero; // the holder positions us
+                break;
+            case State.Buried:
+                vel = Vector2.zero;
+                if (stateFrames >= Feel.BuriedFrames) Enter(State.GetUp); // pops out
                 break;
             case State.Hurt:
                 if (stateFrames >= Feel.Hitstun) Enter(State.Idle);
@@ -238,17 +288,37 @@ public class Fighter : MonoBehaviour
 
     void Strike()
     {
+        if (move == Move.KneeDrop) { StrikeDowned(); return; }
         bool hit = false;
         float heightBand = move == Move.JumpKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
             if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand))
             {
-                t.TakeHit(Damage, facing, Launches, Push);
+                if (move == Move.Pound) t.Bury(Damage, facing);
+                else t.TakeHit(Damage, facing, Launches, Push);
                 hit = true;
             }
         if (!hit) return;
         if (move == Move.JumpKick) airKickSpent = true;
-        Game.Freeze(Launches ? Feel.SmashHitstop : Feel.Hitstop, Launches ? Feel.SmashShake : 0);
+        bool big = Launches || move == Move.Pound;
+        Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
+    }
+
+    // knee drop: lands on enemies lying on the ground and keeps them down
+    void StrikeDowned()
+    {
+        bool hit = false;
+        foreach (var t in Game.Fighters)
+        {
+            float dx = (t.ground.x - ground.x) * facing;
+            if (t.team == team || t.state != State.Down || dx <= -4f || dx >= Reach
+                || Mathf.Abs(t.ground.y - ground.y) >= Feel.DepthBand) continue;
+            t.health -= 2;
+            t.flashFrames = 8;
+            t.Enter(State.Down);
+            hit = true;
+        }
+        if (hit) Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
     }
 
     // knee: damage without letting go (the last point knocks them flying); throw: over the shoulder
@@ -300,14 +370,19 @@ public class Fighter : MonoBehaviour
         {
             State.Idle => art.Idle[Game.Frame / 10 % 4],
             State.Walk => art.Walk[Game.Frame / 8 % 4],
+            State.Run => art.Run[Game.Frame / 5 % 4],
             State.Jump => airKick ? art.Kick : art.Crouch,
             State.GetUp => art.GetUp,
             State.Grab => art.Punch1,
             State.Held => art.Hurt,
+            State.Buried => art.Sinking[Mathf.Min(stateFrames, art.Sinking.Length - 1)], // hammered in over a few frames
             State.Attack => move switch
             {
                 Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
                 Move.Smash or Move.Kick => striking ? art.Kick : art.Crouch,
+                Move.DashKick => striking ? art.Kick : art.Run[0],
+                Move.Pound => striking ? art.Kick : art.Crouch,
+                Move.KneeDrop => art.Crouch,
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
                 Move.Throw => art.Throw[WindingUp ? 0 : 1],
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : art.Idle[0],
@@ -317,11 +392,18 @@ public class Fighter : MonoBehaviour
         };
         body.flipX = facing < 0;
         body.transform.localPosition = new Vector3(0f, h, 0f);
+        shadow.enabled = state != State.Buried;
         body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
         bool telegraph = move == Move.Whip && WindingUp && stateFrames / 3 % 2 == 0;
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
             : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
+
+        // finishing kicks: the foot swells into a giant boot at the moment of impact
+        boot.enabled = striking && state == State.Attack && (move == Move.Smash || move == Move.DashKick);
+        float swell = stateFrames - Startup < 2 ? 1.5f : 2f;
+        boot.transform.localScale = new Vector3(facing * swell, swell, 1f);
+        boot.transform.localPosition = new Vector3(facing * 10f, h + 15f, 0f);
 
         whipLine.enabled = move == Move.Whip && striking;
         whipLine.transform.localScale = new Vector3(facing, 1f, 1f);
@@ -331,5 +413,6 @@ public class Fighter : MonoBehaviour
         int order = -Mathf.RoundToInt(ground.y) * 2;
         body.sortingOrder = order;
         whipLine.sortingOrder = order + 1;
+        boot.sortingOrder = order + 1;
     }
 }

@@ -22,7 +22,7 @@ public static class Art
 
     public class Frames
     {
-        public Sprite[] Idle, Walk, Throw;
+        public Sprite[] Idle, Walk, Run, Throw, Sinking;
         public Sprite Punch1, Punch2, Kick, Hurt, Fall, GetUp, Crouch, WindUp, Headbutt;
     }
 
@@ -37,6 +37,7 @@ public static class Art
         {
             Idle = Strip("Idle", 4, pal),
             Walk = Strip("Walk", 4, pal),
+            Run = Strip("Run", 4, pal),
             Punch1 = Strip("Punch1", 1, pal)[0],
             Punch2 = Strip("Punch2", 1, pal)[0],
             Kick = Strip("Kick", 1, pal)[0],
@@ -48,7 +49,22 @@ public static class Art
             Headbutt = Strip("HeadButt", 2, pal)[1],
             Throw = Strip("Throw", 2, pal),
         };
+        f.Sinking = Sinking(f.Hurt);
         return cache[palette] = f;
+    }
+
+    // the hurt pose with its bottom rows cut off, deeper each frame: a body hammered into the ground
+    static Sprite[] Sinking(Sprite hurt)
+    {
+        var frames = new Sprite[(int)(Feel.BurySink / 3f) + 1];
+        var r = hurt.rect;
+        for (int i = 0; i < frames.Length; i++)
+        {
+            float cut = i * 3f;
+            frames[i] = Sprite.Create(hurt.texture, new Rect(r.x, r.y + cut, r.width, r.height - cut),
+                new Vector2(0.5f, 0f), 1f, 0, SpriteMeshType.FullRect);
+        }
+        return frames;
     }
 
     static Dictionary<char, Color32> ParsePalette(string palette)
@@ -105,6 +121,22 @@ public static class Art
     static bool Speckle(int x, int y) => ((x * 73856093) ^ (y * 19349663)) % 7 == 0;
 
     static Sprite streetScene, shadow, whip, nightSky, skyline, roof, neon, tank;
+
+    static Sprite bigBoot;
+
+    // oversized boot for finishing kicks: shaft on the left, toe pointing right, pivot at the ankle
+    public static Sprite BigBoot => bigBoot != null ? bigBoot : bigBoot = Paint(24, 14, (x, y) =>
+    {
+        bool inShaft = x < 10 && y < 8;
+        bool inFoot = y >= 6 && !(x > 20 && y < 9); // rounded toe
+        if (!inShaft && !inFoot) return Clear;
+        bool edge = x == 0 || y == 0 && x < 10 || x == 23 || y == 13 || x == 10 && y < 6 || x > 20 && y == 9;
+        if (edge) return C(0x1a1020);
+        if (y >= 11) return C(0x3a3a44);                                          // sole
+        if ((y == 7 || y == 9) && x >= 3 && x <= 15 && x % 3 == 0) return C(0xffffff); // laces
+        return y < 3 || x < 2 ? C(0x801c14) : C(0xd03020);                        // shaded red leather
+    }, new Vector2(0f, 0.5f));
+
 
     // 784x192 street: buildings on top, sidewalk and road along the bottom 64 px
     public static Sprite StreetScene => streetScene != null ? streetScene : streetScene = FromResource("Art/Street/panorama");

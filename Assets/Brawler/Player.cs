@@ -5,11 +5,13 @@ using UnityEngine.InputSystem;
 
 // WASD move, K / Space jump, J punch, L kick. Third punch of a quick combo = high kick.
 // J in the air = jump kick. Walk into a stunned enemy to grab: J = headbutt (third one throws), K = throw.
+// Double-tap left/right = run; J or L while running = dash kick.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
     Fighter f;
     int combo, lastPunchFrame = -999, attackBuffer, jumpBuffer, kickBuffer, grabHits;
+    int lastTapDir, lastTapFrame = -999, runRequested;
     bool attackPressed, jumpPressed, kickPressed;
 
     void Awake()
@@ -24,6 +26,15 @@ public class Player : MonoBehaviour
         attackPressed |= AttackPressed();
         jumpPressed |= JumpPressed();
         kickPressed |= KickPressed();
+
+        int tap = TapDirection();
+        if (tap != 0)
+        {
+            if (tap == lastTapDir && Game.Frame - lastTapFrame <= Feel.DoubleTapFrames) runRequested = tap;
+            lastTapDir = tap;
+            lastTapFrame = Game.Frame;
+        }
+
         if (f.state == State.Dead && attackPressed) Game.RestartRequested = true;
         int stage = StagePressed();
         if (stage > 0) Game.RequestedStage = stage;
@@ -45,6 +56,26 @@ public class Player : MonoBehaviour
         else if (f.state == State.Jump && attackBuffer > 0)
         {
             f.JumpKick();
+            attackBuffer = 0;
+        }
+        else if (f.state == State.Run && (attackBuffer > 0 || kickBuffer > 0))
+        {
+            f.Attack(Move.DashKick);
+            attackBuffer = kickBuffer = 0;
+        }
+        else if (runRequested != 0 && f.CanAct)
+        {
+            f.StartRun(runRequested);
+            runRequested = 0;
+        }
+        else if (attackBuffer > 0 && f.CanAct && f.IsDownedEnemyInReach(Feel.KneeDropReach))
+        {
+            f.Attack(Move.KneeDrop); // enemy lying in front: drop a knee on them
+            attackBuffer = 0;
+        }
+        else if (attackBuffer > 0 && f.CanAct && f.moveInput.y < 0f)
+        {
+            f.Attack(Move.Pound); // down + punch = hammer stomp
             attackBuffer = 0;
         }
         else if (attackBuffer > 0 && f.CanAct)
@@ -107,6 +138,13 @@ public class Player : MonoBehaviour
     static bool AttackPressed() => Keyboard.current != null && Keyboard.current.jKey.wasPressedThisFrame;
     static bool KickPressed() => Keyboard.current != null && Keyboard.current.lKey.wasPressedThisFrame;
 
+    static int TapDirection()
+    {
+        var k = Keyboard.current;
+        if (k == null) return 0;
+        return k.dKey.wasPressedThisFrame ? 1 : k.aKey.wasPressedThisFrame ? -1 : 0;
+    }
+
     static int StagePressed()
     {
         var k = Keyboard.current;
@@ -119,5 +157,6 @@ public class Player : MonoBehaviour
     static bool JumpPressed() => Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.Space);
     static bool AttackPressed() => Input.GetKeyDown(KeyCode.J);
     static bool KickPressed() => Input.GetKeyDown(KeyCode.L);
+    static int TapDirection() => Input.GetKeyDown(KeyCode.D) ? 1 : Input.GetKeyDown(KeyCode.A) ? -1 : 0;
 #endif
 }

@@ -170,4 +170,52 @@ public class FeelTests
         Assert.AreEqual(State.Launched, e.state);
         Assert.Less(e.vel.x, 0f, "thrown over the shoulder, behind the player");
     }
+
+    [Test]
+    public void RunIsFasterThanWalkAndDashKickLaunches()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        p.moveInput = Vector2.right;
+        p.StartRun(1);
+        Run(10);
+        Assert.AreEqual(State.Run, p.state);
+        Assert.AreEqual(Feel.RunX, p.vel.x);
+        Assert.Greater(Feel.RunX, Feel.WalkX);
+
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 20f, -70f), 10);
+        p.Attack(Move.DashKick);
+        Run(Feel.DashKickStartup);
+        Assert.AreEqual(State.Launched, e.state);
+        Assert.AreEqual(7, e.health);
+    }
+
+    [Test]
+    public void PoundBuriesThenEnemyPopsOut()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        p.Attack(Move.Pound);
+        Run(Feel.PoundStartup);
+        Assert.AreEqual(State.Buried, e.state);
+
+        Run(Feel.BuriedFrames + Feel.SmashHitstop);
+        Assert.AreEqual(State.GetUp, e.state);
+    }
+
+    [Test]
+    public void KneeDropHitsEnemyLyingDown()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        e.TakeHit(1, 1, true);
+        while (e.state != State.Down) Game.Simulate();
+        e.ground.x = 55f; // the launch carried them away; put them back in front, no longer sliding
+        e.vel = Vector2.zero;
+        Assert.IsTrue(p.IsDownedEnemyInReach(Feel.KneeDropReach));
+
+        p.Attack(Move.KneeDrop);
+        Run(Feel.KneeDropStartup);
+        Assert.AreEqual(7, e.health);
+        Assert.AreEqual(State.Down, e.state);
+    }
 }

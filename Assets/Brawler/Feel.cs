@@ -4,7 +4,13 @@ public static class Feel
 {
     public const float WalkX = 1.5f;              // guess
     public const float WalkDepth = 1f;            // guess
-    public const float JumpVel = 4.5f;            // guess
+    public const float RunX = 3f;                 // guess
+    public const int DoubleTapFrames = 15;        // guess, max gap between the two taps that start a run
+    public const int DashKickStartup = 4;         // guess
+    public const int DashKickActive = 6;          // guess
+    public const int DashKickRecovery = 16;       // guess
+    public const float DashKickReach = 30f;       // guess
+    public const float JumpVel = 4.5f;           // guess
     public const float Gravity = 0.3f;            // guess
     public const float Friction = 0.25f;          // guess
 
@@ -41,7 +47,19 @@ public static class Feel
     public const float JumpKickReach = 24f;       // guess
     public const float JumpKickHeight = 40f;      // guess, hits grounded targets from anywhere in the jump
 
-    public const int GrabFrames = 120;            // guess, how long a hold lasts
+    public const int PoundStartup = 8;            // guess, hammer stomp drives the target into the ground
+    public const int PoundActive = 2;             // guess
+    public const int PoundRecovery = 14;          // guess
+    public const float PoundReach = 26f;          // guess
+    public const int BuriedFrames = 100;          // guess, stuck in the ground before popping out
+    public const float BurySink = 18f;            // guess, pixels below the ground
+
+    public const float KneeDropHop = 2.5f;        // guess, small hop onto a downed enemy
+    public const int KneeDropStartup = 16;        // ~ the hop's airtime: lands knee-first
+    public const int KneeDropRecovery = 10;       // guess
+    public const float KneeDropReach = 24f;       // guess
+
+    public const int GrabFrames = 120;          // guess, how long a hold lasts
     public const int KneeStartup = 4;             // guess
     public const int KneeRecovery = 10;           // guess
     public const int ThrowStartup = 10;           // guess
