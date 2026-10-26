@@ -51,6 +51,8 @@ public static class Feel
     public const int DownFrames = 40;             // guess
     public const int GetUpFrames = 20;            // guess
     public const int GetUpInvuln = 30;            // guess
+    public const int HeroHurtInvuln = 30;         // guess, hero can't be hit again right away (covers Hitstun)
+    public const int BreakFreeInvuln = 20;        // guess, a released enemy can't be re-grabbed or hit at once
 
     public const int KickStartup = 6;             // guess
     public const int KickActive = 3;              // guess

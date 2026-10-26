@@ -44,6 +44,7 @@ public class Player : MonoBehaviour
     void Think()
     {
         f.moveInput = ReadMove();
+        if (Game.Frame - lastTapFrame > Feel.InputBuffer) runRequested = 0; // stale double-tap (e.g. pumping a lamp)
         if (attackPressed) attackBuffer = Feel.InputBuffer;
         if (jumpPressed) jumpBuffer = Feel.InputBuffer;
         if (kickPressed) kickBuffer = Feel.InputBuffer;
@@ -141,7 +142,7 @@ public class Player : MonoBehaviour
         foreach (var e in Game.Fighters)
         {
             float dx = (e.ground.x - f.ground.x) * dir;
-            if (e.team != f.team && e.state == State.Hurt && dx > 0f && dx <= Feel.BodyGap + 2f
+            if (e.team != f.team && e.state == State.Hurt && e.CanBeHit && dx > 0f && dx <= Feel.BodyGap + 2f
                 && Mathf.Abs(e.ground.y - f.ground.y) < Feel.DepthBand)
             {
                 f.Grab(e);

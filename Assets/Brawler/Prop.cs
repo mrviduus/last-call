@@ -193,10 +193,10 @@ public class Prop : MonoBehaviour
     {
         if (kind == Kind.Table && Mathf.Abs(vel.x) < 3f) return false; // only a table sent sliding hurts, not one tipping over
         foreach (var f in Game.Fighters)
-            if (f.team != thrower.team && f.CanBeHit
+            if (f.team != thrower.team && f.CanBeHit && f.state != State.Held
                 && Mathf.Abs(f.ground.x - ground.x) < 16f
                 && Mathf.Abs(f.ground.y - ground.y) < Feel.DepthBand
-                && height - f.height < Feel.HeightBand + 20f)
+                && Mathf.Abs(height - f.height) < Feel.HeightBand + 20f)
             {
                 f.TakeHit(Damage, vel.x > 0f ? 1 : -1, true);
                 Sfx.Play("hit_heavy");

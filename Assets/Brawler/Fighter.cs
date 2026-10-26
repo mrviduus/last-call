@@ -118,7 +118,7 @@ public class Fighter : MonoBehaviour
         foreach (var t in Game.Fighters)
         {
             float dx = (t.ground.x - ground.x) * facing;
-            if (t.team != team && t.state == State.Down && dx > -4f && dx < reach
+            if (t.team != team && t.Alive && t.state == State.Down && dx > -4f && dx < reach
                 && Mathf.Abs(t.ground.y - ground.y) < Feel.DepthBand)
                 return true;
         }
@@ -266,6 +266,7 @@ public class Fighter : MonoBehaviour
         {
             Enter(State.Hurt);
             vel = new Vector2(dir * push, 0f);
+            if (team == 0) invulnFrames = Feel.HeroHurtInvuln;
         }
     }
 
@@ -396,7 +397,7 @@ public class Fighter : MonoBehaviour
     // lets go of the held fighter (if any); they stagger free
     void Release()
     {
-        if (grabbed != null && grabbed.state == State.Held) grabbed.Enter(State.Hurt);
+        if (grabbed != null && grabbed.state == State.Held) { grabbed.Enter(State.Hurt); grabbed.invulnFrames = Feel.BreakFreeInvuln; }
         grabbed = null;
         if (state == State.Grab) Enter(State.Idle);
     }
@@ -480,7 +481,7 @@ public class Fighter : MonoBehaviour
         foreach (var t in Game.Fighters)
         {
             float dx = (t.ground.x - ground.x) * facing;
-            if (t.team == team || t.state != State.Down || dx <= -4f || dx >= Reach
+            if (t.team == team || !t.Alive || t.state != State.Down || dx <= -4f || dx >= Reach
                 || Mathf.Abs(t.ground.y - ground.y) >= Feel.DepthBand) continue;
             t.health -= Damage;
             t.flashFrames = 8;

@@ -566,4 +566,42 @@ public class FeelTests
         Assert.IsNotNull(q.held);
         Assert.AreEqual(Prop.Kind.Lamp, q.held.kind);
     }
+
+    [Test]
+    public void ElbowDropIgnoresAKnockedOutBody()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 1);
+        e.TakeHit(1, 1, true);
+        while (e.state != State.Down) Game.Simulate();
+        e.ground.x = 55f;
+        e.vel = Vector2.zero;
+        Assert.IsFalse(p.IsDownedEnemyInReach(Feel.ElbowDropReach), "a corpse is not a target");
+    }
+
+    [Test]
+    public void ReleasedEnemyCannotBeGrabbedOrHitAtOnce()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(52f, -70f), 10);
+        p.Grab(e);
+        Run(Feel.GrabFrames + 1);
+        Assert.AreEqual(State.Hurt, e.state, "the hold ran out");
+        Assert.IsFalse(e.CanBeHit, "a moment to break free");
+        Run(Feel.BreakFreeInvuln);
+        Assert.IsTrue(e.CanBeHit);
+    }
+
+    [Test]
+    public void HeroCannotBeHitAgainRightAway()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        p.TakeHit(1, 1, false);
+        Run(Feel.Hitstun);
+        p.TakeHit(1, 1, false);
+        Assert.AreEqual(9, p.health, "a crowd can't stunlock the hero");
+        Run(Feel.HeroHurtInvuln);
+        p.TakeHit(1, 1, false);
+        Assert.AreEqual(8, p.health);
+    }
 }
