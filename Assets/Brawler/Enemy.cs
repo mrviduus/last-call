@@ -27,8 +27,7 @@ public class Enemy : MonoBehaviour
         foreach (var t in Game.Props)
         {
             float dx = (t.ground.x - f.ground.x) * Mathf.Sign(f.moveInput.x);
-            if (t.kind == Prop.Kind.Table && t.vel == Vector2.zero && dx > 0f && dx < Feel.TableHalfWidth + 24f
-                && Mathf.Abs(t.ground.y - f.ground.y) < Feel.TableHalfDepth + 6f)
+            if (t.Blocks && dx > 0f && dx < t.HalfWidth + 24f && Mathf.Abs(t.ground.y - f.ground.y) < t.HalfDepth + 6f)
                 return t;
         }
         return null;
@@ -38,8 +37,8 @@ public class Enemy : MonoBehaviour
     float AroundSide(Prop table)
     {
         bool behind = f.ground.y >= table.ground.y;
-        if (behind && table.ground.y + Feel.TableHalfDepth + 8f > Game.MaxDepth) behind = false;
-        if (!behind && table.ground.y - Feel.TableHalfDepth - 8f < Game.MinDepth) behind = true;
+        if (behind && table.ground.y + table.HalfDepth + 8f > Game.MaxDepth) behind = false;
+        if (!behind && table.ground.y - table.HalfDepth - 8f < Game.MinDepth) behind = true;
         return behind ? 1f : -1f;
     }
 

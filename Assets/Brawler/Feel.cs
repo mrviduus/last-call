@@ -87,6 +87,11 @@ public static class Feel
     public const float TableHalfWidth = 20f;      // table footprint on the floor: blocks walking, can be jumped
     public const float TableHalfDepth = 7f;
     public const float TableHeight = 26f;         // jump higher than this to pass over a table
+    public const float PoolHalfWidth = 54f;       // pool table footprint: heavy, never moves
+    public const float PoolHalfDepth = 12f;
+    public const float PoolHeight = 30f;          // its felt; balls and the cue rest on it
+    public const float CueReach = 62f;            // guess, the longest reach in the game: a thrust
+    public const int CueHits = 4;                 // guess
     public const int TableHits = 3;               // hits a tipped table takes before it breaks
     public const float TableSlide = 6f;           // guess, a tipped table hit again slides this fast
     public const float PropThrowHeight = 30f;     // guess, released at about hand height

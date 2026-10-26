@@ -381,7 +381,7 @@ public class Fighter : MonoBehaviour
             if (p.holder == null && p.thrower == null && ahead > -4f && ahead < Reach
                 && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
             {
-                bool table = p.kind == Prop.Kind.Table;
+                bool table = p.Heavy; // tables and pool tables are solid hits, loose bottles are not
                 if (p.Struck(facing, this)) { hit = true; solidHit |= table; }
             }
         }

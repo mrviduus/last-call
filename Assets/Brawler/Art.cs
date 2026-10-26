@@ -218,9 +218,10 @@ public static class Art
     static Sprite shadow, whip;
 
     // ORBIT 9 bar, drawn by Tools/make_bar_art.py: separate layers and props (redraw the PNGs freely)
-    static Sprite barSpace, barBack, barCounter, barFloor, barPillar, chair, stool, bottle, table, tableFlipped, shard;
+    static Sprite barView, barBack, barCounter, barFloor, barPillar, chair, stool, bottle, table, tableFlipped, shard;
+    static Sprite poolTable, poolLamp, cue, ball;
     static readonly Vector2 Feet = new Vector2(0.5f, 0f);
-    public static Sprite BarSpace => barSpace != null ? barSpace : barSpace = FromResource("Bar/bar_space");
+    public static Sprite BarView => barView != null ? barView : barView = FromResource("Bar/bar_view");
     public static Sprite BarBack => barBack != null ? barBack : barBack = FromResource("Bar/bar_back");
     public static Sprite BarCounter => barCounter != null ? barCounter : barCounter = FromResource("Bar/bar_counter");
     public static Sprite BarFloor => barFloor != null ? barFloor : barFloor = FromResource("Bar/bar_floor");
@@ -229,6 +230,10 @@ public static class Art
     public static Sprite Bottle => bottle != null ? bottle : bottle = FromResource("Bar/bottle", Feet);
     public static Sprite Stool => stool != null ? stool : stool = FromResource("Bar/stool", Feet);
     public static Sprite Table => table != null ? table : table = FromResource("Bar/table", Feet);
+    public static Sprite PoolTable => poolTable != null ? poolTable : poolTable = FromResource("Bar/pool_table", Feet);
+    public static Sprite PoolLamp => poolLamp != null ? poolLamp : poolLamp = FromResource("Bar/pool_lamp", Feet);
+    public static Sprite Cue => cue != null ? cue : cue = FromResource("Bar/cue");
+    public static Sprite Ball => ball != null ? ball : ball = FromResource("Bar/ball", Feet);
     public static Sprite TableFlipped => tableFlipped != null ? tableFlipped : tableFlipped = FromResource("Bar/table_flipped", Feet);
     // 2x2 white chip, tinted per shard
     public static Sprite Shard => shard != null ? shard : shard = Paint(2, 2, (x, y) => C(0xffffff), Center);

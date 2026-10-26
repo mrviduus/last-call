@@ -1,15 +1,16 @@
-"""ORBIT 9 space bar: pixel-art layers and props (our own design) -> Assets/Resources/Art/Bar.
+"""OLD LAMP pub: warm pixel-art layers and props (our own design) -> Assets/Resources/Art/Bar.
 
 Run:  python3 Tools/make_bar_art.py   (needs Pillow: python3 -m pip install pillow)
 The PNGs are the real assets; redraw them by hand freely, this script is just the first pass.
 
 Art rules used here:
-- one limited palette (PALETTE): every pixel is snapped to it, so all layers match;
-- light sources (lamps, neon, LED strips, window, spotlights) are painted additively, then
+- one limited warm palette (PALETTE): every pixel is snapped to it, so all layers match;
+- light sources (pendant lamps, wall lamps, the BEER neon, windows) are painted additively, then
   ordered (Bayer) dithering turns the soft gradients into crisp pixel steps;
 - light comes from the top-left: highlights top/left, shadows bottom/right, dark outlines on props;
 - the background stays lower in contrast than the fighters so the fight reads clearly.
 Coordinates are pixels, y from the top. Screen 384x240; the floor (walkable) starts at row 112.
+Layout the game relies on: counter x 300-900; pool tables at x 620 and 1010 (floor light pools under them).
 """
 import math
 import os
@@ -18,30 +19,31 @@ from PIL import Image
 
 OUT = os.path.join(os.path.dirname(__file__), "..", "Assets", "Resources", "Art", "Bar")
 LEVEL_W = 1152  # three screens
+POOL_TABLES = [(620, -82), (1010, -60)]  # (x, depth) as placed by Game.SpawnBarProps
 
 PALETTE = [
-    # space
-    0x05040e, 0x0d0b22, 0x1c1640, 0x2e2260, 0x8a90b8, 0xe8f0ff,
-    # planet
-    0x0c3a4a, 0x15625e, 0x2a9c8c, 0x6ad8c0,
-    # wall (cool, low contrast)
-    0x0b0d15, 0x10131e, 0x161a28, 0x1f2436, 0x2a3046, 0x3a425c,
-    # metal
-    0x4a5068, 0x6a7290, 0x9aa2bc, 0xd0d6e8,
-    # neon pink
-    0x3a1030, 0x7a1a5e, 0xd23aa8, 0xff7ae0, 0xffd0f4,
-    # cyan
-    0x0c3a48, 0x147a90, 0x2ad0f0, 0xa8f4ff,
-    # amber
-    0x5a3410, 0xb06a1a, 0xf0b040, 0xfff0b0,
-    # red
-    0x3a0e16, 0x6a1a26, 0xa02a3a, 0xd84a5a,
-    # green glass
-    0x1a4a2a, 0x2a8a4a, 0x7ad89a,
-    # floor
-    0x12141e, 0x1a1d2a, 0x232838, 0x2e3448, 0x3c4460,
-    # mixed tones the lighting lands on
-    0x2a1a3a, 0x3a2a4a, 0x1a3040, 0x24404a, 0x4a3a2a,
+    # night outside
+    0x0a0c1c, 0x141a33, 0x22284a, 0x3a3f66, 0x1a1428,
+    # brick
+    0x2a140f, 0x3a1c16, 0x5a2a1e, 0x7a3a26, 0x9a4e30, 0xb8653c,
+    # wood, dark to light
+    0x1a0e08, 0x2a160c, 0x3e2212, 0x5a3218, 0x7a4622, 0x9a5e2e, 0xc08040, 0xd8a060, 0xf0c890,
+    # brass and gold
+    0x4a3010, 0x6a4a14, 0xa87a24, 0xe0b040, 0xfff0b0,
+    # warm light
+    0xffd27a, 0xffb347, 0xffe9c0,
+    # beer neon
+    0x5a140c, 0xa0301a, 0xff6a2a, 0xffc890,
+    # felt and lamp-shade green
+    0x0a2a18, 0x0e3a22, 0x17582f, 0x22783e, 0x3a9a58,
+    # red leather and rug
+    0x3a0e10, 0x6a1a1c, 0xa02a28, 0xd04a3a,
+    # paper, chalk, cream
+    0xc8b48a, 0xead8b0, 0xfff4dc,
+    # dark and metal
+    0x0c0806, 0x16100c, 0x241a12, 0x4a4a50, 0x8a8a90, 0xc8c8cc,
+    # glass
+    0x4a2a10, 0x8a5a20, 0x2a5a2a, 0x6aa05a,
 ]
 PAL = [((c >> 16) & 255, (c >> 8) & 255, c & 255) for c in PALETTE]
 BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
@@ -49,14 +51,14 @@ BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]
 # 5x7 pixel font, only the letters the signs use
 FONT = {
     "O": ["01110", "10001", "10001", "10001", "10001", "10001", "01110"],
-    "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
-    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
-    "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
-    "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
-    "9": ["01110", "10001", "10001", "01111", "00001", "00010", "01100"],
     "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
-    "V": ["10001", "10001", "10001", "10001", "01010", "01010", "00100"],
+    "D": ["11110", "10001", "10001", "10001", "10001", "10001", "11110"],
+    "A": ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
+    "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
+    "P": ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
+    "B": ["11110", "10001", "10001", "11110", "10001", "10001", "11110"],
     "E": ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
+    "R": ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
     " ": ["00000"] * 7,
 }
 
@@ -106,6 +108,12 @@ class Canvas:
         self.rect(x0, y1 - 1, x1, y1, dark)
         self.rect(x1 - 1, y0, x1, y1, dark)
 
+    def disc(self, cx, cy, r, color):
+        for y in range(int(cy - r), int(cy + r) + 1):
+            for x in range(int(cx - r), int(cx + r) + 1):
+                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
+                    self.set(x, y, color)
+
     def light(self, cx, cy, rx, ry, color, strength):
         """Additive elliptical light with a soft quadratic falloff."""
         col = c3(color)
@@ -121,7 +129,7 @@ class Canvas:
                         p[i] += col[i] * f
 
     def cone(self, x, y0, y1, spread, color, strength):
-        """Spotlight beam widening downwards."""
+        """Light beam widening downwards."""
         col = c3(color)
         for y in range(y0, min(self.h, y1)):
             half = (y - y0) * spread
@@ -153,212 +161,221 @@ class Canvas:
         print("wrote", name + ".png", im.size)
 
 
-def neon_text(cv, s, x, y, scale, tube, core):
-    """Neon letters: each font pixel is a scale x scale tube block with a bright core."""
+def letters(cv, s, x, y, scale, color, shade=None):
+    """Pixel-font text; an optional shade one pixel down-right gives painted or carved letters some depth."""
     for i, ch in enumerate(s):
         for gy, row in enumerate(FONT[ch]):
             for gx, bit in enumerate(row):
                 if bit != "1":
                     continue
                 bx, by = x + (i * 6 + gx) * scale, y + gy * scale
-                cv.rect(bx, by, bx + scale, by + scale, tube)
-                cv.set(bx + scale // 2, by + scale // 2, core)
+                if shade is not None:
+                    cv.rect(bx + 1, by + 1, bx + scale + 1, by + scale + 1, shade)
+                cv.rect(bx, by, bx + scale, by + scale, color)
 
 
-def space():
-    """Far layer seen through the window (scrolls at half speed): nebula, stars, planet, moon."""
-    cv = Canvas(LEVEL_W, 56)
-    rng = random.Random(7)
-    for y in range(56):
-        for x in range(LEVEL_W):
-            n = math.sin(x * 0.021 + y * 0.09) + math.sin(x * 0.007 - y * 0.05) * 1.4
-            t = max(0.0, min(1.0, 0.25 + n * 0.18 + y / 120))
-            cv.set(x, y, lerp(0x05040e, 0x2e2260, t))
-    for _ in range(420):
-        x, y = rng.randrange(LEVEL_W), rng.randrange(56)
-        cv.set(x, y, 0x8a90b8 if rng.random() < 0.75 else 0xe8f0ff)
-    for _ in range(14):  # bright stars with a small cross
-        x, y = rng.randrange(2, LEVEL_W - 2), rng.randrange(2, 54)
-        for dx, dy in ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)):
-            cv.set(x + dx, y + dy, 0xe8f0ff if (dx, dy) == (0, 0) else 0x8a90b8)
-    # planet lit from the upper left: shaded sphere, cloud bands, rim light
-    px_, py_, r = 700, 78, 62
-    for y in range(56):
-        for x in range(px_ - r, px_ + r):
-            dx, dy = (x - px_) / r, (y - py_) / r
-            if dx * dx + dy * dy >= 1:
-                continue
-            nz = math.sqrt(1 - dx * dx - dy * dy)
-            lit = max(0.0, -dx * 0.6 - dy * 0.5 + nz * 0.62)
-            band = 0.12 * math.sin((dy + dx * 0.25) * 22)
-            ramp = [0x0c3a4a, 0x15625e, 0x2a9c8c, 0x6ad8c0]
-            v = max(0.0, min(0.999, lit + band)) * (len(ramp) - 1)
-            cv.set(x, y, lerp(ramp[int(v)], ramp[min(3, int(v) + 1)], v - int(v)))
-            if dx * dx + dy * dy > 0.9 and dx < 0.1:
-                cv.set(x, y, 0x6ad8c0)
-    # small moon
-    for y in range(8, 24):
-        for x in range(420, 436):
-            dx, dy = (x - 428) / 8, (y - 16) / 8
-            if dx * dx + dy * dy < 1:
-                cv.set(x, y, 0xd0d6e8 if dx + dy < -0.3 else 0x9aa2bc if dx + dy < 0.5 else 0x6a7290)
-    cv.set(426, 14, 0x6a7290)
-    cv.set(431, 19, 0x6a7290)
-    cv.save("bar_space")
+def view():
+    """Far layer seen through the windows (scrolls at half speed): night sky and a warm-lit city."""
+    cv = Canvas(LEVEL_W, 48)
+    rng = random.Random(5)
+    cv.vgrad(0, 0, LEVEL_W, 48, 0x0a0c1c, 0x3a3f66)
+    for _ in range(160):
+        cv.set(rng.randrange(LEVEL_W), rng.randrange(20), 0xc8c8cc)
+    cv.disc(250, 10, 5, 0xfff4dc)
+    cv.disc(252, 9, 5, 0xead8b0)
+    x = 0
+    while x < LEVEL_W:                                     # rooftops of different heights
+        w, h = rng.randint(18, 40), rng.randint(14, 34)
+        cv.rect(x, 48 - h, x + w, 48, 0x141a33)
+        for wy in range(48 - h + 3, 46, 5):
+            for wx in range(x + 3, x + w - 3, 5):
+                if rng.random() < 0.35:
+                    cv.rect(wx, wy, wx + 2, wy + 2, 0xffd27a if rng.random() < 0.7 else 0xffb347)
+        x += w + rng.randint(0, 4)
+    cv.save("bar_view")
 
 
 def back():
-    """Back wall 1152x112: door, neon sign, window opening, bottle shelf, holo screen, stage."""
+    """Back wall 1152x112: brick above wood panelling, door, pub sign, windows, BEER neon,
+    back-bar shelves and taps, pendant lamps over the pool tables, darts, chalkboard, clock, cue rack."""
     cv = Canvas(LEVEL_W, 112)
-    cv.vgrad(0, 0, LEVEL_W, 70, 0x10131e, 0x1f2436)            # upper wall, darker under the ceiling
-    for x in range(0, LEVEL_W, 64):                              # panel seams with a bevel
-        cv.rect(x, 6, x + 1, 70, 0x0b0d15)
-        cv.rect(x + 1, 6, x + 2, 70, 0x2a3046)
-    cv.rect(0, 38, LEVEL_W, 39, 0x0b0d15)
-    cv.rect(0, 39, LEVEL_W, 40, 0x2a3046)
-    # lower wall: slats, metal rail on top, skirting board with an LED strip
-    cv.rect(0, 70, LEVEL_W, 104, 0x161a28)
-    for x in range(0, LEVEL_W, 8):
-        cv.rect(x, 74, x + 1, 104, 0x1f2436)
-    cv.bevel(0, 70, LEVEL_W, 74, 0x6a7290, 0x9aa2bc, 0x4a5068)
-    cv.rect(0, 104, LEVEL_W, 112, 0x0b0d15)
-    cv.rect(0, 106, LEVEL_W, 107, 0x2ad0f0)
-    # ceiling trim with lamps
-    cv.rect(0, 0, LEVEL_W, 6, 0x0b0d15)
-    lamps = list(range(40, LEVEL_W, 96))
-    for x in lamps:
-        cv.rect(x - 12, 3, x + 12, 6, 0x4a5068)
-        cv.rect(x - 10, 5, x + 10, 6, 0xfff0b0)
+    rng = random.Random(11)
+    # brick wall
+    for y in range(6, 66):
+        row = (y - 6) // 8
+        for x in range(LEVEL_W):
+            bx = x + (row % 2) * 8
+            if (y - 6) % 8 == 7 or bx % 16 == 15:
+                col = c3(0x2a140f)                                        # mortar
+            else:
+                tone = (bx // 16 * 7 + row * 3) % 5
+                col = c3([0x5a2a1e, 0x7a3a26, 0x7a3a26, 0x9a4e30, 0x5a2a1e][tone])
+                if (y - 6) % 8 == 0:
+                    col = lerp(0x9a4e30, 0xb8653c, 0.3)                   # lit top edge of each brick
+            cv.set(x, y, col)
+    # ceiling beam
+    cv.rect(0, 0, LEVEL_W, 6, 0x2a160c)
+    cv.rect(0, 5, LEVEL_W, 6, 0x1a0e08)
+    cv.rect(0, 0, LEVEL_W, 1, 0x5a3218)
+    # wood panelling below, with a cap rail and skirting
+    for x in range(LEVEL_W):
+        plank = x // 12
+        for y in range(70, 104):
+            col = 0x3e2212 if plank % 2 else 0x5a3218
+            if x % 12 == 0:
+                col = 0x1a0e08
+            elif x % 12 == 1:
+                col = 0x7a4622
+            elif (x * 7 + y * 3 + plank * 13) % 29 == 0:
+                col = 0x2a160c                                            # grain
+            cv.set(x, y, col)
+    cv.bevel(0, 66, LEVEL_W, 70, 0x9a5e2e, 0xd8a060, 0x3e2212)
+    cv.rect(0, 104, LEVEL_W, 112, 0x1a0e08)
+    cv.rect(0, 104, LEVEL_W, 105, 0x5a3218)
 
-    # entrance door
-    cv.bevel(26, 20, 98, 104, 0x4a5068, 0x9aa2bc, 0x10131e)
-    cv.rect(30, 24, 94, 104, 0x1f2436)
-    for x0 in (31, 63):
-        cv.bevel(x0, 25, x0 + 30, 104, 0x2a3046, 0x3a425c, 0x10131e)
-        cv.rect(x0 + 12, 40, x0 + 18, 80, 0x161a28)
-    cv.rect(30, 24, 94, 25, 0x2ad0f0)
+    # entrance door with a lit window
+    cv.bevel(22, 18, 98, 104, 0x3e2212, 0x7a4622, 0x1a0e08)
+    cv.bevel(28, 24, 92, 104, 0x5a3218, 0x9a5e2e, 0x2a160c)
+    cv.rect(44, 30, 76, 50, 0xffd27a)
+    cv.rect(59, 30, 61, 50, 0x3e2212)
+    cv.rect(44, 39, 76, 41, 0x3e2212)
+    for y0 in (56, 78):
+        cv.bevel(36, y0, 84, y0 + 18, 0x5a3218, 0x7a4622, 0x2a160c)
+    cv.disc(82, 66, 2, 0xe0b040)
 
-    # window opening (transparent: the space layer shows through), framed
-    wx0, wy0, wx1, wy1 = 336, 8, 864, 50
-    cv.bevel(wx0 - 4, wy0 - 4, wx1 + 4, wy1 + 4, 0x6a7290, 0x9aa2bc, 0x4a5068)
-    for y in range(wy0, wy1):
-        for x in range(wx0, wx1):
-            cv.px[y * LEVEL_W + x] = None
-    for x in range(wx0 + 128, wx1, 132):
-        cv.bevel(x, wy0, x + 4, wy1, 0x6a7290, 0x9aa2bc, 0x4a5068)
+    # pub sign: wooden board, gold carved letters
+    cv.bevel(112, 8, 280, 40, 0x3e2212, 0x7a4622, 0x1a0e08)
+    cv.rect(116, 12, 276, 36, 0x2a160c)
+    letters(cv, "OLD LAMP", 125, 14, 3, 0xe0b040, shade=0x4a3010)
+    for bx in (116, 275):
+        cv.rect(bx, 0, bx + 1, 8, 0x4a4a50)                              # hanging chains
 
-    # bottle shelf above the counter, warm backlight
-    cv.rect(320, 52, 880, 64, 0x0b0d15)
-    glass = [0x7ad89a, 0xf0b040, 0xd23aa8, 0x2ad0f0, 0xd84a5a]
-    rng = random.Random(9)
-    for i, x in enumerate(range(326, 874, 9)):
-        h = 7 + rng.randint(0, 3)
-        top = 63 - h
-        col = glass[i % len(glass)]
-        cv.rect(x + 3, top, x + 4, top + 3, col)
-        cv.rect(x + 1, top + 3, x + 6, 63, col)
-        cv.rect(x + 5, top + 3, x + 6, 63, 0x10131e)              # shaded side
-        cv.set(x + 2, top + 4, 0xffffff if i % 2 else 0xfff0b0)   # glint
-    cv.bevel(318, 63, 882, 66, 0x6a7290, 0x9aa2bc, 0x4a5068)
+    # windows onto the street (transparent: the view layer shows through), wooden frames
+    for wx0, wx1 in ((330, 498), (702, 870)):
+        cv.bevel(wx0 - 4, 4, wx1 + 4, 44, 0x5a3218, 0x9a5e2e, 0x2a160c)
+        for y in range(8, 40):
+            for x in range(wx0, wx1):
+                cv.px[y * LEVEL_W + x] = None
+        for x in range(wx0 + 40, wx1, 42):
+            cv.rect(x, 8, x + 3, 40, 0x3e2212)
+        cv.rect(wx0, 23, wx1, 25, 0x3e2212)
+    # BEER neon between the windows
+    cv.rect(548, 10, 652, 34, 0x16100c)
+    letters(cv, "BEER", 557, 13, 3, 0xff6a2a)
+    for i, ch in enumerate("BEER"):  # bright tube cores
+        for gy, row in enumerate(FONT[ch]):
+            for gx, bit in enumerate(row):
+                if bit == "1":
+                    cv.set(557 + (i * 6 + gx) * 3 + 1, 13 + gy * 3 + 1, 0xffc890)
 
-    # neon sign on a backing board
-    cv.bevel(110, 10, 286, 50, 0x10131e, 0x1f2436, 0x0b0d15)
-    for bx, by in ((114, 14), (281, 14), (114, 45), (281, 45)):
-        cv.set(bx, by, 0x6a7290)
-    neon_text(cv, "ORBIT 9", 120, 17, 3, 0xff7ae0, 0xffd0f4)
+    # back bar: shelves of bottles over a mirror strip, beer taps on the counter
+    cv.rect(320, 44, 880, 64, 0x16100c)
+    cv.rect(320, 52, 880, 54, 0x5a3218)
+    cv.rect(320, 62, 880, 64, 0x5a3218)
+    glass = [0x8a5a20, 0x2a5a2a, 0x4a2a10, 0x6aa05a, 0xa0301a]
+    for shelf_top in (44, 54):
+        for i, x in enumerate(range(326, 874, 8)):
+            h = 5 + rng.randint(0, 3)
+            col = glass[(i + shelf_top) % len(glass)]
+            bottom = shelf_top + 8
+            cv.rect(x + 3, bottom - h, x + 4, bottom - h + 2, col)
+            cv.rect(x + 1, bottom - h + 2, x + 6, bottom, col)
+            cv.set(x + 2, bottom - h + 3, 0xffe9c0)
+    for tx in (480, 500, 520):
+        cv.rect(tx, 54, tx + 4, 64, 0xa87a24)
+        cv.rect(tx, 54, tx + 1, 64, 0xe0b040)
+        cv.rect(tx - 1, 50, tx + 5, 54, 0x16100c)
 
-    # holo screen
-    cv.bevel(898, 14, 970, 56, 0x0c3a48, 0x2ad0f0, 0x147a90)
-    for y in range(16, 55, 2):
-        cv.rect(900, y, 968, y + 1, 0x147a90)
-    for x in range(902, 966):
-        y = 44 - int(9 * abs(math.sin(x * 0.31) * math.cos(x * 0.07)))
-        cv.set(x, y, 0xa8f4ff)
-
-    # stage at the far end: platform, speakers, LIVE sign
-    cv.bevel(984, 84, 1148, 104, 0x3a1030, 0xff7ae0, 0x2a1a3a)
-    for sx in (990, 1118):
-        cv.bevel(sx, 48, sx + 24, 84, 0x10131e, 0x2a3046, 0x0b0d15)
-        for cy in (58, 74):
-            cv.rect(sx + 7, cy - 4, sx + 17, cy + 4, 0x0b0d15)
-            cv.rect(sx + 10, cy - 1, sx + 14, cy + 1, 0x3a425c)
-    neon_text(cv, "LIVE", 1042, 26, 2, 0x2ad0f0, 0xa8f4ff)
+    # pool corner: dartboard, chalkboard, clock, cue rack (the lamps over the tables are their own sprite)
+    cv.disc(940, 26, 12, 0x16100c)
+    for r, col in ((11, 0xead8b0), (9, 0x6a1a1c), (7, 0xead8b0), (5, 0x17582f), (3, 0xead8b0), (1, 0xa02a28)):
+        cv.disc(940, 26, r, col)
+    cv.bevel(970, 12, 1050, 52, 0x5a3218, 0x9a5e2e, 0x2a160c)
+    cv.rect(974, 16, 1046, 48, 0x241a12)
+    for i, y in enumerate(range(20, 46, 6)):                              # chalk scribbles
+        for x in range(978, 978 + 20 + (i * 13) % 40):
+            if (x + i) % 4 != 3:
+                cv.set(x, y, 0xead8b0 if i else 0xfff4dc)
+    cv.disc(1090, 24, 10, 0x2a160c)
+    cv.disc(1090, 24, 8, 0xfff4dc)
+    cv.rect(1090, 18, 1091, 25, 0x16100c)
+    cv.rect(1090, 24, 1095, 25, 0x16100c)
+    cv.bevel(1112, 46, 1142, 100, 0x3e2212, 0x7a4622, 0x1a0e08)
+    for cx in range(1117, 1140, 6):
+        cv.rect(cx, 48, cx + 2, 98, 0xc08040)
+        cv.rect(cx, 48, cx + 2, 51, 0x22783e)
 
     # lighting pass
-    for x in lamps:
-        cv.light(x, 8, 46, 70, 0xb06a1a, 0.22)
-    cv.light(198, 30, 120, 60, 0xd23aa8, 0.55)        # sign glow on the wall
-    cv.light(600, 58, 300, 18, 0xb06a1a, 0.35)        # shelf backlight
-    cv.light(934, 35, 60, 40, 0x2ad0f0, 0.3)          # holo screen
-    cv.light(1066, 30, 50, 24, 0x2ad0f0, 0.35)        # LIVE sign
-    cv.cone(1030, 6, 104, 0.4, 0xd23aa8, 0.32)        # stage spotlights
-    cv.cone(1100, 6, 104, 0.4, 0x2ad0f0, 0.32)
-    cv.light(576, 108, 700, 8, 0x2ad0f0, 0.25)        # skirting LED strip
+    cv.light(196, 24, 110, 40, 0xffb347, 0.25)                          # warm wash on the sign
+    cv.light(600, 22, 90, 40, 0xff6a2a, 0.45)                           # BEER neon glow
+    cv.light(600, 58, 300, 16, 0xffd27a, 0.3)                           # back-bar lights
+    cv.light(60, 40, 40, 30, 0xffd27a, 0.3)                             # door window
+    for x in range(40, LEVEL_W, 160):
+        cv.light(x, 66, 70, 40, 0xffb347, 0.12)                         # general warm ambience
     cv.save("bar_back")
 
 
 def counter():
-    """Bar counter 600x48: bevelled top with lamp glints, slatted front, LED strip."""
+    """Counter 600x48: polished wood top, raised wooden panels, brass foot rail."""
     cv = Canvas(600, 48)
-    cv.rect(0, 0, 600, 1, 0xd0d6e8)
-    cv.rect(0, 1, 600, 4, 0x9aa2bc)
-    cv.rect(0, 4, 600, 6, 0x6a7290)
-    for gx in range(24, 600, 96):                       # reflections of the ceiling lamps
-        cv.rect(gx, 1, gx + 14, 3, 0xd0d6e8)
-    cv.rect(0, 6, 600, 8, 0x4a5068)
-    for x0 in range(0, 600, 24):
-        cv.vgrad(x0, 8, x0 + 24, 40, 0x2a3046, 0x161a28)
-        cv.rect(x0, 8, x0 + 1, 40, 0x0b0d15)
-        cv.rect(x0 + 1, 8, x0 + 2, 40, 0x3a425c)
-    cv.rect(0, 29, 600, 30, 0x2ad0f0)
-    cv.rect(0, 30, 600, 31, 0xa8f4ff)
-    cv.rect(0, 31, 600, 32, 0x2ad0f0)
-    cv.rect(0, 40, 600, 48, 0x0b0d15)
+    cv.rect(0, 0, 600, 1, 0xf0c890)
+    cv.rect(0, 1, 600, 4, 0xc08040)
+    cv.rect(0, 4, 600, 6, 0x7a4622)
+    for gx in range(30, 600, 120):
+        cv.rect(gx, 1, gx + 18, 2, 0xf0c890)                             # lamp reflections on the varnish
+    cv.rect(0, 6, 600, 8, 0x2a160c)
+    for x0 in range(0, 600, 50):
+        cv.rect(x0, 8, x0 + 50, 40, 0x3e2212)
+        cv.bevel(x0 + 6, 12, x0 + 44, 34, 0x5a3218, 0x9a5e2e, 0x1a0e08)
+    cv.rect(0, 40, 600, 48, 0x1a0e08)
+    cv.rect(0, 37, 600, 39, 0xa87a24)                                    # brass foot rail
+    cv.rect(0, 37, 600, 38, 0xe0b040)
+    for bx in range(20, 600, 100):
+        cv.rect(bx, 39, bx + 2, 44, 0x6a4a14)
     for x in (0, 1, 598, 599):
-        cv.rect(x, 0, x + 1, 48, 0x0b0d15)
-    cv.light(300, 31, 320, 10, 0x2ad0f0, 0.35)
+        cv.rect(x, 0, x + 1, 48, 0x1a0e08)
+    cv.light(300, 0, 320, 14, 0xffd27a, 0.25)
     cv.save("bar_counter")
 
 
 def floor():
-    """Floor 1152x128: slanted plates in perspective, rug, light pools and neon reflections."""
+    """Floor 1152x128: wooden boards in perspective, a rug at the counter, warm pools under the lamps."""
     cv = Canvas(LEVEL_W, 128)
     rows = [0]
     k = 0
-    while rows[-1] < 128:                                # rows get wider towards the camera
+    while rows[-1] < 128:                                # boards get wider towards the camera
         k += 1
-        rows.append(rows[-1] + 8 + k * 3)
+        rows.append(rows[-1] + 6 + k * 2)
     for y in range(128):
         band = max(i for i, r in enumerate(rows) if r <= y)
+        board_len = 48 + band * 10
         for x in range(LEVEL_W):
-            sx = (x - y * 0.45) % 64                     # seams slanted into the depth
-            col = lerp(0x232838, 0x1a1d2a, y / 128)
+            off = (band * 29) % board_len
+            col = lerp(0x5a3218, 0x3e2212, y / 128)
+            if band % 3 == 1:
+                col = lerp(0x7a4622, 0x5a3218, y / 128)
             if y in rows:
-                col = c3(0x12141e)
+                col = c3(0x1a0e08)
             elif y - 1 in rows:
-                col = c3(0x2e3448)                       # bevel under each seam
-            elif sx < 1:
-                col = c3(0x12141e)
-            elif sx < 2:
-                col = c3(0x2e3448)
-            elif band % 2 and int(x - y * 0.45) // 64 % 2:
-                col = lerp(0x232838, 0x2e3448, 0.3)      # alternating plate tone
+                col = lerp(0x9a5e2e, 0x7a4622, y / 128)                   # lit edge of each board
+            elif (x + off) % board_len == 0:
+                col = c3(0x1a0e08)                                         # board ends
+            elif (x * 3 + y * 11 + band * 7) % 37 == 0:
+                col = c3(0x2a160c)                                         # grain
             cv.set(x, y, col)
-    # rug in front of the counter with an amber trim
+    # rug at the counter: deep red with a gold trim
     for y in range(2, 22):
         for x in range(296, 904):
             edge = y in (2, 21) or x in (296, 903)
             inner = y in (4, 19) or x in (299, 900)
-            col = 0xb06a1a if edge else 0x6a1a26 if inner else (0x3a0e16 if (x // 3 + y // 3) % 2 else 0x6a1a26)
+            col = 0xe0b040 if edge else 0xa87a24 if inner else (0x6a1a1c if (x // 4 + y // 4) % 2 else 0xa02a28)
             cv.set(x, y, col)
-    # lights
-    cv.light(600, 0, 320, 26, 0x2ad0f0, 0.4)         # counter LED underglow
-    cv.light(198, 0, 70, 70, 0xd23aa8, 0.22)         # sign reflection
-    for x in range(40, LEVEL_W, 96):
-        cv.light(x, 30, 50, 22, 0xb06a1a, 0.12)      # lamp pools
-    cv.light(1030, 30, 60, 26, 0xd23aa8, 0.35)       # stage spotlight pools
-    cv.light(1100, 30, 60, 26, 0x2ad0f0, 0.35)
-    for y in range(96, 128):                         # darken towards the bottom edge to frame the scene
+    # light
+    for px_, depth in POOL_TABLES:
+        cv.light(px_, 8 - depth, 90, 34, 0xffb347, 0.45)               # pool lamp pools (floor row = 8 - depth)
+    cv.light(600, 0, 320, 22, 0xffd27a, 0.22)
+    cv.light(60, 6, 50, 20, 0xffd27a, 0.2)
+    for y in range(96, 128):                                           # darker towards the bottom edge
         for x in range(LEVEL_W):
             p = cv.get(x, y)
             f = 1 - (y - 96) / 32 * 0.35
@@ -367,15 +384,32 @@ def floor():
 
 
 def pillar():
-    """Foreground pillar 28x240, drawn in front of the fighters: dark, with a cyan rim on the right."""
+    """Foreground wooden post 28x240 with brass rings, drawn in front of the fighters."""
     cv = Canvas(28, 240)
-    cv.rect(0, 0, 28, 240, 0x0b0d15)
-    cv.rect(2, 0, 4, 240, 0x161a28)
-    cv.rect(25, 0, 26, 240, 0x147a90)
-    cv.rect(26, 0, 27, 240, 0x2ad0f0)
-    for y in range(20, 240, 44):
-        cv.rect(0, y, 28, y + 2, 0x10131e)
+    for x in range(28):
+        col = 0x241a12 if x < 4 else 0x3e2212 if x < 22 else 0x1a0e08
+        cv.rect(x, 0, x + 1, 240, col)
+    cv.rect(4, 0, 6, 240, 0x5a3218)
+    for y in (30, 120, 210):
+        cv.rect(0, y, 28, y + 4, 0xa87a24)
+        cv.rect(0, y, 28, y + 1, 0xe0b040)
     cv.save("bar_pillar")
+
+
+def pool_lamp():
+    """Lamp hanging over a pool table, 40x90: cord from the ceiling, green shade, warm light below it.
+    Its bottom edge is the shade's rim; the game hangs it a fixed height above the felt."""
+    cv = Canvas(40, 90)
+    cv.rect(19, 0, 21, 72, 0x16100c)                                     # cord
+    for y in range(72, 84):
+        half = 5 + (y - 72)
+        cv.rect(20 - half, y, 20 + half, y + 1, 0x17582f if y < 82 else 0x0e3a22)
+        cv.set(20 - half, y, 0x3a9a58)                                   # lit left edge of the shade
+    cv.rect(2, 84, 38, 86, 0x22783e)
+    cv.rect(2, 84, 38, 85, 0x3a9a58)
+    cv.rect(12, 86, 28, 88, 0xffe9c0)                                    # bulbs glowing under the rim
+    cv.rect(16, 88, 24, 89, 0xffd27a)
+    cv.save("pool_lamp", spread=0)
 
 
 def outlined(cv):
@@ -386,98 +420,148 @@ def outlined(cv):
             if cv.get(x, y) is None and any(cv.get(x + dx, y + dy) is not None for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
                 edge.append((x, y))
     for x, y in edge:
-        cv.set(x, y, 0x0b0d15)
+        cv.set(x, y, 0x0c0806)
 
 
 def chair():
-    """Chair 22x30: red cushions with 3-step shading, chrome frame."""
+    """Wooden chair 22x30 with a green seat cushion."""
     cv = Canvas(22, 30)
-    cv.rect(4, 1, 18, 5, 0xa02a3a)
-    cv.rect(4, 1, 18, 2, 0xd84a5a)
-    cv.rect(4, 4, 18, 5, 0x6a1a26)
+    cv.rect(4, 1, 18, 4, 0x9a5e2e)
+    cv.rect(4, 1, 18, 2, 0xc08040)
+    cv.rect(4, 6, 18, 8, 0x7a4622)
     for x in (4, 17):
-        cv.rect(x, 5, x + 1, 13, 0x9aa2bc)
-    cv.rect(1, 13, 21, 17, 0xa02a3a)
-    cv.rect(1, 13, 21, 14, 0xd84a5a)
-    cv.rect(1, 16, 21, 17, 0x6a1a26)
+        cv.rect(x, 1, x + 1, 14, 0x7a4622)
+    cv.rect(1, 13, 21, 16, 0x17582f)
+    cv.rect(1, 13, 21, 14, 0x3a9a58)
+    cv.rect(1, 16, 21, 17, 0x5a3218)
     for x in (3, 18):
-        cv.rect(x, 17, x + 1, 29, 0x9aa2bc)
-        cv.rect(x + 1, 17, x + 2, 29, 0x4a5068)
-    cv.rect(3, 23, 19, 24, 0x6a7290)
+        cv.rect(x, 17, x + 1, 29, 0x7a4622)
+        cv.rect(x + 1, 17, x + 2, 29, 0x3e2212)
+    cv.rect(3, 23, 19, 24, 0x5a3218)
     outlined(cv)
     cv.save("chair", spread=0)
 
 
 def stool():
-    """Bar stool 16x28."""
+    """Bar stool 16x28: red leather seat, wooden legs, brass footrest."""
     cv = Canvas(16, 28)
-    cv.rect(1, 1, 15, 5, 0xa02a3a)
-    cv.rect(1, 1, 15, 2, 0xd84a5a)
-    cv.rect(2, 5, 14, 6, 0x6a1a26)
-    cv.rect(7, 6, 8, 23, 0x9aa2bc)
-    cv.rect(8, 6, 9, 23, 0x4a5068)
-    cv.rect(4, 15, 12, 16, 0x6a7290)
-    cv.rect(3, 23, 13, 27, 0x4a5068)
-    cv.rect(3, 23, 13, 24, 0x9aa2bc)
+    cv.rect(1, 1, 15, 5, 0xa02a28)
+    cv.rect(1, 1, 15, 2, 0xd04a3a)
+    cv.rect(2, 5, 14, 6, 0x6a1a1c)
+    for x in (3, 11):
+        cv.rect(x, 6, x + 2, 27, 0x7a4622)
+        cv.rect(x + 1, 6, x + 2, 27, 0x3e2212)
+    cv.rect(3, 16, 13, 17, 0xa87a24)
     outlined(cv)
     cv.save("stool", spread=0)
 
 
 def bottle():
-    """Bottle 8x18: green glass, highlight, amber label, cork."""
+    """Brown beer bottle 8x18 with a cream label."""
     cv = Canvas(8, 18)
-    cv.rect(3, 1, 5, 2, 0xb06a1a)
-    cv.rect(3, 2, 5, 6, 0x2a8a4a)
-    cv.rect(1, 6, 7, 17, 0x2a8a4a)
-    cv.rect(6, 6, 7, 17, 0x1a4a2a)
-    cv.rect(2, 7, 3, 15, 0x7ad89a)
-    cv.rect(1, 10, 7, 13, 0xf0b040)
-    cv.rect(6, 10, 7, 13, 0xb06a1a)
+    cv.rect(3, 1, 5, 2, 0xa87a24)
+    cv.rect(3, 2, 5, 6, 0x4a2a10)
+    cv.rect(1, 6, 7, 17, 0x4a2a10)
+    cv.rect(6, 6, 7, 17, 0x241a12)
+    cv.rect(2, 7, 3, 15, 0x8a5a20)
+    cv.rect(1, 10, 7, 13, 0xead8b0)
+    cv.rect(6, 10, 7, 13, 0xc8b48a)
     outlined(cv)
     cv.save("bottle", spread=0)
 
 
 def table():
-    """Round table 42x32: metal top with a cyan rim light, pedestal, base."""
+    """Round wooden pub table 42x32."""
     cv = Canvas(42, 32)
     for y in range(1, 8):
         for x in range(1, 41):
             dx, dy = (x - 20.5) / 20, (y - 4) / 3.4
             if dx * dx + dy * dy < 1:
-                cv.set(x, y, 0xd0d6e8 if dy < -0.4 else 0x9aa2bc if dy < 0.3 else 0x6a7290)
-    cv.rect(2, 7, 40, 8, 0x2ad0f0)
-    cv.rect(19, 8, 21, 27, 0x6a7290)
-    cv.rect(21, 8, 23, 27, 0x4a5068)
+                cv.set(x, y, 0xc08040 if dy < -0.4 else 0x9a5e2e if dy < 0.3 else 0x7a4622)
+    cv.rect(2, 7, 40, 8, 0x3e2212)
+    cv.rect(19, 8, 21, 27, 0x7a4622)
+    cv.rect(21, 8, 23, 27, 0x3e2212)
     for y in range(27, 31):
         for x in range(8, 34):
             dx, dy = (x - 20.5) / 12.5, (y - 29) / 2
             if dx * dx + dy * dy < 1:
-                cv.set(x, y, 0x4a5068 if dy < 0 else 0x2a3046)
+                cv.set(x, y, 0x5a3218 if dy < 0 else 0x2a160c)
     outlined(cv)
     cv.save("table", spread=0)
 
 
 def table_flipped():
-    """The round table knocked onto its side, 34x32: the top stands up as an edge-on disc, legs point out."""
+    """The pub table knocked onto its side, 34x32."""
     cv = Canvas(34, 32)
     for y in range(1, 31):
         for x in range(1, 12):
             dx, dy = (x - 6) / 5, (y - 16) / 14.5
             if dx * dx + dy * dy < 1:
-                cv.set(x, y, 0xd0d6e8 if dx < -0.4 else 0x9aa2bc if dx < 0.3 else 0x6a7290)
-    cv.rect(11, 2, 12, 30, 0x2ad0f0)                       # rim light, now facing us
-    cv.rect(12, 14, 28, 16, 0x6a7290)                      # pedestal lying sideways
-    cv.rect(12, 16, 28, 18, 0x4a5068)
-    for y in range(8, 26):                                 # base disc, edge-on at the end
+                cv.set(x, y, 0xc08040 if dx < -0.4 else 0x9a5e2e if dx < 0.3 else 0x7a4622)
+    cv.rect(11, 2, 12, 30, 0x3e2212)
+    cv.rect(12, 14, 28, 16, 0x7a4622)
+    cv.rect(12, 16, 28, 18, 0x3e2212)
+    for y in range(8, 26):
         for x in range(27, 33):
             dx, dy = (x - 29.5) / 3, (y - 17) / 9
             if dx * dx + dy * dy < 1:
-                cv.set(x, y, 0x4a5068 if dx < 0 else 0x2a3046)
+                cv.set(x, y, 0x5a3218 if dx < 0 else 0x2a160c)
     outlined(cv)
     cv.save("table_flipped", spread=0)
 
 
+def pool_table():
+    """Pool table 108x40 seen from the front and a little above: wooden rails, green felt with pockets,
+    a dark wooden apron and turned legs. Its felt is 28-30 px above the floor (balls rest there)."""
+    cv = Canvas(108, 40)
+    cv.rect(0, 0, 108, 20, 0x5a3218)                                     # rail frame
+    cv.rect(0, 0, 108, 1, 0x9a5e2e)
+    for y in range(3, 17):                                               # felt, lit from the lamp above
+        for x in range(4, 104):
+            d = abs(x - 54) / 54
+            cv.set(x, y, lerp(0x3a9a58, 0x17582f, min(1.0, d * 1.2 + (y - 3) / 30)))
+    for px_ in (4, 54, 103):                                             # pockets
+        cv.rect(px_ - 2, 2, px_ + 2, 5, 0x0c0806)
+        cv.rect(px_ - 2, 15, px_ + 2, 18, 0x0c0806)
+    cv.rect(0, 17, 108, 20, 0x7a4622)                                    # front rail
+    cv.rect(0, 17, 108, 18, 0xc08040)
+    for x in (27, 81):                                                   # diamond sights
+        cv.set(x, 18, 0xead8b0)
+    cv.rect(2, 20, 106, 29, 0x3e2212)                                    # apron
+    cv.rect(2, 20, 106, 21, 0x5a3218)
+    cv.rect(46, 22, 62, 27, 0x2a160c)
+    for lx in (6, 50, 96):                                               # turned legs
+        cv.rect(lx, 29, lx + 6, 39, 0x5a3218)
+        cv.rect(lx, 33, lx + 6, 35, 0x7a4622)
+        cv.rect(lx + 4, 29, lx + 6, 39, 0x2a160c)
+    outlined(cv)
+    cv.save("pool_table", spread=0)
+
+
+def cue():
+    """Pool cue 60x3: chalked tip, light shaft, brass joint, dark butt."""
+    cv = Canvas(60, 3)
+    cv.rect(0, 1, 58, 2, 0xf0c890)
+    cv.rect(58, 1, 60, 2, 0x3a3f66)
+    cv.rect(0, 0, 22, 3, 0x2a160c)
+    cv.rect(0, 0, 22, 1, 0x5a3218)
+    cv.rect(22, 0, 24, 3, 0xe0b040)
+    cv.rect(24, 1, 58, 2, 0xd8a060)
+    cv.save("cue", spread=0)
+
+
+def ball():
+    """Pool ball 6x6, white with shading; the game tints it per ball."""
+    cv = Canvas(6, 6)
+    for y in range(6):
+        for x in range(6):
+            dx, dy = x - 2.5, y - 2.5
+            if dx * dx + dy * dy <= 7:
+                cv.set(x, y, 0xfff4dc if dx + dy < -1.5 else 0xc8c8cc if dx + dy < 1.5 else 0x8a8a90)
+    cv.save("ball", spread=0)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for draw in (space, back, counter, floor, pillar, chair, stool, bottle, table, table_flipped):
+    for draw in (view, back, counter, floor, pillar, chair, stool, bottle, table, table_flipped, pool_table, pool_lamp, cue, ball):
         draw()

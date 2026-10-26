@@ -84,17 +84,18 @@ public class Game : MonoBehaviour
             }
     }
 
-    // tables are solid on the floor: walk around them or jump over; pushed out along the shallower side
+    // tables and pool tables are solid on the floor: walk around them or jump over (low ones);
+    // pushed out along the shallower side
     static void BlockByTables()
     {
         foreach (var t in Props)
         {
-            if (t.kind != Prop.Kind.Table || t.vel != Vector2.zero) continue;
+            if (!t.Blocks) continue;
             foreach (var f in Fighters)
             {
-                if (!f.Solid && f.state != State.Jump || f.height > Feel.TableHeight) continue;
+                if (!f.Solid && f.state != State.Jump || f.height > t.BlockHeight) continue;
                 float dx = f.ground.x - t.ground.x, dy = f.ground.y - t.ground.y;
-                float px = Feel.TableHalfWidth - Mathf.Abs(dx), py = Feel.TableHalfDepth - Mathf.Abs(dy);
+                float px = t.HalfWidth - Mathf.Abs(dx), py = t.HalfDepth - Mathf.Abs(dy);
                 if (px <= 0f || py <= 0f) continue;
                 if (px < py) f.ground.x += dx >= 0f ? px : -px;
                 else f.ground.y += dy >= 0f ? py : -py;
@@ -148,7 +149,7 @@ public class Game : MonoBehaviour
     // ORBIT 9: layers from Resources/Art/Bar, placed by their pixel rows (screen top = y 120, floor from row 112)
     void BuildBar()
     {
-        Layer(Art.BarSpace, new Vector2(LevelW / 2f, 120f - 2f - 28f), -20004, 0.5f); // seen through the window
+        Layer(Art.BarView, new Vector2(LevelW / 2f, 120f - 2f - 24f), -20004, 0.5f);  // the street seen through the windows
         Layer(Art.BarBack, new Vector2(LevelW / 2f, 120f - 56f), -20003);
         Layer(Art.BarCounter, new Vector2(600f, 120f - 64f - 24f), -20002);
         Layer(Art.BarFloor, new Vector2(LevelW / 2f, 120f - 112f - 64f), -20001);
@@ -167,6 +168,7 @@ public class Game : MonoBehaviour
     }
 
     const float TableTop = 26f;   // height of a table's top surface (table.png)
+    const float FeltTop = 28f;    // height of the pool table's felt (pool_table.png)
     const float CounterTop = 47f; // height of the counter top above its front edge (bar_counter.png)
     const float CounterEdge = 9f; // depth of the counter's front edge
 
@@ -179,8 +181,21 @@ public class Game : MonoBehaviour
         foreach (float x in new[] { 425f, 612f, 795f })
             SpawnProp(Prop.Kind.Bottle, new Vector2(x, CounterEdge), CounterTop);
 
-        // a couple at each table: a guy on the left chair, a girl on the right, facing each other
-        var tables = new (float x, float depth, int bottles)[] { (170f, -45f, 1), (460f, -82f, 2), (700f, -40f, 1), (1000f, -78f, 2) };
+        // pool tables, each with its balls and a cue on the felt (towards the front rail, where you can reach them)
+        // and a lamp hanging over it; the floor art has the lamp's light pool at the same spot
+        Color[] ballColours = { new Color(1f, 0.85f, 0.2f), new Color(0.3f, 0.45f, 1f), new Color(1f, 0.3f, 0.25f),
+            new Color(0.6f, 0.3f, 0.9f), new Color(1f, 1f, 1f) };
+        foreach (var (x, depth) in new[] { (620f, -82f), (1010f, -60f) })
+        {
+            SpawnProp(Prop.Kind.PoolTable, new Vector2(x, depth));
+            for (int i = 0; i < ballColours.Length; i++)
+                SpawnProp(Prop.Kind.Ball, new Vector2(x - 30f + i * 13f, depth - 9f), FeltTop).Tint(ballColours[i]);
+            SpawnProp(Prop.Kind.Cue, new Vector2(x, depth - 9f), FeltTop + 2f);
+            Lamp(x, depth);
+        }
+
+        // a couple at each round table: a guy on the left chair, a girl on the right, facing each other
+        var tables = new (float x, float depth, int bottles)[] { (170f, -45f, 1), (400f, -88f, 2), (790f, -30f, 1) };
         for (int t = 0; t < tables.Length; t++)
         {
             var (x, depth, bottles) = tables[t];
@@ -193,6 +208,18 @@ public class Game : MonoBehaviour
             Seat(t % 2 == 0 ? Art.GruntA : Art.GruntB, right, -1, 3);
         }
     }
+
+    // a lamp hanging over a pool table, drawn just in front of the table so it sits above the felt
+    static void Lamp(float x, float depth)
+    {
+        var sr = new GameObject("PoolLamp").AddComponent<SpriteRenderer>();
+        sr.sprite = Art.PoolLamp;
+        sr.sortingOrder = -Mathf.RoundToInt(depth) * 2 + 2;
+        sr.transform.position = new Vector3(x, depth + FeltTop + 40f, 0f);
+        lamps.Add(sr.gameObject);
+    }
+
+    static readonly List<GameObject> lamps = new List<GameObject>();
 
     public static Fighter Seat(string look, Prop chair, int faceDir, int hp)
     {
@@ -207,6 +234,8 @@ public class Game : MonoBehaviour
     {
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
         foreach (var p in Props) if (p != null) Destroy(p.gameObject);
+        foreach (var l in lamps) Destroy(l);
+        lamps.Clear();
         Reset();
         wave = toSpawn = 0;
         Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), 10); // at the counter

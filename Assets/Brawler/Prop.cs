@@ -1,18 +1,19 @@
 using UnityEngine;
 
-// Things in the bar: chairs, stools and bottles can be picked up, swung and thrown; tables are too heavy
-// to lift but tip over when hit (spilling what stands on them) and then slide into people when hit again.
+// Things in the pub. Chairs, stools, bottles, cues and pool balls can be picked up, swung and thrown.
+// Tables are too heavy to lift: they tip over when hit (spilling what stands on them) and slide into people
+// when hit again. Pool tables don't move at all; hitting one knocks its balls and cue onto the floor.
 // Same ground plane as fighters: (x, depth) + height; stepped by Game at 60 Hz.
 public class Prop : MonoBehaviour
 {
-    public enum Kind { Chair, Stool, Bottle, Table }
+    public enum Kind { Chair, Stool, Bottle, Table, PoolTable, Cue, Ball }
 
     public Kind kind;
     public Vector2 ground, vel;
     public float height, heightVel;
     public Fighter holder, thrower; // thrower: who threw it, or who sent a tipped table sliding
     public int hitsLeft;
-    public bool resting;            // standing on a table or the counter, at its height
+    public bool resting;            // standing on a table, the counter or the felt, at its height
     public Fighter seatedBy;        // a chair with a patron on it
     public bool flipped;            // a table knocked onto its side
     public bool mirrored;           // drawn facing left (a chair turned towards its table)
@@ -20,9 +21,16 @@ public class Prop : MonoBehaviour
     SpriteRenderer sr, shadow;
 
     public bool Free => holder == null && thrower == null;
-    public bool Pickable => Free && kind != Kind.Table && (seatedBy == null || seatedBy.state != State.Sit);
-    public float Reach => kind == Kind.Bottle ? Feel.BottleReach : Feel.ChairReach;
-    public int Damage => kind == Kind.Bottle ? 2 : 3;
+    public bool Heavy => kind == Kind.Table || kind == Kind.PoolTable;
+    public bool Pickable => Free && !Heavy && (seatedBy == null || seatedBy.state != State.Sit);
+    public float Reach => kind switch { Kind.Cue => Feel.CueReach, Kind.Bottle or Kind.Ball => Feel.BottleReach, _ => Feel.ChairReach };
+    public int Damage => kind is Kind.Bottle or Kind.Ball or Kind.Cue ? 2 : 3;
+
+    // furniture footprint on the floor: blocks walking (and thrown things), can be jumped over if low enough
+    public bool Blocks => kind == Kind.PoolTable || kind == Kind.Table && vel == Vector2.zero;
+    public float HalfWidth => kind == Kind.PoolTable ? Feel.PoolHalfWidth : Feel.TableHalfWidth;
+    public float HalfDepth => kind == Kind.PoolTable ? Feel.PoolHalfDepth : Feel.TableHalfDepth;
+    public float BlockHeight => kind == Kind.PoolTable ? Feel.PoolHeight : Feel.TableHeight;
 
     public void Init(Kind k, Vector2 pos, float onHeight, bool faceLeft)
     {
@@ -31,14 +39,21 @@ public class Prop : MonoBehaviour
         height = onHeight;
         resting = onHeight > 0f;
         mirrored = faceLeft;
-        hitsLeft = k switch { Kind.Bottle => 1, Kind.Table => Feel.TableHits, _ => Feel.ChairHits };
+        hitsLeft = k switch
+        {
+            Kind.Bottle => 1, Kind.Table => Feel.TableHits, Kind.Cue => Feel.CueHits,
+            Kind.Ball or Kind.PoolTable => int.MaxValue, _ => Feel.ChairHits,
+        };
         shadow = Child("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000;
         sr = Child("Sprite", k switch
         {
-            Kind.Chair => Art.Chair, Kind.Stool => Art.Stool, Kind.Bottle => Art.Bottle, _ => Art.Table,
+            Kind.Chair => Art.Chair, Kind.Stool => Art.Stool, Kind.Bottle => Art.Bottle, Kind.PoolTable => Art.PoolTable,
+            Kind.Cue => Art.Cue, Kind.Ball => Art.Ball, _ => Art.Table,
         });
     }
+
+    public void Tint(Color c) => sr.color = c; // pool balls come in colours
 
     SpriteRenderer Child(string name, Sprite sprite)
     {
@@ -70,6 +85,11 @@ public class Prop : MonoBehaviour
     // hit by a punch, kick or a swung prop; returns true if it reacted (counts as a hit)
     public bool Struck(int dir, Fighter by)
     {
+        if (kind == Kind.PoolTable)
+        {
+            KnockOffWhatStandsOnMe(dir); // too heavy to budge; balls and cue roll off the felt
+            return true;
+        }
         if (kind == Kind.Table && !flipped)
         {
             flipped = true;
@@ -87,7 +107,7 @@ public class Prop : MonoBehaviour
         }
         if (resting)
         {
-            resting = false; // bottle swept off the counter or a table: falls and smashes
+            resting = false; // swept off the counter, a table or the felt: falls to the floor
             vel = new Vector2(dir * 1.5f, 0f);
             heightVel = 1.5f;
             return true;
@@ -98,7 +118,8 @@ public class Prop : MonoBehaviour
     void KnockOffWhatStandsOnMe(int dir)
     {
         foreach (var p in Game.Props)
-            if (p != this && p.resting && Mathf.Abs(p.ground.x - ground.x) < 24f && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
+            if (p != this && p.resting && Mathf.Abs(p.ground.x - ground.x) < HalfWidth + 4f
+                && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
                 p.Struck(dir, null);
     }
 
@@ -115,12 +136,13 @@ public class Prop : MonoBehaviour
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
         var color = kind switch
         {
-            Kind.Bottle => new Color32(0x2a, 0x8a, 0x4a, 255),
-            Kind.Table => new Color32(0x6a, 0x72, 0x90, 255),
-            _ => new Color32(0xa0, 0x2a, 0x3a, 255),
+            Kind.Bottle => new Color32(0x4a, 0x2a, 0x10, 255),   // brown glass
+            Kind.Chair => new Color32(0x17, 0x58, 0x2f, 255),    // green cushion
+            Kind.Stool => new Color32(0xa0, 0x2a, 0x28, 255),    // red leather
+            _ => new Color32(0x9a, 0x5e, 0x2e, 255),             // wood
         };
         for (int i = 0; i < 7; i++)
-            Shard.Spawn(new Vector3(ground.x, ground.y + height + 6f, 0f), i % 3 == 0 ? new Color32(0x9a, 0xa2, 0xbc, 255) : color);
+            Shard.Spawn(new Vector3(ground.x, ground.y + height + 6f, 0f), i % 3 == 0 ? new Color32(0x5a, 0x32, 0x18, 255) : color);
         Destroy(gameObject);
     }
 
@@ -132,7 +154,7 @@ public class Prop : MonoBehaviour
             height = holder.height;
             return;
         }
-        if (resting) return;
+        if (resting || kind == Kind.PoolTable) return;
 
         bool airborne = height > 0f || heightVel > 0f;
         ground += vel;
@@ -142,16 +164,25 @@ public class Prop : MonoBehaviour
 
         if (airborne)
         {
-            heightVel -= Feel.Gravity;
+            float impact = heightVel - Feel.Gravity;
+            heightVel = impact;
             height += heightVel;
             if (height > 0f) return;
             height = 0f;
             heightVel = 0f;
-            if (kind == Kind.Bottle || thrower != null) { Break(); return; } // bottles shatter, thrown chairs smash
+            if (kind == Kind.Ball)
+            {
+                if (impact < -1.5f) heightVel = -impact * 0.45f; // bounces, smaller each time
+                else thrower = null;                             // then rolls
+                vel *= 0.7f;
+                return;
+            }
+            if (kind == Kind.Bottle || thrower != null) { Break(); return; } // bottles shatter, thrown things smash
             vel = Vector2.zero;
             return;
         }
-        vel = Vector2.MoveTowards(vel, Vector2.zero, Feel.Friction); // a sliding table slows down
+        // tables slide to a stop, balls roll a long way
+        vel = Vector2.MoveTowards(vel, Vector2.zero, kind == Kind.Ball ? Feel.Friction * 0.15f : Feel.Friction);
         if (vel == Vector2.zero && kind == Kind.Table) thrower = null;
     }
 
@@ -167,23 +198,33 @@ public class Prop : MonoBehaviour
                 f.TakeHit(Damage, vel.x > 0f ? 1 : -1, true);
                 Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
                 if (kind == Kind.Table) vel *= 0.5f;
+                else if (kind == Kind.Ball) BounceBack();
                 else Break();
                 return true;
             }
         return false;
     }
 
-    // a thrown chair or bottle that flies into a table knocks it over and breaks
+    // a thrown thing that flies into a table or pool table: knocks it over (or its balls off) and breaks,
+    // a ball bounces back instead
     bool HitTable()
     {
-        if (kind == Kind.Table || height > Feel.TableHeight + 10f) return false;
-        Prop table = Game.Props.Find(t => t.kind == Kind.Table && t.holder == null
-            && Mathf.Abs(t.ground.x - ground.x) < Feel.TableHalfWidth
-            && Mathf.Abs(t.ground.y - ground.y) < Feel.TableHalfDepth + 4f);
+        if (Heavy) return false;
+        Prop table = Game.Props.Find(t => t.Blocks && t.holder == null && height <= t.BlockHeight + 10f
+            && Mathf.Abs(t.ground.x - ground.x) < t.HalfWidth
+            && Mathf.Abs(t.ground.y - ground.y) < t.HalfDepth + 4f);
         if (table == null) return false;
         table.Struck(vel.x > 0f ? 1 : -1, thrower);
-        Break();
+        if (kind == Kind.Ball) BounceBack();
+        else Break();
         return true;
+    }
+
+    void BounceBack()
+    {
+        vel = new Vector2(-vel.x * 0.3f, 0f);
+        heightVel = 2f;
+        thrower = null;
     }
 
     void LateUpdate()
@@ -192,23 +233,32 @@ public class Prop : MonoBehaviour
         float h = Mathf.Round(height);
         var pose = sr.transform;
         if (kind == Kind.Table) sr.sprite = flipped ? Art.TableFlipped : Art.Table;
-        sr.flipX = holder == null && mirrored;
+        sr.flipX = holder == null ? mirrored : holder.facing < 0;
         if (holder != null)
         {
-            // carried in front at the fists, swung out further while attacking
+            // carried in front at the fists, swung out further while attacking; a cue is held level and thrust
             bool swinging = holder.state == State.Attack && holder.move == Move.Swing && holder.stateFrames > Feel.SwingStartup;
             int face = holder.facing;
-            pose.localPosition = swinging ? new Vector3(face * 28f, h + 26f, 0f) : new Vector3(face * 16f, h + 24f, 0f);
-            pose.localRotation = Quaternion.Euler(0f, 0f, swinging ? -70f * face : 0f);
+            if (kind == Kind.Cue)
+            {
+                pose.localPosition = new Vector3(face * (swinging ? 40f : 22f), h + 28f, 0f);
+                pose.localRotation = Quaternion.identity;
+            }
+            else
+            {
+                pose.localPosition = swinging ? new Vector3(face * 28f, h + 26f, 0f) : new Vector3(face * 16f, h + 24f, 0f);
+                pose.localRotation = Quaternion.Euler(0f, 0f, swinging ? -70f * face : 0f);
+            }
         }
         else
         {
             pose.localPosition = new Vector3(0f, h, 0f);
-            pose.localRotation = Quaternion.Euler(0f, 0f, thrower != null && kind != Kind.Table ? Game.Frame * 25f : 0f); // tumbles in the air
+            bool tumbling = thrower != null && !Heavy && kind != Kind.Ball;
+            pose.localRotation = Quaternion.Euler(0f, 0f, tumbling ? Game.Frame * 25f : 0f);
         }
-        shadow.enabled = holder == null && !resting;
+        shadow.enabled = holder == null && !resting && kind != Kind.PoolTable;
         int order = -Mathf.RoundToInt(ground.y) * 2;
-        sr.sortingOrder = holder != null || resting ? order + 1 : order; // on top of the table it stands on
+        sr.sortingOrder = holder != null || resting ? order + 1 : order; // on top of what it stands on
     }
 }
 

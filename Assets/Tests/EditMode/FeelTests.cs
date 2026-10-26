@@ -458,4 +458,49 @@ public class FeelTests
         Assert.Greater(skin, 0);
         Assert.Greater(changed, 0, "outfit recoloured");
     }
+
+    [Test]
+    public void PoolTableIsHeavySolidAndShedsItsBalls()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var pool = Game.SpawnProp(Prop.Kind.PoolTable, new Vector2(120f, -70f));
+        var ball = Game.SpawnProp(Prop.Kind.Ball, new Vector2(70f, -79f), 28f);
+        Assert.IsFalse(pool.Pickable);
+
+        p.moveInput = Vector2.right;
+        Run(60);
+        Assert.LessOrEqual(p.ground.x, pool.ground.x - Feel.PoolHalfWidth + 0.01f, "can't walk through it");
+
+        p.moveInput = Vector2.zero;
+        p.Attack(Move.Kick);
+        Run(Feel.KickStartup + 2);
+        Assert.AreEqual(120f, pool.ground.x, "doesn't budge");
+        Assert.IsFalse(ball.resting, "the ball rolls off the felt");
+    }
+
+    [Test]
+    public void CueThrustReachesFurtherThanAnything()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var cue = Game.SpawnProp(Prop.Kind.Cue, new Vector2(40f, -70f));
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + Feel.CueReach - 4f, -70f), 10);
+        Assert.Greater(Feel.CueReach - 4f, Feel.KickReach);
+        p.PickUp(cue);
+        p.Attack(Move.Swing);
+        Run(Feel.SwingStartup);
+        Assert.AreEqual(8, e.health);
+    }
+
+    [Test]
+    public void ThrownBallBouncesInsteadOfBreaking()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var ball = Game.SpawnProp(Prop.Kind.Ball, new Vector2(40f, -70f));
+        p.PickUp(ball);
+        p.Attack(Move.ThrowProp);
+        Run(Feel.PropThrowStartup + 120);
+        Assert.IsTrue(Game.Props.Contains(ball), "still there");
+        Assert.AreEqual(0f, ball.height);
+        Assert.Greater(ball.ground.x, 80f, "flew and rolled away");
+    }
 }
