@@ -36,12 +36,12 @@ public class FeelTests
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
 
-        p.Attack(false);
+        p.Attack(Move.Punch);
         Run(Feel.PunchStartup);
         Assert.AreEqual(State.Hurt, e.state);
 
         Run(40);
-        p.Attack(true);
+        p.Attack(Move.Smash);
         Run(Feel.PunchStartup);
         Assert.AreEqual(State.Launched, e.state);
 
@@ -86,8 +86,8 @@ public class FeelTests
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
         e.facing = -1;
-        p.Attack(false);
-        e.Attack(false);
+        p.Attack(Move.Punch);
+        e.Attack(Move.Punch);
 
         Run(Feel.PunchStartup);
         Assert.AreEqual(State.Hurt, p.state);
@@ -109,7 +109,7 @@ public class FeelTests
         var w = Lasher(40f + 45f);
         Assert.Greater(45f, Feel.PunchReach);
 
-        w.Attack(false);
+        w.Attack(Move.Whip);
         Run(Feel.WhipStartup);
         Assert.AreEqual(State.Hurt, p.state);
     }
@@ -119,11 +119,55 @@ public class FeelTests
     {
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         var w = Lasher(55f);
-        w.Attack(false);
+        w.Attack(Move.Whip);
         Run(2);
 
-        p.Attack(false);
+        p.Attack(Move.Punch);
         Run(Feel.PunchStartup);
         Assert.AreEqual(State.Launched, w.state);
+    }
+
+    [Test]
+    public void KickReachesFurtherThanPunch()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + 25f, -70f), 10);
+        Assert.Greater(25f, Feel.PunchReach);
+
+        p.Attack(Move.Kick);
+        Run(Feel.KickStartup);
+        Assert.AreEqual(State.Hurt, e.state);
+        Assert.AreEqual(8, e.health);
+    }
+
+    [Test]
+    public void JumpKickLaunches()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(60f, -70f), 10);
+        p.Jump();
+        Run(3);
+        p.JumpKick();
+        Run(2);
+        Assert.AreEqual(State.Launched, e.state);
+    }
+
+    [Test]
+    public void GrabHeadbuttsThenThrowsBehind()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(52f, -70f), 10);
+        p.Grab(e);
+        Assert.AreEqual(State.Held, e.state);
+
+        p.Attack(Move.Knee);
+        Run(Feel.KneeStartup + 30);
+        Assert.AreEqual(State.Held, e.state, "a headbutt keeps the hold");
+        Assert.AreEqual(9, e.health);
+
+        p.Attack(Move.Throw);
+        Run(Feel.ThrowStartup);
+        Assert.AreEqual(State.Launched, e.state);
+        Assert.Less(e.vel.x, 0f, "thrown over the shoulder, behind the player");
     }
 }

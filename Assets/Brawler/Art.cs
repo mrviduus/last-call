@@ -22,8 +22,8 @@ public static class Art
 
     public class Frames
     {
-        public Sprite[] Idle, Walk;
-        public Sprite Punch1, Punch2, Kick, Hurt, Fall, GetUp, Crouch, WindUp;
+        public Sprite[] Idle, Walk, Throw;
+        public Sprite Punch1, Punch2, Kick, Hurt, Fall, GetUp, Crouch, WindUp, Headbutt;
     }
 
     static readonly Dictionary<string, Frames> cache = new Dictionary<string, Frames>();
@@ -45,6 +45,8 @@ public static class Art
             GetUp = Strip("GetUp", 1, pal)[0],
             Crouch = Strip("Crouch", 1, pal)[0],
             WindUp = Strip("HeadButt", 2, pal)[0],
+            Headbutt = Strip("HeadButt", 2, pal)[1],
+            Throw = Strip("Throw", 2, pal),
         };
         return cache[palette] = f;
     }

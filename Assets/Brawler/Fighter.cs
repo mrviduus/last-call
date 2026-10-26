@@ -1,6 +1,7 @@
 using UnityEngine;
 
-public enum State { Idle, Walk, Jump, Attack, Hurt, Launched, Down, GetUp, Dead }
+public enum State { Idle, Walk, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held }
+public enum Move { Punch, Smash, Kick, JumpKick, Knee, Throw, Whip }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -18,17 +19,34 @@ public class Fighter : MonoBehaviour
     public Vector2 ground, vel, moveInput;
     public float height, heightVel;
     public int health, facing = 1;
-    public bool smash;
-    public bool whip; // long reach, slow telegraphed wind-up
+    public Move move;
+    public bool whip; // enemy type: long reach, slow telegraphed wind-up
+    public Fighter grabbed;
 
     int flashFrames, invulnFrames;
-    bool bounced, strikePending, punchAlt;
+    bool bounced, strikePending, punchAlt, airKick, airKickSpent;
     SpriteRenderer body, shadow, whipLine;
     Art.Frames art;
 
-    int Startup => whip ? Feel.WhipStartup : Feel.PunchStartup;
-    int Active => whip ? Feel.WhipActive : Feel.PunchActive;
-    int Recovery => whip ? Feel.WhipRecovery : smash ? Feel.SmashRecovery : Feel.PunchRecovery;
+    int Startup => move switch
+    {
+        Move.Kick => Feel.KickStartup, Move.Knee => Feel.KneeStartup,
+        Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup, _ => Feel.PunchStartup,
+    };
+    int Active => move switch { Move.Kick => Feel.KickActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive };
+    int Recovery => move switch
+    {
+        Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery, Move.Knee => Feel.KneeRecovery,
+        Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery, _ => Feel.PunchRecovery,
+    };
+    float Reach => move switch
+    {
+        Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach,
+        Move.JumpKick => Feel.JumpKickReach, Move.Whip => Feel.WhipReach, _ => Feel.PunchReach,
+    };
+    float Push => move switch { Move.Kick => Feel.KickPush, Move.Whip => Feel.WhipPush, _ => Feel.JabPush };
+    int Damage => move is Move.Punch or Move.Whip ? 1 : 2;
+    bool Launches => move is Move.Smash or Move.JumpKick;
     bool WindingUp => state == State.Attack && stateFrames < Startup;
 
     public bool CanAct => state == State.Idle || state == State.Walk;
@@ -58,10 +76,12 @@ public class Fighter : MonoBehaviour
         return sr;
     }
 
-    public void Attack(bool isSmash)
+    // ground attacks; knee and throw only while holding someone
+    public void Attack(Move m)
     {
-        if (!CanAct) return;
-        smash = isSmash;
+        bool holding = state == State.Grab && (m == Move.Knee || m == Move.Throw);
+        if (!CanAct && !holding) return;
+        move = m;
         punchAlt = !punchAlt;
         vel = Vector2.zero;
         Enter(State.Attack);
@@ -71,13 +91,34 @@ public class Fighter : MonoBehaviour
     {
         if (!CanAct) return;
         heightVel = Feel.JumpVel;
+        airKick = airKickSpent = false;
         Enter(State.Jump);
+    }
+
+    public void JumpKick()
+    {
+        if (state != State.Jump || airKick) return;
+        airKick = true;
+        move = Move.JumpKick;
+    }
+
+    public void Grab(Fighter t)
+    {
+        grabbed = t;
+        facing = t.ground.x > ground.x ? 1 : -1;
+        vel = Vector2.zero;
+        Enter(State.Grab);
+        t.Enter(State.Held);
+        t.vel = Vector2.zero;
+        t.facing = -facing;
+        HoldVictim();
     }
 
     public void TakeHit(int damage, int dir, bool launch, float push = Feel.JabPush)
     {
         if (!CanBeHit) return;
-        bool countered = whip && WindingUp; // punished mid wind-up: knocked flying
+        bool countered = move == Move.Whip && WindingUp; // punished mid wind-up: knocked flying
+        Release();
         health -= damage;
         flashFrames = 8;
         facing = -dir;
@@ -95,12 +136,12 @@ public class Fighter : MonoBehaviour
         }
     }
 
-    public bool InReach(Fighter t, float reach)
+    public bool InReach(Fighter t, float reach, float heightBand = Feel.HeightBand)
     {
         float dx = (t.ground.x - ground.x) * facing;
         return t.CanBeHit && dx > -4f && dx < reach
             && Mathf.Abs(t.ground.y - ground.y) < Feel.DepthBand
-            && Mathf.Abs(t.height - height) < Feel.HeightBand;
+            && Mathf.Abs(t.height - height) < heightBand;
     }
 
     public void Step()
@@ -125,11 +166,21 @@ public class Fighter : MonoBehaviour
                 state = vel == Vector2.zero ? State.Idle : State.Walk;
                 break;
             case State.Jump:
+                if (airKick && !airKickSpent) strikePending = true;
                 if (landed) Enter(State.Idle);
                 break;
             case State.Attack:
+                if (grabbed != null) HoldVictim();
                 if (stateFrames == Startup) strikePending = true;
-                if (stateFrames >= Startup + Active + Recovery) Enter(State.Idle);
+                if (stateFrames >= Startup + Active + Recovery)
+                    Enter(grabbed != null && grabbed.state == State.Held ? State.Grab : State.Idle);
+                break;
+            case State.Grab:
+                if (grabbed == null || grabbed.state != State.Held || stateFrames >= Feel.GrabFrames) Release();
+                else HoldVictim();
+                break;
+            case State.Held:
+                vel = Vector2.zero; // the holder positions us
                 break;
             case State.Hurt:
                 if (stateFrames >= Feel.Hitstun) Enter(State.Idle);
@@ -146,6 +197,16 @@ public class Fighter : MonoBehaviour
                 if (stateFrames >= Feel.GetUpFrames) { Enter(State.Idle); invulnFrames = Feel.GetUpInvuln; }
                 break;
         }
+    }
+
+    void HoldVictim() => grabbed.ground = new Vector2(ground.x + facing * Feel.BodyGap, ground.y);
+
+    // lets go of the held fighter (if any); they stagger free
+    void Release()
+    {
+        if (grabbed != null && grabbed.state == State.Held) grabbed.Enter(State.Hurt);
+        grabbed = null;
+        if (state == State.Grab) Enter(State.Idle);
     }
 
     // returns true on the frame the body touches the ground
@@ -171,20 +232,42 @@ public class Fighter : MonoBehaviour
     {
         if (!strikePending) return;
         strikePending = false;
-        Strike();
+        if (move == Move.Knee || move == Move.Throw) StrikeHeld();
+        else Strike();
     }
 
     void Strike()
     {
         bool hit = false;
-        float reach = whip ? Feel.WhipReach : smash ? Feel.SmashReach : Feel.PunchReach;
+        float heightBand = move == Move.JumpKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
-            if (t.team != team && InReach(t, reach))
+            if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand))
             {
-                t.TakeHit(smash ? 2 : 1, facing, smash, whip ? Feel.WhipPush : Feel.JabPush);
+                t.TakeHit(Damage, facing, Launches, Push);
                 hit = true;
             }
-        if (hit) Game.Freeze(smash ? Feel.SmashHitstop : Feel.Hitstop, smash ? Feel.SmashShake : 0);
+        if (!hit) return;
+        if (move == Move.JumpKick) airKickSpent = true;
+        Game.Freeze(Launches ? Feel.SmashHitstop : Feel.Hitstop, Launches ? Feel.SmashShake : 0);
+    }
+
+    // knee: damage without letting go (the last point knocks them flying); throw: over the shoulder
+    void StrikeHeld()
+    {
+        if (grabbed == null || grabbed.state != State.Held) return;
+        var g = grabbed;
+        if (move == Move.Knee && g.health > 1)
+        {
+            g.health--;
+            g.flashFrames = 8;
+            Game.Freeze(Feel.Hitstop, 0);
+            return;
+        }
+        grabbed = null;
+        g.Enter(State.Hurt); // makes them hittable again
+        bool thrown = move == Move.Throw;
+        g.TakeHit(thrown ? 2 : 1, thrown ? -facing : facing, true);
+        Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
     }
 
     // a body flying fast knocks down its own teammates
@@ -193,7 +276,7 @@ public class Fighter : MonoBehaviour
         if (Mathf.Abs(vel.x) < Feel.BodyHitSpeed) return;
         int dir = vel.x > 0f ? 1 : -1;
         foreach (var o in Game.Fighters)
-            if (o != this && o.team == team && o.CanBeHit
+            if (o != this && o.team == team && o.CanBeHit && o.state != State.Held
                 && Mathf.Abs(o.ground.x - ground.x) < Width
                 && Mathf.Abs(o.ground.y - ground.y) < Feel.DepthBand
                 && Mathf.Abs(o.height - height) < Feel.HeightBand)
@@ -217,23 +300,30 @@ public class Fighter : MonoBehaviour
         {
             State.Idle => art.Idle[Game.Frame / 10 % 4],
             State.Walk => art.Walk[Game.Frame / 8 % 4],
-            State.Jump => art.Crouch,
+            State.Jump => airKick ? art.Kick : art.Crouch,
             State.GetUp => art.GetUp,
-            State.Attack when whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
-            State.Attack when smash => striking ? art.Kick : art.Crouch,
-            State.Attack => striking ? (punchAlt ? art.Punch2 : art.Punch1) : art.Idle[0],
+            State.Grab => art.Punch1,
+            State.Held => art.Hurt,
+            State.Attack => move switch
+            {
+                Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
+                Move.Smash or Move.Kick => striking ? art.Kick : art.Crouch,
+                Move.Knee => striking ? art.Headbutt : art.Punch1,
+                Move.Throw => art.Throw[WindingUp ? 0 : 1],
+                _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : art.Idle[0],
+            },
             State.Hurt => art.Hurt,
             _ => art.Fall, // launched, down, dead
         };
         body.flipX = facing < 0;
         body.transform.localPosition = new Vector3(0f, h, 0f);
         body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
-        bool telegraph = whip && WindingUp && stateFrames / 3 % 2 == 0;
+        bool telegraph = move == Move.Whip && WindingUp && stateFrames / 3 % 2 == 0;
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
             : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
 
-        whipLine.enabled = whip && striking;
+        whipLine.enabled = move == Move.Whip && striking;
         whipLine.transform.localScale = new Vector3(facing, 1f, 1f);
         whipLine.transform.localPosition = new Vector3(facing * 10f, h + 19f, 0f);
 

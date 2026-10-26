@@ -35,7 +35,7 @@ public class Enemy : MonoBehaviour
 
         if (cooldown == 0 && f.InReach(p, reach))
         {
-            f.Attack(false);
+            f.Attack(f.whip ? Move.Whip : Move.Punch);
             cooldown = (f.whip ? Feel.WhipCooldown : Feel.EnemyAttackCooldown) + Random.Range(0, 30);
         }
     }

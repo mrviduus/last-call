@@ -33,7 +33,21 @@ public static class Feel
     public const int GetUpFrames = 20;            // guess
     public const int GetUpInvuln = 30;            // guess
 
-    public const int WhipStartup = 18;            // guess, telegraph window to dodge or counter
+    public const int KickStartup = 6;             // guess
+    public const int KickActive = 3;              // guess
+    public const int KickRecovery = 12;           // guess
+    public const float KickReach = 28f;           // guess
+    public const float KickPush = 3f;             // guess
+    public const float JumpKickReach = 24f;       // guess
+    public const float JumpKickHeight = 40f;      // guess, hits grounded targets from anywhere in the jump
+
+    public const int GrabFrames = 120;            // guess, how long a hold lasts
+    public const int KneeStartup = 4;             // guess
+    public const int KneeRecovery = 10;           // guess
+    public const int ThrowStartup = 10;           // guess
+    public const int ThrowRecovery = 16;          // guess
+
+    public const int WhipStartup = 18;           // guess, telegraph window to dodge or counter
     public const int WhipActive = 4;              // guess
     public const int WhipRecovery = 22;           // guess
     public const float WhipReach = 52f;           // guess
