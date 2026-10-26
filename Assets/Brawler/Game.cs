@@ -13,7 +13,7 @@ public class Game : MonoBehaviour
     public static int SimFrame; // ticks that actually simulated (hitstop excluded)
     public static bool RestartRequested;
     public static RenderTexture PixelScreen;
-    static int freezeFrames, shakeFrames;
+    static int freezeFrames, shakeFrames, flashFrames;
 
     public static int RequestedStage; // debug jump (keys 1/2)
     const int StreetWaves = 3;
@@ -33,7 +33,7 @@ public class Game : MonoBehaviour
     {
         Fighters.Clear();
         Hero = null;
-        Frame = SimFrame = freezeFrames = shakeFrames = 0;
+        Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = 0;
         RestartRequested = false;
         RequestedStage = 0;
     }
@@ -44,11 +44,14 @@ public class Game : MonoBehaviour
         shakeFrames = Mathf.Max(shakeFrames, shake);
     }
 
+    public static void Flash(int frames) => flashFrames = Mathf.Max(flashFrames, frames);
+
     // one 60 Hz tick of the whole fight; hitstop skips it
     public static void Simulate()
     {
         Frame++;
         if (shakeFrames > 0) shakeFrames--;
+        if (flashFrames > 0) flashFrames--;
         if (freezeFrames > 0) { freezeFrames--; return; }
         SimFrame++;
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
@@ -233,7 +236,16 @@ public class Game : MonoBehaviour
         int scale = Mathf.Max(1, Mathf.Min(Screen.width / ScreenW, Screen.height / ScreenH));
         int w = ScreenW * scale, h = ScreenH * scale;
         var view = new Rect((Screen.width - w) / 2, (Screen.height - h) / 2, w, h);
-        if (Event.current.type == EventType.Repaint) GUI.DrawTexture(view, PixelScreen);
+        if (Event.current.type == EventType.Repaint)
+        {
+            GUI.DrawTexture(view, PixelScreen);
+            if (flashFrames > 0) // white flash on finishers
+            {
+                GUI.color = new Color(1f, 1f, 1f, 0.6f);
+                GUI.DrawTexture(view, Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+        }
 
         // HUD sized in game pixels, so it scales with the picture
         hud ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };

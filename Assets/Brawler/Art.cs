@@ -20,7 +20,8 @@ public static class Art
     public class Frames
     {
         public Sprite[] Idle, Walk, Throw, Spin, Sinking;
-        public Sprite Punch1, Punch2, Kick, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
+        public Sprite Punch1, Punch2, KickWind, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
+        public Vector2 KickTip; // toe of the kick frame, relative to the feet
     }
 
     const int FrameW = 96; // every sheet is a row of 96 px wide frames
@@ -33,6 +34,7 @@ public static class Art
         if (cache.TryGetValue(name, out var f)) return f;
         f = name == "Girl" ? Girl() : Punk();
         f.Sinking = Sinking(f.Hurt);
+        f.KickTip = Tip(f.Kick);
         return cache[name] = f;
     }
 
@@ -46,7 +48,7 @@ public static class Art
         return new Frames
         {
             Idle = S("idle"), Walk = S("walk"),
-            Punch1 = jab[1], Punch2 = punch[1], Kick = kick[3], JumpKick = dive[3],
+            Punch1 = jab[1], Punch2 = punch[1], KickWind = kick[1], Kick = kick[3], KickRecover = kick[4], JumpKick = dive[3],
             Hurt = hurt[0], Fall = hurt[1], Down = LyingDown(hurt[1]),
             GetUp = jump[0], Crouch = jump[0], Air = jump[2],
             WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
@@ -63,12 +65,24 @@ public static class Art
         return new Frames
         {
             Idle = idle, Walk = S("walk"),
-            Punch1 = punch[2], Punch2 = punch[2], Kick = punch[2], JumpKick = punch[2],
+            Punch1 = punch[2], Punch2 = punch[2], KickWind = punch[1], Kick = punch[2], KickRecover = idle[0], JumpKick = punch[2],
             Hurt = hurt[1], Fall = hurt[2], Down = hurt[3],
             GetUp = idle[0], Crouch = idle[0], Air = idle[0],
             WindUp = punch[1], Headbutt = punch[2], Throw = new[] { punch[1], punch[2] },
             Spin = new[] { punch[2], punch[2] },
         };
+    }
+
+    // the right-most opaque pixel of a frame (the toe of a kick), relative to the sprite's pivot
+    static Vector2 Tip(Sprite s)
+    {
+        var r = s.rect;
+        var px = s.texture.GetPixels32();
+        for (int x = (int)r.width - 1; x >= 0; x--)
+            for (int y = 0; y < (int)r.height; y++)
+                if (px[((int)r.y + y) * s.texture.width + (int)r.x + x].a > 0)
+                    return new Vector2(x, y) - s.pivot;
+        return Vector2.zero;
     }
 
     static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);

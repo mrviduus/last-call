@@ -24,7 +24,7 @@ public class Fighter : MonoBehaviour
     public Fighter grabbed;
 
     int flashFrames, invulnFrames;
-    bool bounced, strikePending, punchAlt, airKick, airKickSpent;
+    bool bounced, strikePending, punchAlt, airKick, airKickSpent, finishing;
     SpriteRenderer body, shadow, whipLine, boot;
     Art.Frames art;
     Color tint = Color.white;
@@ -311,14 +311,27 @@ public class Fighter : MonoBehaviour
             if (t.team != team && t.state != State.Held && (spin ? InSpinReach(t) : InReach(t, Reach, heightBand)))
             {
                 int dir = spin ? (t.ground.x >= ground.x ? 1 : -1) : facing; // a spin knocks them away from us
-                if (move == Move.Pound) t.Bury(Damage, dir);
-                else t.TakeHit(Damage, dir, Launches, Push);
+                bool last = team == 0 && t.health <= Damage;
+                if (move == Move.Pound && !last) t.Bury(Damage, dir);
+                else t.TakeHit(Damage, dir, Launches || last, Push);
+                if (last) Finish(t);
                 hit = true;
             }
-        if (!hit) return;
+        if (!hit || finishing) return;
         if (move == Move.JumpKick) airKickSpent = true;
         bool big = Launches || move == Move.Pound;
         Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
+    }
+
+    // the player's last hit on an enemy: long freeze, flash, giant boot, sent flying far
+    void Finish(Fighter t)
+    {
+        finishing = true;
+        if (move == Move.JumpKick) airKickSpent = true;
+        t.vel *= Feel.FinisherLaunch;
+        t.heightVel *= Feel.FinisherLaunch;
+        Game.Freeze(Feel.FinisherHitstop, Feel.FinisherShake);
+        Game.Flash(Feel.FinisherFlash);
     }
 
     // knee drop: lands on enemies lying on the ground and keeps them down
@@ -374,6 +387,7 @@ public class Fighter : MonoBehaviour
     {
         state = s;
         stateFrames = 0;
+        finishing = false;
     }
 
     void LateUpdate()
@@ -396,9 +410,8 @@ public class Fighter : MonoBehaviour
             State.Attack => move switch
             {
                 Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
-                Move.Smash or Move.Kick => striking ? art.Kick : art.Crouch,
+                Move.Smash or Move.Kick or Move.Pound => WindingUp ? art.KickWind : striking ? art.Kick : art.KickRecover,
                 Move.SpinKick => striking ? art.Spin[stateFrames / Feel.SpinTurnFrames % 2] : art.Crouch,
-                Move.Pound => striking ? art.Kick : art.Crouch,
                 Move.KneeDrop => art.Crouch,
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
                 Move.Throw => art.Throw[WindingUp ? 0 : 1],
@@ -421,10 +434,11 @@ public class Fighter : MonoBehaviour
             : Alive ? tint : tint * new Color(0.6f, 0.6f, 0.6f);
 
         // finishing kicks: the foot swells into a giant boot at the moment of impact
-        boot.enabled = striking && state == State.Attack && (move == Move.Smash || move == Move.SpinKick);
-        float swell = stateFrames - Startup < 2 ? 2f : 2.5f;
+        boot.enabled = striking && (state == State.Attack && (move == Move.Smash || move == Move.SpinKick) || finishing);
+        float swell = stateFrames - Startup < 2 ? 1.2f : 1.6f;
         boot.transform.localScale = new Vector3(look * swell, swell, 1f);
-        boot.transform.localPosition = new Vector3(look * 22f, h + 30f, 0f);
+        // on the toe of the kick frame, slightly overlapping the leg
+        boot.transform.localPosition = new Vector3(look * (art.KickTip.x - 8f), h + art.KickTip.y, 0f);
 
         whipLine.enabled = move == Move.Whip && striking;
         whipLine.transform.localScale = new Vector3(facing * 1.8f, 1f, 1f);

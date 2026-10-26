@@ -225,4 +225,16 @@ public class FeelTests
         Assert.AreEqual(7, e.health);
         Assert.AreEqual(State.Down, e.state);
     }
+
+    [Test]
+    public void LastHitIsAFinisherThatSendsThemFlying()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(65f, -70f), 1);
+        p.Attack(Move.Punch);
+        Run(Feel.PunchStartup);
+
+        Assert.AreEqual(State.Launched, e.state, "even a jab launches on the last hit");
+        Assert.AreEqual(Feel.LaunchX * Feel.FinisherLaunch, e.vel.x, 0.01f);
+    }
 }

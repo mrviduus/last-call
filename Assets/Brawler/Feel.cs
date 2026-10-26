@@ -32,6 +32,10 @@ public static class Feel
     public const int Hitstop = 4;                 // guess
     public const int SmashHitstop = 10;           // guess
     public const int SmashShake = 8;              // guess
+    public const int FinisherHitstop = 20;        // guess, the last hit on an enemy
+    public const int FinisherShake = 14;          // guess
+    public const int FinisherFlash = 6;           // guess, frames of white screen flash
+    public const float FinisherLaunch = 1.8f;     // guess, launch speed multiplier
     public const int Hitstun = 16;                // guess
     public const float JabPush = 2f;            // guess
     public const float LaunchX = 6f;              // guess
