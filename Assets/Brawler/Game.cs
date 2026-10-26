@@ -8,7 +8,6 @@ public class Game : MonoBehaviour
     public const float LevelW = 1152f;                                   // three screens of bar
     public const float MinX = 16f, MaxX = LevelW - 16f;
     public const float MinDepth = -105f, MaxDepth = 10f;                 // the bar floor
-    const bool EnemyWaves = false;                                       // bar slice step 1: look at the bar first
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
     public static readonly List<Prop> Props = new List<Prop>();
@@ -25,6 +24,7 @@ public class Game : MonoBehaviour
 
     // layers that scroll at their own speed: < 1 is further away, > 1 is in front of the fighters
     readonly List<(Transform layer, float speed, float x)> parallax = new List<(Transform, float, float)>();
+    readonly List<SpriteRenderer> occluders = new List<SpriteRenderer>(); // foreground pillars, faded when someone is behind
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot()
@@ -60,6 +60,7 @@ public class Game : MonoBehaviour
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
         for (int i = Props.Count - 1; i >= 0; i--) Props[i].Step(); // backwards: a prop may break and remove itself
         Separate();
+        BlockByTables();
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].ResolveStrike();
     }
 
@@ -78,6 +79,24 @@ public class Game : MonoBehaviour
                 a.ground.x -= push;
                 b.ground.x += push;
             }
+    }
+
+    // tables are solid on the floor: walk around them or jump over; pushed out along the shallower side
+    static void BlockByTables()
+    {
+        foreach (var t in Props)
+        {
+            if (t.kind != Prop.Kind.Table || t.vel != Vector2.zero) continue;
+            foreach (var f in Fighters)
+            {
+                if (!f.Solid && f.state != State.Jump || f.height > Feel.TableHeight) continue;
+                float dx = f.ground.x - t.ground.x, dy = f.ground.y - t.ground.y;
+                float px = Feel.TableHalfWidth - Mathf.Abs(dx), py = Feel.TableHalfDepth - Mathf.Abs(dy);
+                if (px <= 0f || py <= 0f) continue;
+                if (px < py) f.ground.x += dx >= 0f ? px : -px;
+                else f.ground.y += dy >= 0f ? py : -py;
+            }
+        }
     }
 
     public static Fighter Spawn(int team, string look, Vector2 pos, int hp)
@@ -131,16 +150,17 @@ public class Game : MonoBehaviour
         Layer(Art.BarCounter, new Vector2(600f, 120f - 64f - 24f), -20002);
         Layer(Art.BarFloor, new Vector2(LevelW / 2f, 120f - 112f - 64f), -20001);
         foreach (float x in new[] { 250f, 900f })
-            Layer(Art.BarPillar, new Vector2(x, 0f), 30000, 1.25f);                    // in front of everyone
+            occluders.Add(Layer(Art.BarPillar, new Vector2(x, 0f), 30000, 1.25f));     // in front of everyone
     }
 
-    void Layer(Sprite sprite, Vector2 pos, int order, float speed = 1f)
+    SpriteRenderer Layer(Sprite sprite, Vector2 pos, int order, float speed = 1f)
     {
         var sr = new GameObject("Layer").AddComponent<SpriteRenderer>();
         sr.sprite = sprite;
         sr.sortingOrder = order;
         sr.transform.position = pos;
         if (speed != 1f) parallax.Add((sr.transform, speed, pos.x));
+        return sr;
     }
 
     const float TableTop = 26f;   // height of a table's top surface (table.png)
@@ -186,9 +206,11 @@ public class Game : MonoBehaviour
         wave++;
         for (int i = 0; i < Mathf.Min(1 + wave, 5); i++)
         {
-            // alternate sides, each one further out so they don't stack; clamp into the bar
-            float x = camX + (i % 2 == 0 ? 1f : -1f) * (ScreenW / 2f + 20f + i * 12f);
-            var pos = new Vector2(Mathf.Clamp(x, MinX, MaxX), Random.Range(MinDepth, MaxDepth));
+            // they come in through the entrance door or from the stage end, whichever is further from the hero
+            const float Door = 60f, StageEnd = LevelW - 40f;
+            float entrance = Mathf.Abs(Hero.ground.x - Door) > Mathf.Abs(Hero.ground.x - StageEnd) ? Door : StageEnd;
+            float x = entrance + (entrance == Door ? -1f : 1f) * i * 14f;
+            var pos = new Vector2(Mathf.Clamp(x, MinX, MaxX), entrance == Door ? MaxDepth - 4f : Random.Range(MinDepth, MaxDepth));
 
             // every other enemy is a whip fighter; others: quick and fragile, or slow and tough
             bool lasher = i % 2 == 0;
@@ -216,7 +238,7 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (EnemyWaves && Hero.Alive && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (Hero.Alive && !Fighters.Exists(f => f.team != 0)) SpawnWave();
 
         camX += (CameraX(Hero.ground.x) - camX) * 0.1f;
     }
@@ -229,6 +251,11 @@ public class Game : MonoBehaviour
         // a layer at speed s moves s times as fast as the floor; authored positions match the start of the level
         foreach (var (layer, speed, baseX) in parallax)
             layer.position = new Vector3(Mathf.Round(baseX + (x - ScreenW / 2f) * (1f - speed)), layer.position.y, 0f);
+        foreach (var pillar in occluders)
+        {
+            bool behind = Fighters.Exists(f => Mathf.Abs(f.ground.x - pillar.transform.position.x) < 24f);
+            pillar.color = new Color(1f, 1f, 1f, behind ? 0.35f : 1f);
+        }
     }
 
     void OnGUI()

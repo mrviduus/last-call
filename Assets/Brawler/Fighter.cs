@@ -243,7 +243,8 @@ public class Fighter : MonoBehaviour
         {
             case State.Idle:
             case State.Walk:
-                vel = new Vector2(moveInput.x * walkX, moveInput.y * walkDepth);
+                float carry = held != null ? Feel.CarrySpeed : 1f; // props are heavy
+                vel = new Vector2(moveInput.x * walkX, moveInput.y * walkDepth) * carry;
                 if (moveInput.x != 0f) facing = moveInput.x > 0f ? 1 : -1;
                 state = vel == Vector2.zero ? State.Idle : State.Walk;
                 break;

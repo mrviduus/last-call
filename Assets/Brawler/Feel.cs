@@ -83,6 +83,11 @@ public static class Feel
     public const int PropThrowRecovery = 10;      // guess
     public const float PropThrowSpeed = 6f;       // guess
     public const float PropThrowUp = 2f;          // guess
+    public const float CarrySpeed = 0.75f;        // guess, walking speed multiplier while holding a prop
+    public const float TableHalfWidth = 20f;      // table footprint on the floor: blocks walking, can be jumped
+    public const float TableHalfDepth = 7f;
+    public const float TableHeight = 26f;         // jump higher than this to pass over a table
+    public const int TableHits = 3;               // hits a tipped table takes before it breaks
     public const float TableSlide = 6f;           // guess, a tipped table hit again slides this fast
     public const float PropThrowHeight = 30f;     // guess, released at about hand height
 

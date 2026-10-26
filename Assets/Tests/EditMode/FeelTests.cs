@@ -343,4 +343,34 @@ public class FeelTests
         Run(Feel.KickStartup + 30);
         Assert.AreEqual(State.Launched, e.state);
     }
+
+    [Test]
+    public void TablesBlockWalkingButCanBeJumpedOver()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(100f, -70f));
+        p.moveInput = Vector2.right;
+        Run(60);
+        Assert.LessOrEqual(p.ground.x, table.ground.x - Feel.TableHalfWidth + 0.01f, "stopped at the table");
+
+        p.Jump();
+        Run(40);
+        Assert.Greater(p.ground.x, table.ground.x, "cleared it with a jump");
+    }
+
+    [Test]
+    public void TippedTableBreaksOnTheThirdHit()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(65f, -70f));
+        table.flipped = true;
+        for (int i = 0; i < Feel.TableHits; i++)
+        {
+            table.vel = Vector2.zero;
+            table.ground.x = 65f; // back in reach after each slide
+            p.Attack(Move.Punch);
+            Run(Feel.PunchStartup + Feel.PunchActive + Feel.PunchRecovery + Feel.Hitstop);
+        }
+        Assert.IsFalse(Game.Props.Contains(table));
+    }
 }

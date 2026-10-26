@@ -30,7 +30,7 @@ public class Prop : MonoBehaviour
         height = onHeight;
         resting = onHeight > 0f;
         mirrored = faceLeft;
-        hitsLeft = k == Kind.Bottle ? 1 : Feel.ChairHits;
+        hitsLeft = k switch { Kind.Bottle => 1, Kind.Table => Feel.TableHits, _ => Feel.ChairHits };
         shadow = Child("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000;
         sr = Child("Sprite", k switch
@@ -79,6 +79,7 @@ public class Prop : MonoBehaviour
         }
         if (kind == Kind.Table)
         {
+            if (--hitsLeft <= 0) { Break(); return true; } // a beaten-up table falls apart
             vel = new Vector2(dir * Feel.TableSlide, 0f); // a tipped table slides into people
             thrower = by;
             return true;
@@ -111,7 +112,12 @@ public class Prop : MonoBehaviour
         if (holder != null) holder.held = null;
         Game.Props.Remove(this);
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
-        var color = kind == Kind.Bottle ? new Color32(0x2a, 0x8a, 0x4a, 255) : new Color32(0xa0, 0x2a, 0x3a, 255);
+        var color = kind switch
+        {
+            Kind.Bottle => new Color32(0x2a, 0x8a, 0x4a, 255),
+            Kind.Table => new Color32(0x6a, 0x72, 0x90, 255),
+            _ => new Color32(0xa0, 0x2a, 0x3a, 255),
+        };
         for (int i = 0; i < 7; i++)
             Shard.Spawn(new Vector3(ground.x, ground.y + height + 6f, 0f), i % 3 == 0 ? new Color32(0x9a, 0xa2, 0xbc, 255) : color);
         Destroy(gameObject);
@@ -175,10 +181,10 @@ public class Prop : MonoBehaviour
         sr.flipX = holder == null && mirrored;
         if (holder != null)
         {
-            // raised overhead, swung down in front while attacking
+            // carried in front at the fists, swung out further while attacking
             bool swinging = holder.state == State.Attack && holder.move == Move.Swing && holder.stateFrames > Feel.SwingStartup;
             int face = holder.facing;
-            pose.localPosition = swinging ? new Vector3(face * 28f, h + 26f, 0f) : new Vector3(face * 4f, h + 58f, 0f);
+            pose.localPosition = swinging ? new Vector3(face * 28f, h + 26f, 0f) : new Vector3(face * 16f, h + 24f, 0f);
             pose.localRotation = Quaternion.Euler(0f, 0f, swinging ? -70f * face : 0f);
         }
         else
