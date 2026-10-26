@@ -742,4 +742,110 @@ public class FeelTests
         Assert.IsFalse(p.Special());
         Assert.AreEqual(Feel.SpecialCost, p.health);
     }
+
+    [Test]
+    public void ACrowdSpreadsToBothSidesOfTheHero()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(500f, -50f), 1000);
+        Game.Hero = p;
+        foreach (float x in new[] { 300f, 320f, 340f, 360f, 380f, 400f })
+            Game.Spawn(1, Art.GruntA, new Vector2(x, -50f), 100).gameObject.AddComponent<Enemy>().Setup();
+        Run(600);
+        int right = Game.Fighters.FindAll(f => f.team == 1 && f.ground.x > p.ground.x).Count;
+        Assert.GreaterOrEqual(right, 2, "they all came from the left; some walk round to the right");
+    }
+
+    static Fighter Victim(float x, int hp)
+    {
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(x, -70f), hp);
+        e.facing = -1;
+        return e;
+    }
+
+    [Test]
+    public void KillingKickTakesTheHeadOff()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Victim(75f, 5);
+        p.Attack(Move.Kick);
+        Run(Feel.KickStartup);
+        Assert.IsTrue(e.headless);
+        Assert.AreEqual(State.Headless, e.state, "the body stays standing a moment");
+        var head = Game.Props.Find(q => q.kind == Prop.Kind.Head);
+        Assert.IsNotNull(head);
+        Run(Feel.FinisherHitstop + 20);
+        Assert.Greater(head.ground.x, 75f, "the head flies off the way it was kicked");
+        Run(Feel.HeadlessFrames);
+        Assert.AreEqual(State.Down, e.state, "then it drops");
+    }
+
+    [Test]
+    public void KillingStompHammersThemThroughTheFloor()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Victim(55f, 5);
+        p.Attack(Move.Pound);
+        Run(Feel.PoundStartup);
+        Assert.AreEqual(State.Buried, e.state);
+        Assert.IsFalse(e.Alive);
+        Run(Feel.FinisherHitstop + 200);
+        Assert.AreEqual(State.Dead, e.state, "gone through the floor");
+    }
+
+    [Test]
+    public void KickingSomeoneBuriedPuntsTheirHead()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Victim(70f, 100);
+        e.Bury(10, 1);
+        p.Attack(Move.Kick);
+        Run(Feel.KickStartup);
+        Assert.IsFalse(e.Alive);
+        Assert.IsTrue(e.headless);
+        var head = Game.Props.Find(q => q.kind == Prop.Kind.Head);
+        Assert.AreSame(p, head.thrower, "a kicked head hits whoever is in the way");
+    }
+
+    [Test]
+    public void LInAHoldRipsAnArmOffToClubWith()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Victim(52f, 100);
+        p.Grab(e);
+        p.Attack(Move.Rip);
+        Run(Feel.RipStartup);
+        Assert.IsTrue(e.armless);
+        Assert.AreEqual(State.Launched, e.state);
+        Assert.AreEqual(100 - Feel.ArmRipDamage, e.health);
+        Assert.IsNotNull(p.held);
+        Assert.AreEqual(Prop.Kind.Arm, p.held.kind);
+    }
+
+    [Test]
+    public void KillingElbowDropTearsTheBodyInTwo()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Victim(55f, 5);
+        e.TakeHit(1, 1, true);
+        while (e.state != State.Down) Game.Simulate();
+        e.ground.x = 55f;
+        e.vel = Vector2.zero;
+        p.Attack(Move.ElbowDrop);
+        Run(Feel.ElbowDropStartup);
+        Assert.IsTrue(e.halved);
+        Assert.IsNotNull(Game.Props.Find(q => q.kind == Prop.Kind.Gib), "the other half");
+    }
+
+    [Test]
+    public void LastHeadbuttBurstsTheHead()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Victim(52f, Feel.KneeDamage);
+        p.Grab(e);
+        p.Attack(Move.Knee);
+        Run(Feel.KneeStartup);
+        Assert.IsFalse(e.Alive);
+        Assert.IsTrue(e.headless);
+        Assert.AreEqual(State.Headless, e.state);
+    }
 }

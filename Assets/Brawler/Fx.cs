@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Short-lived pictures over the fight: hit sparks, dust puffs, afterimages. Cosmetic only.
@@ -33,6 +34,16 @@ public class Fx : MonoBehaviour
     // a puff on the floor at someone's feet (landing, running, hitting the ground)
     public static void Dust(Vector2 ground) => Make(Art.Dust, ground, 4, -Mathf.RoundToInt(ground.y) * 2 + 1);
 
+    // blood: drops fly from a point above the floor (dir: -1 left, 1 right, 0 all round), fall back to it and
+    // stay there as stains; force > 3 is a burst, a high force with dir 0 a fountain
+    public static void Blood(Vector2 ground, float height, int count, float dir, float force)
+    {
+        if (!Application.isPlaying) return;
+        for (int i = 0; i < count; i++)
+            Drop.Spawn(ground, height, (dir == 0f ? Random.Range(-1f, 1f) : dir * Random.Range(0.3f, 1f)) * force * 0.6f
+                + Random.Range(-0.5f, 0.5f), Random.Range(1f, 2.5f) + force * 0.5f * Random.Range(0.5f, 1.2f));
+    }
+
     // a fading blue copy of a body: fast moves leave a trail
     public static void Ghost(SpriteRenderer body)
     {
@@ -56,5 +67,58 @@ public class Fx : MonoBehaviour
             c.a = fade * (1f - (float)age / (frames.Length * frameTime));
             sr.color = c;
         }
+    }
+}
+
+// one drop of blood in flight; lands as a stain on the floor, where it stays (the oldest go past MaxStains)
+public class Drop : MonoBehaviour
+{
+    const int MaxStains = 500;
+    static readonly Queue<GameObject> stains = new Queue<GameObject>();
+    static readonly Color32[] Reds = { new Color32(0xc0, 0x10, 0x14, 255), new Color32(0x90, 0x08, 0x0c, 255), new Color32(0xe0, 0x28, 0x20, 255) };
+
+    Vector2 ground;
+    float height, vx, vh;
+
+    public static void Spawn(Vector2 ground, float height, float vx, float vh)
+    {
+        var sr = new GameObject("Blood").AddComponent<SpriteRenderer>();
+        sr.sprite = Art.Shard;
+        sr.color = Reds[Random.Range(0, Reds.Length)];
+        sr.sortingOrder = -Mathf.RoundToInt(ground.y) * 2 + 1;
+        var d = sr.gameObject.AddComponent<Drop>();
+        d.ground = ground;
+        d.height = height;
+        d.vx = vx;
+        d.vh = vh;
+        d.transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y + height), 0f);
+    }
+
+    // a new fight: the floor is mopped
+    public static void Clear()
+    {
+        foreach (var d in FindObjectsByType<Drop>(FindObjectsSortMode.None)) Destroy(d.gameObject);
+        while (stains.Count > 0) Destroy(stains.Dequeue());
+    }
+
+    void FixedUpdate()
+    {
+        vh -= Feel.Gravity;
+        height += vh;
+        ground.x += vx;
+        if (height > 0f)
+        {
+            transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y + height), 0f);
+            return;
+        }
+        // splat: a dark smear on the floor, wider the faster it fell
+        var sr = GetComponent<SpriteRenderer>();
+        sr.color = Reds[1];
+        sr.sortingOrder = -19000; // on the floor, under everyone and everything
+        transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y), 0f);
+        transform.localScale = new Vector3(vh < -4f ? 3f : vh < -2f ? 2f : 1f, 1f, 1f);
+        stains.Enqueue(gameObject);
+        if (stains.Count > MaxStains) Destroy(stains.Dequeue());
+        Destroy(this);
     }
 }

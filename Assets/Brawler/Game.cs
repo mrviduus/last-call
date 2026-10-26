@@ -245,6 +245,7 @@ public class Game : MonoBehaviour
         foreach (var p in Props) if (p != null) Destroy(p.gameObject);
         foreach (var l in Lamps) if (l != null) Destroy(l.gameObject);
         Reset();
+        Drop.Clear();
         wave = toSpawn = 0;
         Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), Feel.HeroHealth); // at the counter
         Hero.gameObject.AddComponent<Player>();
@@ -357,12 +358,13 @@ public class Game : MonoBehaviour
             if (Event.current.type == EventType.Repaint)
             {
                 GUI.color = new Color(0f, 0f, 0f, 0.6f);
-                GUI.DrawTexture(new Rect(view.x, view.y + 186 * scale, view.width, 54 * scale), Texture2D.whiteTexture);
+                GUI.DrawTexture(new Rect(view.x, view.y + 170 * scale, view.width, 70 * scale), Texture2D.whiteTexture);
                 GUI.color = Color.white;
             }
-            Text(view.x + 8 * scale, view.y + 190 * scale, scale, "WASD MOVE  J PUNCH  L KICK  K JUMP  S+L STOMP  J+K SPECIAL");
-            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L BICYCLE KICK");
-            Text(view.x + 8 * scale, view.y + 222 * scale, scale, "J BY A CHAIR OR BOTTLE = PICK UP      HOLD H = HELP");
+            Text(view.x + 8 * scale, view.y + 174 * scale, scale, "WASD MOVE  J PUNCH  L KICK  K JUMP  J+K SPECIAL  H HELP");
+            Text(view.x + 8 * scale, view.y + 190 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L BICYCLE KICK");
+            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "WALK INTO A DAZED ONE: J HEADBUTT  K THROW  L RIP ARM");
+            Text(view.x + 8 * scale, view.y + 222 * scale, scale, "S+L STOMP, THEN L: KICK THE HEAD OFF   J BY A PROP: PICK UP");
         }
         else if (Hero.held != null)
             Text(view.x + 8 * scale, view.y + 224 * scale, scale, "J - SWING      L - THROW");

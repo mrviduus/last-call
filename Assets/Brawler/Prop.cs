@@ -3,10 +3,11 @@ using UnityEngine;
 // Things in the pub. Chairs, stools, bottles, cues and pool balls can be picked up, swung and thrown.
 // Tables are too heavy to lift: they tip over when hit (spilling what stands on them) and slide into people
 // when hit again. Pool tables don't move at all; hitting one knocks its balls and cue onto the floor.
+// Gore leaves heads (pick up, throw, kick them), torn-off arms (a club) and halves of bodies (just lie there).
 // Same ground plane as fighters: (x, depth) + height; stepped by Game at 60 Hz.
 public class Prop : MonoBehaviour
 {
-    public enum Kind { Chair, Stool, Bottle, Table, PoolTable, Cue, Ball, Lamp }
+    public enum Kind { Chair, Stool, Bottle, Table, PoolTable, Cue, Ball, Lamp, Head, Arm, Gib }
 
     public Kind kind;
     public Vector2 ground, vel;
@@ -22,9 +23,9 @@ public class Prop : MonoBehaviour
 
     public bool Free => holder == null && thrower == null;
     public bool Heavy => kind == Kind.Table || kind == Kind.PoolTable;
-    public bool Pickable => Free && !Heavy && (seatedBy == null || seatedBy.state != State.Sit);
-    public float Reach => kind switch { Kind.Cue => Feel.CueReach, Kind.Bottle or Kind.Ball => Feel.BottleReach, _ => Feel.ChairReach };
-    public int Damage => kind is Kind.Bottle or Kind.Ball or Kind.Cue ? Feel.LightPropDamage : Feel.HeavyPropDamage;
+    public bool Pickable => Free && !Heavy && kind != Kind.Gib && (seatedBy == null || seatedBy.state != State.Sit);
+    public float Reach => kind switch { Kind.Cue => Feel.CueReach, Kind.Bottle or Kind.Ball or Kind.Head => Feel.BottleReach, _ => Feel.ChairReach };
+    public int Damage => kind is Kind.Bottle or Kind.Ball or Kind.Cue or Kind.Head ? Feel.LightPropDamage : Feel.HeavyPropDamage;
 
     // furniture footprint on the floor: blocks walking (and thrown things), can be jumped over if low enough
     public bool Blocks => kind == Kind.PoolTable || kind == Kind.Table && vel == Vector2.zero;
@@ -42,18 +43,32 @@ public class Prop : MonoBehaviour
         hitsLeft = k switch
         {
             Kind.Bottle => 1, Kind.Table => Feel.TableHits, Kind.Cue => Feel.CueHits, Kind.Lamp => Feel.LampHits,
-            Kind.Ball or Kind.PoolTable => int.MaxValue, _ => Feel.ChairHits,
+            Kind.Head => Feel.HeadHits, Kind.Arm => Feel.ArmHits,
+            Kind.Ball or Kind.PoolTable or Kind.Gib => int.MaxValue, _ => Feel.ChairHits,
         };
         shadow = Child("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000;
         sr = Child("Sprite", k switch
         {
             Kind.Chair => Art.Chair, Kind.Stool => Art.Stool, Kind.Bottle => Art.Bottle, Kind.PoolTable => Art.PoolTable,
-            Kind.Cue => Art.Cue, Kind.Ball => Art.Ball, Kind.Lamp => Art.LampShade, _ => Art.Table,
+            Kind.Cue => Art.Cue, Kind.Ball => Art.Ball, Kind.Lamp => Art.LampShade, Kind.Arm => Art.Arm,
+            Kind.Head or Kind.Gib => null, _ => Art.Table, // a head or a half body: Fling sets its picture
         });
     }
 
     public void Tint(Color c) => sr.color = c; // pool balls come in colours
+
+    // a body part torn off and sent flying (thrower: a kicked head hurts whoever it hits)
+    public static Prop Fling(Kind kind, Sprite sprite, Vector2 ground, float height, Vector2 vel, float up, bool faceLeft, Fighter thrower = null)
+    {
+        var p = Game.SpawnProp(kind, ground, 0f, faceLeft);
+        if (sprite != null) p.sr.sprite = sprite;
+        p.height = height;
+        p.vel = vel;
+        p.heightVel = up;
+        p.thrower = thrower;
+        return p;
+    }
 
     SpriteRenderer Child(string name, Sprite sprite)
     {
@@ -113,6 +128,13 @@ public class Prop : MonoBehaviour
             heightVel = 1.5f;
             return true;
         }
+        if (kind is Kind.Head or Kind.Ball && height <= 0f && by != null)
+        {
+            vel = new Vector2(dir * Feel.PuntSpeed, 0f); // kicked along the floor like a football, at whoever is there
+            heightVel = Feel.PuntUp;
+            thrower = by;
+            return true;
+        }
         return false;
     }
 
@@ -134,13 +156,16 @@ public class Prop : MonoBehaviour
     {
         if (holder != null) holder.held = null;
         Game.Props.Remove(this);
-        Sfx.Play(kind is Kind.Bottle or Kind.Lamp ? "glass" : "wood");
+        bool flesh = kind is Kind.Head or Kind.Arm or Kind.Gib;
+        Sfx.Play(kind is Kind.Bottle or Kind.Lamp ? "glass" : flesh ? "splat" : "wood");
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
+        if (flesh) Fx.Blood(ground, height + 4f, 20, 0f, 3f);
         var color = kind switch
         {
             Kind.Bottle => new Color32(0x4a, 0x2a, 0x10, 255),   // brown glass
             Kind.Chair or Kind.Lamp => new Color32(0x17, 0x58, 0x2f, 255), // green cushion or shade
             Kind.Stool => new Color32(0xa0, 0x2a, 0x28, 255),    // red leather
+            Kind.Head or Kind.Arm or Kind.Gib => new Color32(0xe8, 0xb0, 0x80, 255), // skin and bone
             _ => new Color32(0x9a, 0x5e, 0x2e, 255),             // wood
         };
         for (int i = 0; i < 7; i++)
@@ -159,6 +184,8 @@ public class Prop : MonoBehaviour
         if (resting || kind == Kind.PoolTable) return;
 
         bool airborne = height > 0f || heightVel > 0f;
+        if (airborne && kind is Kind.Head or Kind.Arm or Kind.Gib && Game.Frame % 3 == 0)
+            Fx.Blood(ground, height, 1, 0f, 0.5f); // drips as it flies
         ground += vel;
         ground.x = Mathf.Clamp(ground.x, Game.MinX, Game.MaxX);
         ground.y = Mathf.Clamp(ground.y, Game.MinDepth, Game.MaxDepth);
@@ -172,9 +199,9 @@ public class Prop : MonoBehaviour
             if (height > 0f) return;
             height = 0f;
             heightVel = 0f;
-            if (kind == Kind.Ball)
+            if (kind is Kind.Ball or Kind.Head)
             {
-                Sfx.Play("ball", Mathf.Clamp01(-impact / 4f));
+                Sfx.Play(kind == Kind.Head ? "splat" : "ball", Mathf.Clamp01(-impact / 4f) * (kind == Kind.Head ? 0.4f : 1f));
                 if (impact < -1.5f) heightVel = -impact * 0.45f; // bounces, smaller each time
                 else thrower = null;                             // then rolls
                 vel *= 0.7f;
@@ -202,7 +229,7 @@ public class Prop : MonoBehaviour
                 Sfx.Play("hit_heavy");
                 Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
                 if (kind == Kind.Table) vel *= 0.5f;
-                else if (kind == Kind.Ball) BounceBack();
+                else if (kind is Kind.Ball or Kind.Head) BounceBack();
                 else Break();
                 return true;
             }
@@ -219,7 +246,7 @@ public class Prop : MonoBehaviour
             && Mathf.Abs(t.ground.y - ground.y) < t.HalfDepth + 4f);
         if (table == null) return false;
         table.Struck(vel.x > 0f ? 1 : -1, thrower);
-        if (kind == Kind.Ball) BounceBack();
+        if (kind is Kind.Ball or Kind.Head) BounceBack();
         else Break();
         return true;
     }
@@ -257,7 +284,7 @@ public class Prop : MonoBehaviour
         else
         {
             pose.localPosition = new Vector3(0f, h, 0f);
-            bool tumbling = thrower != null && !Heavy && kind != Kind.Ball;
+            bool tumbling = (thrower != null || kind is Kind.Head or Kind.Gib && height > 0f) && !Heavy && kind != Kind.Ball;
             pose.localRotation = Quaternion.Euler(0f, 0f, tumbling ? Game.Frame * 25f : 0f);
         }
         shadow.enabled = holder == null && !resting && kind != Kind.PoolTable;

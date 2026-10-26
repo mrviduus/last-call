@@ -1,7 +1,7 @@
 using UnityEngine;
 
-public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit, Hang }
-public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick, Special }
+public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit, Hang, Headless }
+public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick, Special, Rip }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -27,6 +27,10 @@ public class Fighter : MonoBehaviour
     public Fighter grabbed;
     public Prop held; // chair or bottle in hand
     public Lamp hangingOn;
+    public bool headless, halved, armless; // gore done to us
+    int bleed;      // frames left of bleeding from a wound
+    int sinkFrames; // killed while buried: how far we've been hammered on through the floor
+    bool sunk;      // ...all the way, gone
     int hangKick; // frames left of a kick from the lamp
 
     int flashFrames, invulnFrames;
@@ -42,7 +46,7 @@ public class Fighter : MonoBehaviour
     {
         Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
         Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee => Feel.KneeStartup,
-        Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup,
+        Move.Throw => Feel.ThrowStartup, Move.Rip => Feel.RipStartup, Move.Whip => Feel.WhipStartup,
         Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, Move.Special => Feel.SpecialStartup,
         _ => team == 0 ? Feel.PunchStartup : Feel.EnemyPunchStartup,
     };
@@ -56,7 +60,7 @@ public class Fighter : MonoBehaviour
         Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery,
         Move.FlyingKick => Feel.FlyingKickRecovery, Move.BicycleKick => Feel.BicycleKickRecovery, Move.Pound => Feel.PoundRecovery,
         Move.ElbowDrop => Feel.ElbowDropRecovery, Move.Knee => Feel.KneeRecovery,
-        Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
+        Move.Throw or Move.Rip => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
         Move.Swing => Feel.SwingRecovery, Move.ThrowProp => Feel.PropThrowRecovery, Move.Special => Feel.SpecialRecovery,
         _ => Feel.PunchRecovery,
     };
@@ -117,7 +121,7 @@ public class Fighter : MonoBehaviour
     // ground attacks; knee and throw only while holding someone
     public void Attack(Move m)
     {
-        bool holding = state == State.Grab && (m == Move.Knee || m == Move.Throw);
+        bool holding = state == State.Grab && (m == Move.Knee || m == Move.Throw || m == Move.Rip);
         if (!CanAct && !holding) return;
         move = m;
         punchAlt = !punchAlt;
@@ -310,11 +314,69 @@ public class Fighter : MonoBehaviour
     public void Bury(int damage, int dir)
     {
         if (!CanBeHit) return;
-        if (health <= damage || state == State.Buried) { TakeHit(damage, dir, true); return; } // once per bury
+        if (state == State.Buried) { TakeHit(damage, dir, true); return; } // once per bury
         Release();
         Damaged(damage);
         vel = Vector2.zero;
         Enter(State.Buried);
+        if (Alive) return;
+        Fx.Blood(ground, 4f, 30, 0f, 4f); // a killing stomp: hammered on, right through the floor
+        Sfx.Play("splat");
+        Sfx.Play("crunch", 0.8f);
+    }
+
+    // ---- gore: what the hero's killing blows do ----
+    Sprite[] Sinking => headless ? art.HeadlessSinking : art.Sinking;
+    float Neck => height + Feel.NeckHeight - (state == State.Buried ? Feel.BurySink : 0f);
+
+    // the head comes off and flies; the body stands a moment with blood fountaining from the neck, then drops
+    public void Decapitate(int dir, float speed, Fighter kicker = null)
+    {
+        headless = true;
+        Prop.Fling(Prop.Kind.Head, art.Head, ground, Neck + 7f, new Vector2(dir * speed, 0f), Feel.HeadFlyUp, facing < 0, kicker);
+        Fx.Blood(ground, Neck, 25, dir, 3f);
+        Sfx.Play("splat");
+        Sfx.Play("crunch", 0.8f);
+        if (state == State.Buried) return; // stuck in the floor: sinks on through it, headless
+        vel = Vector2.zero;
+        heightVel = 0f;
+        Enter(State.Headless);
+    }
+
+    // a headbutt in the face: the head bursts
+    public void BurstHead()
+    {
+        headless = true;
+        Fx.Blood(ground, Neck + 6f, 45, 0f, 4.5f);
+        for (int i = 0; i < 8; i++) // bits of skull
+            Shard.Spawn(new Vector3(ground.x, ground.y + Neck + 6f, 0f), i % 2 == 0 ? new Color32(0xf0, 0xe8, 0xd0, 255) : new Color32(0xd0, 0x70, 0x70, 255));
+        Sfx.Play("splat");
+        Sfx.Play("crunch");
+        vel = Vector2.zero;
+        heightVel = 0f;
+        Enter(State.Headless);
+    }
+
+    // an elbow drop finishing a body on the floor: torn in two, one half flies off
+    public void TearInHalf(int dir)
+    {
+        halved = true;
+        Prop.Fling(Prop.Kind.Gib, art.HalfFlies, ground, 4f, new Vector2(dir * 3f, 0f), 4f, facing < 0);
+        Fx.Blood(ground, 6f, 40, dir, 3.5f);
+        bleed = Feel.BleedFrames;
+        Sfx.Play("splat");
+        Sfx.Play("crunch");
+    }
+
+    // pulled off in a hold: the wound bleeds, the arm is a club now
+    public Prop RipArm(int dir)
+    {
+        armless = true;
+        bleed = Feel.BleedFrames;
+        Fx.Blood(ground, height + Feel.ShoulderHeight, 30, dir, 3.5f);
+        Sfx.Play("crunch");
+        Sfx.Play("splat");
+        return Prop.Fling(Prop.Kind.Arm, null, ground, height + Feel.ShoulderHeight, Vector2.zero, 0f, facing > 0);
     }
 
     // every blow lands through here: from the ComboScaleFrom-th hit of a combo on, each does 10% less (down to half)
@@ -326,6 +388,7 @@ public class Fighter : MonoBehaviour
         health -= dealt;
         flashFrames = 8;
         Fx.Spark(new Vector2(ground.x, ground.y + height + 34f), dealt >= Feel.SmashDamage);
+        Fx.Blood(ground, height + 38f, dealt / 4, 0f, 1.5f); // every blow draws blood, harder ones more
         if (team != 0) Game.LastHit = this; // its health bar shows in the HUD
     }
 
@@ -349,6 +412,7 @@ public class Fighter : MonoBehaviour
         stateFrames++;
         if (flashFrames > 0) flashFrames--;
         if (landSquash > 0) landSquash--;
+        if (bleed > 0 && --bleed % 5 == 0) Fx.Blood(ground, state is State.Down or State.Dead ? 4f : height + Feel.ShoulderHeight, 1, 0f, 0.3f);
         if (jumpStretch > 0) jumpStretch--;
         if (invulnFrames > 0) invulnFrames--;
 
@@ -427,7 +491,13 @@ public class Fighter : MonoBehaviour
                 break;
             case State.Buried:
                 vel = Vector2.zero;
-                if (stateFrames >= Feel.BuriedFrames) Enter(State.GetUp); // pops out
+                if (Alive && stateFrames >= Feel.BuriedFrames) Enter(State.GetUp); // pops out
+                if (!Alive && ++sinkFrames / 2 + Art.BuriedFrame >= Sinking.Length) { sunk = true; Enter(State.Dead); }
+                break;
+            case State.Headless:
+                // stands a moment, a fountain from the neck, then drops
+                if (stateFrames % 2 == 0 && stateFrames < Feel.HeadlessFrames - 10) Fx.Blood(ground, Neck, 2, 0f, 6f);
+                if (stateFrames >= Feel.HeadlessFrames) { Enter(State.Down); Sfx.Play("thud", 0.8f); Fx.Dust(ground); bleed = Feel.BleedFrames; }
                 break;
             case State.Hurt:
                 if (stateFrames >= Feel.Hitstun) Enter(State.Idle);
@@ -490,7 +560,7 @@ public class Fighter : MonoBehaviour
     {
         if (!strikePending) return;
         strikePending = false;
-        if (move == Move.Knee || move == Move.Throw) StrikeHeld();
+        if (move is Move.Knee or Move.Throw or Move.Rip) StrikeHeld();
         else if (move == Move.ThrowProp) { held?.Throw(this); held = null; }
         else Strike();
     }
@@ -505,9 +575,10 @@ public class Fighter : MonoBehaviour
         foreach (var t in Game.Fighters)
             if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand, allRound))
             {
-                if (move == Move.Pound) t.Bury(Damage, facing); // a knockout launches instead
+                if (move == Move.Pound) t.Bury(Damage, facing);
+                else if (move == Move.Kick && team == 0 && t.state == State.Buried) t.Punt(facing, this);
                 else t.TakeHit(Damage, allRound ? (t.ground.x >= ground.x ? 1 : -1) : facing, Launches, Push);
-                if (team == 0 && !t.Alive) { Finish(t); finished = true; }
+                if (team == 0 && !t.Alive) { Finish(t); Gore(t); finished = true; }
                 hit = solidHit = true;
                 landed++;
             }
@@ -537,6 +608,27 @@ public class Fighter : MonoBehaviour
         Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
     }
 
+    // a buried enemy kicked in the face: the head sails off like a football, hitting whoever is in the way
+    public void Punt(int dir, Fighter kicker)
+    {
+        if (!CanBeHit) return;
+        Damaged(health);
+        health = Mathf.Min(health, 0); // no combo scaling saves you from this
+        Decapitate(dir, Feel.PuntSpeed * 1.5f, kicker);
+    }
+
+    // what a killing blow from the hero does to the body
+    void Gore(Fighter t)
+    {
+        if (t.headless || t.state == State.Buried) return; // punted, or hammered through the floor
+        bool heavy = move is Move.Kick or Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick
+            || move == Move.Swing && held != null && held.kind != Prop.Kind.Bottle;
+        if (heavy) { t.Decapitate(facing, Feel.HeadFlySpeed); return; }
+        Fx.Blood(t.ground, t.height + 36f, 20, facing, 3f); // flies off bleeding
+        t.bleed = Feel.BleedFrames;
+        Sfx.Play("splat", 0.7f);
+    }
+
     // the player's last hit on an enemy: long freeze, flash, shake, sent flying far
     void Finish(Fighter t)
     {
@@ -559,7 +651,7 @@ public class Fighter : MonoBehaviour
                 || Mathf.Abs(t.ground.y - ground.y) >= Feel.DepthBand) continue;
             t.Damaged(Damage);
             hit = true;
-            finished |= !t.Alive;
+            if (!t.Alive) { finished = true; t.TearInHalf(facing); }
         }
         if (finished)
         {
@@ -585,8 +677,16 @@ public class Fighter : MonoBehaviour
         }
         grabbed = null;
         g.Enter(State.Hurt); // makes them hittable again
+        if (move == Move.Rip)
+        {
+            g.TakeHit(Feel.ArmRipDamage, facing, true);
+            if (held == null) { held = g.RipArm(facing); held.holder = this; }
+            Game.Freeze(Feel.FinisherHitstop, Feel.FinisherShake);
+            return;
+        }
         bool thrown = move == Move.Throw;
         g.TakeHit(thrown ? Feel.ThrowDamage : Feel.KneeDamage, thrown ? -facing : facing, true);
+        if (team == 0 && !g.Alive && !thrown) g.BurstHead(); // the last headbutt
         Sfx.Play("hit_heavy");
         Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
     }
@@ -628,7 +728,9 @@ public class Fighter : MonoBehaviour
             State.Held => art.Hurt,
             State.Sit => art.Sit,
             State.Hang => hangKick > 0 ? art.JumpKick : art.ElbowRise, // arms up on the lamp, or kicking
-            State.Buried => art.Sinking[Mathf.Min(stateFrames, art.Sinking.Length - 1)], // hammered in over a few frames
+            State.Buried => Sinking[Alive ? Mathf.Min(stateFrames, Art.BuriedFrame) // hammered in
+                : Mathf.Min(Art.BuriedFrame + sinkFrames / 2, Sinking.Length - 1)], // ...and on through the floor
+            State.Headless => art.HeadlessHurt,
             State.Attack => move switch
             {
                 Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
@@ -639,13 +741,13 @@ public class Fighter : MonoBehaviour
                 Move.BicycleKick => striking ? art.Bicycle[stateFrames / 3 % 2] : art.KickWind, // left-right-left
                 Move.ElbowDrop => heightVel > 0f ? art.ElbowRise : art.ElbowDrop, // up with the elbow raised, down flat
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
-                Move.Throw => art.Throw[WindingUp ? 0 : 1],
+                Move.Throw or Move.Rip => art.Throw[WindingUp ? 0 : 1],
                 Move.Special => striking ? art.Kick : art.KickWind,
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : WindingUp && team != 0 ? art.WindUp : art.Idle[0],
             },
             State.Hurt => art.Hurt,
             State.Launched => art.Fall,
-            _ => art.Down, // down, dead
+            _ => halved ? art.HalfStays : headless ? art.HeadlessDown : art.Down, // down, dead
         };
         bool spinning = state == State.Attack && move == Move.Special && striking;
         body.flipX = spinning ? stateFrames / 4 % 2 == 0 : facing < 0; // the kick turns round and round
@@ -656,8 +758,8 @@ public class Fighter : MonoBehaviour
         body.transform.localPosition = new Vector3(jolt + lunge * facing, h, 0f);
         body.transform.localScale = landSquash > 0 ? new Vector3(1.12f, 0.88f, 1f)
             : jumpStretch > 0 ? new Vector3(0.9f, 1.1f, 1f) : Vector3.one;
-        shadow.enabled = state != State.Buried;
-        body.enabled = invulnFrames == 0 || spinning || invulnFrames / 3 % 2 == 0;
+        shadow.enabled = state != State.Buried && !sunk;
+        body.enabled = !sunk && (invulnFrames == 0 || spinning || invulnFrames / 3 % 2 == 0);
         bool telegraph = team != 0 && WindingUp && stateFrames / 3 % 2 == 0; // every enemy blow flashes as it winds up
         bool white = flashFrames > 5; // solid white the moment a blow lands, then red
         body.sharedMaterial = white ? Art.Silhouette : normalMat;

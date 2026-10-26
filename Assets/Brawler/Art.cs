@@ -37,6 +37,8 @@ public static class Art
         public Sprite[] Idle, Walk, Throw, Bicycle, Sinking;
         public Sprite Punch1, Punch2, KickWind, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
         public Sprite ElbowRise, ElbowDrop, Sit;
+        public Sprite Head, HeadlessHurt, HeadlessDown, HalfStays, HalfFlies; // gore, cut from the hurt and down poses
+        public Sprite[] HeadlessSinking;
     }
 
     const int FrameW = 96; // every sheet is a row of 96 px wide frames
@@ -48,7 +50,7 @@ public static class Art
         if (cache.TryGetValue(look, out var f)) return f;
         var (girl, hair, clothes) = Looks[look];
         f = girl ? Girl(hair, clothes) : Punk(look == Hero, hair, clothes);
-        f.Sinking = Sinking(f.Hurt);
+        Gore(f);
         return cache[look] = f;
     }
 
@@ -180,13 +182,49 @@ public static class Art
         return Sprite.Create(tex, new Rect(0, 0, h, w), FeetPivot(tex, h), 1f, 0, SpriteMeshType.FullRect);
     }
 
-    // the hurt pose with its bottom rows cut off, deeper each frame: a body hammered into the ground
+    // gore, all cut out of the existing poses: the head (top HeadRows of the hurt pose), the body without it
+    // (standing and lying), the lying body split in two, and bodies sinking into the floor
+    const int HeadRows = 15;
+    static void Gore(Frames f)
+    {
+        var r = f.Hurt.rect;
+        var tex = f.Hurt.texture;
+        float neck = r.height - EmptyRowsOnTop(f.Hurt) - HeadRows; // rows from the sprite's bottom to the neck
+        float px = f.Hurt.pivot.x / r.width;
+        f.Head = Sprite.Create(tex, new Rect(r.x, r.y + neck, r.width, HeadRows), new Vector2(px, 0.5f), 1f, 0, SpriteMeshType.FullRect);
+        f.HeadlessHurt = Sprite.Create(tex, new Rect(r.x, r.y, r.width, neck), new Vector2(px, f.Hurt.pivot.y / neck), 1f, 0, SpriteMeshType.FullRect);
+        f.HeadlessDown = LyingDown(f.HeadlessHurt);
+
+        var d = f.Down.rect;
+        float half = Mathf.Floor(d.width / 2f), py = f.Down.pivot.y / d.height;
+        f.HalfStays = Sprite.Create(f.Down.texture, new Rect(d.x, d.y, half, d.height), new Vector2(f.Down.pivot.x / half, py), 1f, 0, SpriteMeshType.FullRect);
+        f.HalfFlies = Sprite.Create(f.Down.texture, new Rect(d.x + half, d.y, d.width - half, d.height),
+            new Vector2((f.Down.pivot.x - half) / (d.width - half), py), 1f, 0, SpriteMeshType.FullRect);
+
+        f.Sinking = Sinking(f.Hurt);
+        f.HeadlessSinking = Sinking(f.HeadlessHurt);
+    }
+
+    static int EmptyRowsOnTop(Sprite s)
+    {
+        var r = s.rect;
+        int w = (int)r.width, h = (int)r.height;
+        var px = s.texture.GetPixels((int)r.x, (int)r.y, w, h);
+        for (int y = h - 1; y >= 0; y--)
+            for (int x = 0; x < w; x++)
+                if (px[y * w + x].a > 0) return h - 1 - y;
+        return 0;
+    }
+
+    // the pose with its bottom rows cut off, 3 deeper each frame until nothing is left: a body hammered into
+    // the ground (alive it stops at Feel.BurySink, chest deep; a killing blow sends it all the way through)
+    public static int BuriedFrame => (int)(Feel.BurySink / 3f);
     static Sprite[] Sinking(Sprite hurt)
     {
-        var frames = new Sprite[(int)(Feel.BurySink / 3f) + 1];
         var r = hurt.rect;
-        var pivot = new Vector2(hurt.pivot.x / r.width, 0f);
         float soles = hurt.pivot.y; // empty rows under the feet: the first frame stands exactly on the floor
+        var frames = new Sprite[(int)((r.height - soles - 1f) / 3f) + 1];
+        var pivot = new Vector2(hurt.pivot.x / r.width, 0f);
         for (int i = 0; i < frames.Length; i++)
         {
             float cut = soles + i * 3f;
@@ -261,6 +299,13 @@ public static class Art
     public static Sprite[] Dust => dust ??= new[] { Puff(2, 200), Puff(3, 150), Puff(4, 90) };
     static Sprite Puff(int r, byte a) => Paint(4 * r + 1, 2 * r + 1, (x, y) =>
         (x - 2 * r) * (x - 2 * r) / 4 + (y - r) * (y - r) <= r * r ? C(0xd8c4a4, a) : Clear, new Vector2(0.5f, 0.2f));
+
+    // a torn-off arm to club people with: bloody stump, forearm, fist
+    static Sprite arm;
+    public static Sprite Arm => arm != null ? arm : arm = Paint(24, 5, (x, y) =>
+        x < 3 ? (y == 2 && x == 2 ? C(0xf0e8d0) : C(0x9a1010)) // the stump, a bit of bone
+        : x < 18 ? (y == 0 ? C(0xf0c090) : y == 4 ? C(0xa06838) : C(0xd8a070))
+        : y == 0 || y == 4 ? Clear : C(0xb88050), Center);
 
     // flat-colour sprite material (Resources/Silhouette.shader): white hit flash, afterimages
     static Material silhouette;

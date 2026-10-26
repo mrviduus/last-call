@@ -119,7 +119,27 @@ def ball():
     save("ball", times(sweep(n, 1400, 1100), env(n, 0.0005, 4)))
 
 
+def splat():
+    """Wet gore: a dull low thump under dark gurgling noise that wobbles."""
+    n = int(0.45 * RATE)
+    body = times(sweep(n, 120, 45), env(n, 0.002, 2))
+    wet = times(noise(n, 0.05), env(n, 0.004, 1.5))
+    wobble = [w * (0.6 + 0.4 * math.sin(i / RATE * 2 * math.pi * 23)) for i, w in enumerate(wet)]
+    save("splat", [math.tanh(x * 2.5) for x in mix(scale(body, 0.8), wobble)])
+
+
+def crunch():
+    """Bone snapping: a few sharp bright cracks close together."""
+    n = int(0.25 * RATE)
+    layers = [times(sweep(n, 200, 60), scale(env(n, 0.001, 3), 0.5))]
+    for k in range(4):
+        start = int(k * 0.018 * RATE + rng.randint(0, 200))
+        m = int(0.015 * RATE)
+        layers.append([0.0] * start + scale(times(noise(m, 0.9), env(m, 0.0002, 3)), 1.0 - k * 0.15))
+    save("crunch", mix(*layers))
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for make in (whoosh, hit, hit_heavy, glass, wood, thud, ball):
+    for make in (whoosh, hit, hit_heavy, glass, wood, thud, ball, splat, crunch):
         make()

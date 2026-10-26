@@ -150,6 +150,20 @@ public static class Feel
     public const int RecoverPerHit = 2;           // of the cost won back per enemy hit afterwards
     public const int SpecialLeniency = 3;         // frames J may come before K (or K before J) and still count as together
 
+    // gore
+    public const float NeckHeight = 48f;          // above the feet (a fighter is ~63 px, the head ~15)
+    public const float ShoulderHeight = 42f;
+    public const float HeadFlySpeed = 5f;         // a head knocked off by a killing kick
+    public const float HeadFlyUp = 4f;
+    public const float PuntSpeed = 6f;            // a head (or a ball) kicked along the floor
+    public const float PuntUp = 3f;
+    public const int HeadlessFrames = 60;         // a headless body stands this long, fountaining, before it drops
+    public const int BleedFrames = 180;
+    public const int HeadHits = 2;                // swings with a head before it bursts
+    public const int ArmHits = 3;                 // ...with a torn-off arm
+    public const int RipStartup = 8;
+    public const int ArmRipDamage = 20;
+
     public const int GrabFrames = 120;          // guess, how long a hold lasts
     public const int KneeStartup = 4;             // guess
     public const int KneeRecovery = 10;           // guess

@@ -9,6 +9,7 @@ using UnityEngine.InputSystem;
 // J next to a chair or bottle (nobody in reach) picks it up; then J = swing it, L = throw it.
 // Jump into a pool lamp to hang on: A/D swing, J/L kick, K let go, S+J rip it down.
 // J+K = special: spinning kick all round, costs health you win back by landing hits.
+// Gore: L in a hold rips an arm off (a club); L on someone buried kicks their head off; killing blows maim.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
@@ -67,6 +68,7 @@ public class Player : MonoBehaviour
         {
             if (attackBuffer > 0) { grabHits++; f.Attack(grabHits >= 3 ? Move.Throw : Move.Knee); attackBuffer = 0; }
             else if (jumpBuffer > 0) { f.Attack(Move.Throw); jumpBuffer = 0; }
+            else if (kickBuffer > 0 && !f.grabbed.armless && f.held == null) { f.Attack(Move.Rip); kickBuffer = 0; } // tear an arm off
         }
         else if (f.held != null && attackBuffer > 0 && f.CanAct)
         {

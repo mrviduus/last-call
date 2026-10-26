@@ -11,6 +11,7 @@ public class Enemy : MonoBehaviour
     bool engaging;     // our turn: allowed into the hero's lane to strike
     float laneOffset;  // where we wait: this far in front of or behind the hero's lane
     float ringX;       // ...and this far off the hero (x)
+    int waitSide;      // ...on this side of the hero (-1 left, 1 right; 0 = not picked yet)
     float pace;        // phase of the slow drift while waiting, so the ring never stands still
 
     // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
@@ -60,6 +61,18 @@ public class Enemy : MonoBehaviour
         return n;
     }
 
+    // wait on the less crowded side of the hero, so a crowd surrounds the hero instead of queueing on one side
+    int PickSide(int mine)
+    {
+        int here = 0, there = 0;
+        foreach (var o in Game.Fighters)
+            if (o != f && o.team == f.team && o.Alive && o.state != State.Sit)
+                if ((o.ground.x < Game.Hero.ground.x ? -1 : 1) == mine) here++; else there++;
+        int pick = here > there + 1 ? -mine : mine;
+        float x = Game.Hero.ground.x + pick * ringX;
+        return x < Game.MinX + 10f || x > Game.MaxX - 10f ? -pick : pick; // no room by the wall: the other side
+    }
+
     void Think()
     {
         var p = Game.Hero;
@@ -79,8 +92,9 @@ public class Enemy : MonoBehaviour
         // our turn: into the hero's lane at striking distance (whips stay at whip range);
         // otherwise wait on the ring, off the lane, drifting a little
         float reach = f.whip ? Feel.WhipReach : Feel.PunchReach;
+        if (waitSide == 0 || (Game.Frame + (int)(pace * 40f)) % 60 == 0) waitSide = PickSide(-side);
         float wantX = engaging ? to.x - side * reach * (f.whip ? 0.8f : 0.7f)
-            : to.x - side * (ringX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
+            : to.x + waitSide * (ringX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
         float laneY = p.ground.y + laneOffset;
         if (laneY > Game.MaxDepth || laneY < Game.MinDepth) laneY = p.ground.y - laneOffset; // the floor ends there: other side
         float wantY = engaging ? to.y : laneY - f.ground.y;
