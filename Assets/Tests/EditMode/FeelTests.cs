@@ -237,4 +237,18 @@ public class FeelTests
         Assert.AreEqual(State.Launched, e.state, "even a jab launches on the last hit");
         Assert.AreEqual(Feel.LaunchX * Feel.FinisherLaunch, e.vel.x, 0.01f);
     }
+
+    [Test]
+    public void FlyingKickCrossesTheScreenAndLaunchesEveryoneInThePath()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var near = Game.Spawn(1, Art.GruntA, new Vector2(70f, -70f), 10);
+        var far = Game.Spawn(1, Art.GruntA, new Vector2(170f, -70f), 10);
+        p.Attack(Move.FlyingKick);
+        Run(Feel.FlyingKickStartup + Feel.FlyingKickActive + Feel.FlyingKickRecovery + 2 * Feel.SmashHitstop);
+
+        Assert.Greater(p.ground.x - 40f, Feel.FlyingKickSpeed * Feel.FlyingKickActive * 0.8f);
+        Assert.AreEqual(State.Launched, near.state);
+        Assert.AreEqual(State.Launched, far.state);
+    }
 }

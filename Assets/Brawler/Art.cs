@@ -6,7 +6,7 @@ using UnityEngine;
 public static class Art
 {
     // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
-    public const string Hero = "Punk";           // placeholder until Vasyl (blond, leather jacket) has frames
+    public const string Hero = "Vasyl";          // the punk recoloured: blond hair, leather vest (until his own frames)
     public const string GruntA = "Girl";          // street fighter
     public const string GruntB = "Girl:c8a0ff";   // tougher fighter, violet tint
     public const string Lasher = "Girl:b0ffd8";   // whip fighter, teal tint
@@ -32,7 +32,7 @@ public static class Art
     {
         string name = look.Split(':')[0];
         if (cache.TryGetValue(name, out var f)) return f;
-        f = name == "Girl" ? Girl() : Punk();
+        f = name == "Girl" ? Girl() : Punk(name == "Vasyl");
         f.Sinking = Sinking(f.Hurt);
         f.KickTip = Tip(f.Kick);
         return cache[name] = f;
@@ -57,10 +57,10 @@ public static class Art
     }
 
     // only idle, walk, punch and hurt; the last hurt frame lies on the ground
-    static Frames Punk()
+    static Frames Punk(bool asVasyl)
     {
         var pivot = FeetPivot(Load("Punk/idle"), FrameW);
-        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot);
+        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, asVasyl);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
         return new Frames
         {
@@ -87,13 +87,47 @@ public static class Art
 
     static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);
 
-    static Sprite[] Sheet(string path, Vector2 pivot)
+    static Sprite[] Sheet(string path, Vector2 pivot, bool asVasyl = false)
     {
-        var tex = Load(path);
+        var tex = asVasyl ? RecolorAsVasyl(Load(path)) : Load(path);
         var frames = new Sprite[tex.width / FrameW];
         for (int i = 0; i < frames.Length; i++)
             frames[i] = Sprite.Create(tex, new Rect(i * FrameW, 0, FrameW, tex.height), pivot, 1f, 0, SpriteMeshType.FullRect);
         return frames;
+    }
+
+    // the punk's reds, by where they are: hair at the top of the body, vest below it
+    static readonly Dictionary<int, Color32> BlondHair = new Dictionary<int, Color32>
+    {
+        [0xce2038] = C(0xf0d070), [0xed4924] = C(0xfff0a0), [0x8a0b41] = C(0xb08830),
+    };
+    static readonly Dictionary<int, Color32> LeatherVest = new Dictionary<int, Color32>
+    {
+        [0xce2038] = C(0x4a3a32), [0xed4924] = C(0x6a5248), [0x8a0b41] = C(0x2a201c),
+    };
+    const int HairRows = 10; // rows from the top of each frame's body that are hair
+
+    static Texture2D RecolorAsVasyl(Texture2D src)
+    {
+        var px = src.GetPixels32();
+        for (int f = 0; f < src.width / FrameW; f++)
+        {
+            int top = -1; // highest opaque row of this frame (rows count up from the bottom)
+            for (int y = src.height - 1; y >= 0 && top < 0; y--)
+                for (int x = f * FrameW; x < (f + 1) * FrameW; x++)
+                    if (px[y * src.width + x].a > 0) { top = y; break; }
+            for (int y = 0; y < src.height; y++)
+                for (int x = f * FrameW; x < (f + 1) * FrameW; x++)
+                {
+                    ref var c = ref px[y * src.width + x];
+                    var map = y > top - HairRows ? BlondHair : LeatherVest;
+                    if (c.a > 0 && map.TryGetValue(c.r << 16 | c.g << 8 | c.b, out var to)) c = to;
+                }
+        }
+        var tex = new Texture2D(src.width, src.height) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        tex.SetPixels32(px);
+        tex.Apply();
+        return tex;
     }
 
     // pivot under the feet: lowest opaque row, centred on the body (first frame of the sheet)

@@ -250,6 +250,12 @@ public class Game : MonoBehaviour
         // HUD sized in game pixels, so it scales with the picture
         hud ??= new GUIStyle(GUI.skin.label) { fontStyle = FontStyle.Bold };
         hud.fontSize = 8 * scale;
+        if (Event.current.type == EventType.Repaint) // dark strip so the text reads over any background
+        {
+            GUI.color = new Color(0f, 0f, 0f, 0.55f);
+            GUI.DrawTexture(new Rect(view.x, view.y, view.width, 20 * scale), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+        }
         Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}    STAGE {stage}-{stageWave}");
         if (bannerFrames > 0)
             Text(view.x + 60 * scale, view.y + 80 * scale, scale, stage == 1 ? "STAGE 1   THE STREET" : "STAGE 2   NEON ROOFTOP");

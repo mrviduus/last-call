@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 #endif
 
-// WASD move, K / Space jump, J punch, L kick. Third punch of a quick combo = high kick.
+// WASD move, K / Space jump, J punch, L kick. Third punch of a quick combo = high kick. S + L = hammer stomp.
 // J in the air = jump kick. Walk into a stunned enemy to grab: J = headbutt (third one throws), K = throw.
-// Double-tap left/right = run; J or L while running = spin kick.
+// Double-tap left/right = run; while running J = flying kick, L = tornado kick.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
@@ -58,10 +58,15 @@ public class Player : MonoBehaviour
             f.JumpKick();
             attackBuffer = 0;
         }
-        else if (f.state == State.Run && (attackBuffer > 0 || kickBuffer > 0))
+        else if (f.state == State.Run && attackBuffer > 0)
         {
-            f.Attack(Move.SpinKick);
-            attackBuffer = kickBuffer = 0;
+            f.Attack(Move.FlyingKick); // run + punch: long flying kick
+            attackBuffer = 0;
+        }
+        else if (f.state == State.Run && kickBuffer > 0)
+        {
+            f.Attack(Move.SpinKick); // run + kick: tornado kick
+            kickBuffer = 0;
         }
         else if (runRequested != 0 && f.CanAct)
         {
@@ -73,10 +78,10 @@ public class Player : MonoBehaviour
             f.Attack(Move.KneeDrop); // enemy lying in front: drop a knee on them
             attackBuffer = 0;
         }
-        else if (attackBuffer > 0 && f.CanAct && f.moveInput.y < 0f)
+        else if (kickBuffer > 0 && f.CanAct && f.moveInput.y < 0f)
         {
-            f.Attack(Move.Pound); // down + punch = hammer stomp
-            attackBuffer = 0;
+            f.Attack(Move.Pound); // down + kick = hammer stomp
+            kickBuffer = 0;
         }
         else if (attackBuffer > 0 && f.CanAct)
         {

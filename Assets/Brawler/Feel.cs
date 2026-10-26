@@ -6,6 +6,12 @@ public static class Feel
     public const float WalkDepth = 1.4f;            // guess
     public const float RunX = 4.5f;                 // guess
     public const int DoubleTapFrames = 15;        // guess, max gap between the two taps that start a run
+    public const int FlyingKickStartup = 4;       // guess, crouch before take-off
+    public const int FlyingKickActive = 24;       // guess, frames of flight
+    public const int FlyingKickRecovery = 12;     // guess, drop and slide after
+    public const float FlyingKickReach = 40f;     // guess, contact range ahead while flying
+    public const float FlyingKickSpeed = 7f;      // guess, px/frame straight across the screen
+    public const float FlyingKickHeight = 18f;    // guess, flies just above the ground
     public const int SpinKickStartup = 4;         // guess, crouch before the hop
     public const int SpinKickActive = 30;         // guess, frames of spinning
     public const int SpinKickRecovery = 12;       // guess, landing
