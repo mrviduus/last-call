@@ -422,4 +422,40 @@ public class FeelTests
         Run(Feel.FinisherHitstop);
         Assert.IsTrue(e.state == State.Down || e.state == State.Dead, "stays down for good");
     }
+
+    [Test]
+    public void PatronsSitUntilTheFightStartsThenGetUp()
+    {
+        Game.Hero = Game.Spawn(0, Art.Hero, new Vector2(300f, -70f), 10);
+        var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(100f, -70f));
+        var patron = Game.Seat(Art.GruntA, chair, 1, 3);
+        Assert.IsNull(Game.Hero.PropInReach(), "nothing nearby");
+        Run(200);
+        Assert.AreEqual(State.Sit, patron.state);
+        Assert.IsFalse(chair.Pickable, "someone is sitting on it");
+
+        Game.Brawl = true;
+        Run(160);
+        Assert.AreNotEqual(State.Sit, patron.state);
+        Assert.IsTrue(chair.Pickable, "free once they stand up");
+    }
+
+    [Test]
+    public void RecolouredLooksKeepTheirSkin()
+    {
+        // the same frame in two looks: clothes and hair differ, skin pixels stay identical
+        var a = Art.For(Art.GruntA).Idle[0];
+        var b = Art.For(Art.GruntB).Idle[0];
+        var pa = a.texture.GetPixels32();
+        var pb = b.texture.GetPixels32();
+        int skin = 0, changed = 0;
+        for (int i = 0; i < pa.Length; i++)
+        {
+            bool isSkin = pa[i].r == 0xff && pa[i].g == 0xb1 && pa[i].b == 0x64;
+            if (isSkin) { skin++; Assert.AreEqual(pa[i], pb[i]); }
+            else if (!pa[i].Equals(pb[i])) changed++;
+        }
+        Assert.Greater(skin, 0);
+        Assert.Greater(changed, 0, "outfit recoloured");
+    }
 }

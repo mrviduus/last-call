@@ -46,6 +46,7 @@ public class Player : MonoBehaviour
         if (attackPressed) attackBuffer = Feel.InputBuffer;
         if (jumpPressed) jumpBuffer = Feel.InputBuffer;
         if (kickPressed) kickBuffer = Feel.InputBuffer;
+        if (attackPressed || kickPressed) Game.Brawl = true; // the first swing starts the bar fight
         attackPressed = jumpPressed = kickPressed = false;
 
         if (f.state == State.Grab)

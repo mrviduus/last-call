@@ -13,13 +13,14 @@ public class Prop : MonoBehaviour
     public Fighter holder, thrower; // thrower: who threw it, or who sent a tipped table sliding
     public int hitsLeft;
     public bool resting;            // standing on a table or the counter, at its height
+    public Fighter seatedBy;        // a chair with a patron on it
     public bool flipped;            // a table knocked onto its side
     public bool mirrored;           // drawn facing left (a chair turned towards its table)
 
     SpriteRenderer sr, shadow;
 
     public bool Free => holder == null && thrower == null;
-    public bool Pickable => Free && kind != Kind.Table;
+    public bool Pickable => Free && kind != Kind.Table && (seatedBy == null || seatedBy.state != State.Sit);
     public float Reach => kind == Kind.Bottle ? Feel.BottleReach : Feel.ChairReach;
     public int Damage => kind == Kind.Bottle ? 2 : 3;
 

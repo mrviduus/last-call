@@ -15,6 +15,7 @@ public class Game : MonoBehaviour
     public static int Frame;    // every fixed tick
     public static int SimFrame; // ticks that actually simulated (hitstop excluded)
     public static bool RestartRequested;
+    public static bool Brawl; // the hero has thrown the first punch: patrons get up, waves come in
     public static bool ShowHelp; // H held
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames, flashFrames;
@@ -40,6 +41,7 @@ public class Game : MonoBehaviour
         Hero = null;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = 0;
         RestartRequested = false;
+        Brawl = false;
     }
 
     public static void Freeze(int frames, int shake)
@@ -177,15 +179,28 @@ public class Game : MonoBehaviour
         foreach (float x in new[] { 425f, 612f, 795f })
             SpawnProp(Prop.Kind.Bottle, new Vector2(x, CounterEdge), CounterTop);
 
+        // a couple at each table: a guy on the left chair, a girl on the right, facing each other
         var tables = new (float x, float depth, int bottles)[] { (170f, -45f, 1), (460f, -82f, 2), (700f, -40f, 1), (1000f, -78f, 2) };
-        foreach (var (x, depth, bottles) in tables)
+        for (int t = 0; t < tables.Length; t++)
         {
+            var (x, depth, bottles) = tables[t];
             SpawnProp(Prop.Kind.Table, new Vector2(x, depth));
-            SpawnProp(Prop.Kind.Chair, new Vector2(x - 28f, depth));
-            SpawnProp(Prop.Kind.Chair, new Vector2(x + 28f, depth), faceLeft: true);
+            var left = SpawnProp(Prop.Kind.Chair, new Vector2(x - 28f, depth));
+            var right = SpawnProp(Prop.Kind.Chair, new Vector2(x + 28f, depth), faceLeft: true);
             for (int i = 0; i < bottles; i++)
                 SpawnProp(Prop.Kind.Bottle, new Vector2(x - 4f + i * 9f, depth), TableTop);
+            Seat(t % 2 == 0 ? Art.Guy : Art.GuyDenim, left, 1, 4);
+            Seat(t % 2 == 0 ? Art.GruntA : Art.GruntB, right, -1, 3);
         }
+    }
+
+    public static Fighter Seat(string look, Prop chair, int faceDir, int hp)
+    {
+        var f = Spawn(1, look, chair.ground, hp);
+        f.Sit(faceDir);
+        chair.seatedBy = f;
+        f.gameObject.AddComponent<Enemy>().Setup(wakeDelay: Random.Range(20, 140));
+        return f;
     }
 
     void Restart()
@@ -217,15 +232,14 @@ public class Game : MonoBehaviour
         bool door = Mathf.Abs(Hero.ground.x - Door) > Mathf.Abs(Hero.ground.x - StageEnd);
         var pos = new Vector2(door ? Door : StageEnd, door ? MaxDepth - 4f : Random.Range(MinDepth, MaxDepth));
 
-        // every other enemy is a whip fighter; others: quick and fragile, or slow and tough
-        bool lasher = toSpawn % 2 == 1;
-        bool bruiser = !lasher && Random.value < 0.35f;
+        // guys and girls take turns; every third one is a whip fighter
+        bool lasher = toSpawn % 3 == 0, guy = !lasher && toSpawn % 2 == 0;
         var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
-            : bruiser ? Spawn(1, Art.GruntB, pos, 5)
-            : Spawn(1, Art.GruntA, pos, 3);
+            : guy ? Spawn(1, Random.value < 0.5f ? Art.Guy : Art.GuyDenim, pos, 4)
+            : Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, 3);
         e.whip = lasher;
-        e.gameObject.AddComponent<Enemy>();
-        if (bruiser) e.walkX = Feel.EnemyWalkX * 0.7f;
+        e.gameObject.AddComponent<Enemy>().Setup();
+        if (guy) e.walkX = Feel.EnemyWalkX * 0.85f; // heavier, a bit slower
     }
 
     void FixedUpdate()
@@ -242,7 +256,7 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (Brawl && Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0)) SpawnWave();
         if (toSpawn > 0 && --spawnDelay <= 0)
         {
             SpawnNext();

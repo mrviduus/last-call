@@ -1,19 +1,23 @@
 using UnityEngine;
 
 // Walks into the hero's lane, stops at punching distance, punches on a cooldown.
+// Patrons sit at their table until the hero starts the fight.
 [RequireComponent(typeof(Fighter))]
 public class Enemy : MonoBehaviour
 {
     Fighter f;
-    int cooldown;
+    int cooldown, wakeDelay;
 
-    void Awake()
+    // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
+    // wakeDelay: frames a seated patron waits after the fight starts before getting up
+    public void Setup(int wakeDelay = 0)
     {
         f = GetComponent<Fighter>();
         f.Think = Think;
         f.walkX = Feel.EnemyWalkX;
         f.walkDepth = Feel.EnemyWalkX * 0.7f;
         cooldown = Random.Range(30, 90);
+        this.wakeDelay = wakeDelay;
     }
 
     // a standing table right in the way of where we're walking
@@ -43,6 +47,11 @@ public class Enemy : MonoBehaviour
     {
         var p = Game.Hero;
         f.moveInput = Vector2.zero;
+        if (f.state == State.Sit)
+        {
+            if (Game.Brawl && --wakeDelay <= 0) f.StandUp(); // one by one, the bar joins the fight
+            return;
+        }
         if (cooldown > 0) cooldown--;
         if (p == null || !p.Alive || !f.CanAct) return;
 

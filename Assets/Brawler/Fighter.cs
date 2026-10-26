@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried }
+public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit }
 public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
@@ -28,7 +28,6 @@ public class Fighter : MonoBehaviour
     bool bounced, strikePending, punchAlt, airKick;
     SpriteRenderer body, shadow, whipLine;
     Art.Frames art;
-    Color tint = Color.white;
 
     int Startup => move switch
     {
@@ -74,7 +73,7 @@ public class Fighter : MonoBehaviour
 
     public bool CanAct => state == State.Idle || state == State.Walk || state == State.Run;
     public bool Alive => health > 0;
-    public bool Solid => Alive && height <= 0f && state != State.Launched && state != State.Down;
+    public bool Solid => Alive && height <= 0f && state != State.Launched && state != State.Down && state != State.Sit;
     public bool CanBeHit => Alive && invulnFrames == 0
         && state != State.Launched && state != State.Down && state != State.GetUp;
 
@@ -84,7 +83,6 @@ public class Fighter : MonoBehaviour
         ground = start;
         health = maxHealth;
         art = Art.For(look);
-        tint = Art.Tint(look);
         shadow = MakeSprite("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000; // under every body
         body = MakeSprite("Body", art.Idle[0]);
@@ -129,6 +127,19 @@ public class Fighter : MonoBehaviour
         if (!CanAct || held != null) return; // no running with a chair in your hands
         facing = dir;
         Enter(State.Run);
+    }
+
+    // a patron sitting at a table, facing it, until the bar fight starts
+    public void Sit(int faceDir)
+    {
+        facing = faceDir;
+        vel = Vector2.zero;
+        Enter(State.Sit);
+    }
+
+    public void StandUp()
+    {
+        if (state == State.Sit) Enter(State.Idle);
     }
 
     public void Jump()
@@ -285,6 +296,9 @@ public class Fighter : MonoBehaviour
                 break;
             case State.Held:
                 vel = Vector2.zero; // the holder positions us
+                break;
+            case State.Sit:
+                vel = Vector2.zero;
                 break;
             case State.Buried:
                 vel = Vector2.zero;
@@ -464,6 +478,7 @@ public class Fighter : MonoBehaviour
             State.GetUp => art.GetUp,
             State.Grab => art.Punch1,
             State.Held => art.Hurt,
+            State.Sit => art.Sit,
             State.Buried => art.Sinking[Mathf.Min(stateFrames, art.Sinking.Length - 1)], // hammered in over a few frames
             State.Attack => move switch
             {
@@ -489,7 +504,7 @@ public class Fighter : MonoBehaviour
         bool telegraph = move == Move.Whip && WindingUp && stateFrames / 3 % 2 == 0;
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
-            : Alive ? tint : tint * new Color(0.6f, 0.6f, 0.6f);
+            : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
 
         whipLine.enabled = move == Move.Whip && striking;
         whipLine.transform.localScale = new Vector3(facing * 1.8f, 1f, 1f);
@@ -497,7 +512,7 @@ public class Fighter : MonoBehaviour
 
         // nearer to the camera (lower depth) draws on top; shadows under everything
         int order = -Mathf.RoundToInt(ground.y) * 2;
-        body.sortingOrder = order;
+        body.sortingOrder = state == State.Sit ? order + 1 : order; // in front of the chair
         whipLine.sortingOrder = order + 1;
     }
 }

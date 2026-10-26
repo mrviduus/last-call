@@ -5,6 +5,7 @@ Until Vasyl has a full hand-drawn set, his body is the placeholder fighter (Reso
 recoloured blond with a leather vest. This script keeps that upper body and paints new legs for each pose:
   kick.png: 0 knee up (wind-up), 1 straight kick, 2 high kick (second leg of the bicycle), 3 jump kick;
   elbow.png: 0 rising with the elbow raised, 1 falling flat elbow-first (the wrestling elbow drop).
+Also Punk/sit.png and Girl/sit.png: patrons sitting at the tables (in the sheets' own colours and facing).
 """
 import os
 from PIL import Image, ImageOps
@@ -112,14 +113,47 @@ def elbow_drop(base):
     return arm(im, [(58, FEET_ROW - 12), (54, FEET_ROW - 3), (49, FEET_ROW - 6)])
 
 
-def save_sheet(name, frames):
+def save_sheet(name, frames, folder="Vasyl"):
     sheet = Image.new("RGBA", (FW * len(frames), FH))
     for i, f in enumerate(frames):
         sheet.paste(f, (i * FW, 0), f)
-    out = os.path.join(ROOT, "Vasyl")
+    out = os.path.join(ROOT, folder)
     os.makedirs(out, exist_ok=True)
     sheet.save(os.path.join(out, name + ".png"))
-    print("wrote Vasyl/%s.png" % name, sheet.size)
+    print("wrote %s/%s.png" % (folder, name), sheet.size)
+
+
+def sitting(idle, thigh, thigh_light, shin, boot_color):
+    """Seated on a chair, facing right: the upper body lowered to seat height, thigh forward, shin down.
+    Kept in the source sheet's own colours, so the game's recolours apply to it like to any other frame."""
+    left, top, right, bottom = idle.getbbox()
+    hip_row = top + int((bottom - top) * 0.56)
+    hip_x = (left + right) // 2
+    drop = 8                                              # seat is lower than standing hips
+    im = Image.new("RGBA", (FW, FH))
+    upper = idle.crop((0, 0, FW, hip_row))
+    im.paste(upper, (0, drop), upper)
+    px = im.load()
+    before = {(x, y) for y in range(FH) for x in range(FW) if px[x, y][3]}
+    hy = hip_row + drop
+    knee = (hip_x + 13, hy)
+    limb(px, (hip_x - 3, hy), knee, 3, thigh)             # thigh along the seat
+    limb(px, (hip_x - 3, hy - 2), (knee[0], hy - 2), 0, thigh_light)
+    limb(px, knee, (knee[0], FEET_ROW - 3), 2, shin)      # shin down to the floor
+    for y in range(FEET_ROW - 4, FEET_ROW + 1):
+        for x in range(knee[0] - 2, knee[0] + 5):
+            px[x, y] = boot_color + (255,)
+    outline(im, {(x, y) for y in range(FH) for x in range(FW) if px[x, y][3]} - before)
+    return im
+
+
+def sit_frames():
+    """Patrons sitting at the tables: one frame each for the male (Punk) and female (Girl) sheets."""
+    punk = ImageOps.mirror(Image.open(os.path.join(ROOT, "Punk", "idle.png")).convert("RGBA").crop((0, 0, FW, FH)))
+    punk_sit = sitting(punk, JEANS, JEANS_LIGHT, JEANS, BOOT_DARK)
+    save_sheet("sit", [ImageOps.mirror(punk_sit)], "Punk")      # punk sheets face left, like the rest of his
+    girl = Image.open(os.path.join(ROOT, "Girl", "idle.png")).convert("RGBA").crop((0, 0, FW, FH))
+    save_sheet("sit", [sitting(girl, SKIN, SKIN_LIGHT, SKIN, (0x58, 0x2d, 0x39))], "Girl")
 
 
 def main():
@@ -131,6 +165,7 @@ def main():
         pose(base, [[HIP, (66, 40), (82, 40)]]),        # jump kick (the standing leg stays tucked under)
     ])
     save_sheet("elbow", [elbow_rise(base), elbow_drop(base)])
+    sit_frames()
 
 
 if __name__ == "__main__":

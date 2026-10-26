@@ -1,27 +1,37 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Fighters: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt). Variants are tinted copies.
-// The bar is PNGs from Tools/make_bar_art.py; Vasyl's own frames from Tools/make_vasyl_frames.py; the whip is drawn in code. 1 texel = 1 screen pixel.
+// Fighters: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt), recoloured per look (hair and clothes only).
+// The bar is PNGs from Tools/make_bar_art.py; Vasyl's frames and the sitting frames from Tools/make_vasyl_frames.py;
+// the whip is drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
-    // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
-    public const string Hero = "Vasyl";          // the punk recoloured: blond hair, leather vest (until his own frames)
-    public const string GruntA = "Girl";          // street fighter
-    public const string GruntB = "Girl:c8a0ff";   // tougher fighter, violet tint
-    public const string Lasher = "Girl:b0ffd8";   // whip fighter, teal tint
+    public const string Hero = "Vasyl";          // blond, leather vest
+    public const string Guy = "Punk";            // red mohawk, red vest
+    public const string GuyDenim = "PunkDenim";  // black hair, denim vest
+    public const string GruntA = "Girl";         // red outfit
+    public const string GruntB = "GirlBlue";     // brown hair, blue outfit
+    public const string Lasher = "GirlBlack";    // purple hair, black leather: the whip fighter
 
-    public static Color Tint(string look)
-    {
-        int i = look.IndexOf(':');
-        return i >= 0 && ColorUtility.TryParseHtmlString("#" + look.Substring(i + 1), out var c) ? c : Color.white;
-    }
+    // a look = which sheet (girl or the male punk) + new colours for its three reds, which both sheets use for
+    // hair (top of the body) and clothes (below); null keeps the original. Skin and boots are never touched.
+    static readonly Dictionary<string, (bool girl, uint[] hair, uint[] clothes)> Looks =
+        new Dictionary<string, (bool, uint[], uint[])>
+        {
+            ["Vasyl"] = (false, new[] { 0xf0d070u, 0xfff0a0u, 0xb08830u }, new[] { 0x4a3a32u, 0x6a5248u, 0x2a201cu }),
+            ["Punk"] = (false, null, null),
+            ["PunkDenim"] = (false, new[] { 0x2a2a2eu, 0x4a4a52u, 0x16161au }, new[] { 0x3a5a8au, 0x5a7aaau, 0x2a3a5au }),
+            ["Girl"] = (true, null, null),
+            ["GirlBlue"] = (true, new[] { 0x5a3a2au, 0x7a5038u, 0x3a2418u }, new[] { 0x2a5ab0u, 0x4a8ae0u, 0x1a3470u }),
+            ["GirlBlack"] = (true, new[] { 0x8a3ab0u, 0xb05ae0u, 0x5a1a7au }, new[] { 0x2a2a34u, 0x4a4a58u, 0x16161cu }),
+        };
+    static readonly int[] SourceReds = { 0xce2038, 0xed4924, 0x8a0b41 }; // red, light red, dark red
 
     public class Frames
     {
         public Sprite[] Idle, Walk, Throw, Bicycle, Sinking;
         public Sprite Punch1, Punch2, KickWind, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
-        public Sprite ElbowRise, ElbowDrop;
+        public Sprite ElbowRise, ElbowDrop, Sit;
     }
 
     const int FrameW = 96; // every sheet is a row of 96 px wide frames
@@ -30,18 +40,18 @@ public static class Art
 
     public static Frames For(string look)
     {
-        string name = look.Split(':')[0];
-        if (cache.TryGetValue(name, out var f)) return f;
-        f = name == "Girl" ? Girl() : Punk(name == "Vasyl");
+        if (cache.TryGetValue(look, out var f)) return f;
+        var (girl, hair, clothes) = Looks[look];
+        f = girl ? Girl(hair, clothes) : Punk(look == Hero, hair, clothes);
         f.Sinking = Sinking(f.Hurt);
-        return cache[name] = f;
+        return cache[look] = f;
     }
 
     // full move set
-    static Frames Girl()
+    static Frames Girl(uint[] hair, uint[] clothes)
     {
         var pivot = FeetPivot(Load("Girl/idle"), FrameW);
-        Sprite[] S(string sheet) => Sheet("Girl/" + sheet, pivot);
+        Sprite[] S(string sheet) => Sheet("Girl/" + sheet, pivot, hair, clothes, hairRows: 12);
         var jab = S("jab"); var punch = S("punch"); var kick = S("kick"); var jump = S("jump");
         var jumpKick = S("jump_kick"); var dive = S("dive_kick"); var hurt = S("hurt");
         return new Frames
@@ -52,17 +62,17 @@ public static class Art
             GetUp = jump[0], Crouch = jump[0], Air = jump[2],
             WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
             Bicycle = new[] { kick[3], jumpKick[2] },
-            ElbowRise = jump[1], ElbowDrop = hurt[1],
+            ElbowRise = jump[1], ElbowDrop = hurt[1], Sit = S("sit")[0],
         };
     }
 
     // only idle, walk, punch and hurt; the last hurt frame lies on the ground
     // the punk's sheets face left (he was drawn as an enemy); mirrored so every character faces right
-    static Frames Punk(bool asVasyl)
+    static Frames Punk(bool asVasyl, uint[] hair, uint[] clothes)
     {
         var raw = FeetPivot(Load("Punk/idle"), FrameW);
         var pivot = new Vector2(1f - raw.x, raw.y); // the sheets are mirrored below
-        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, asVasyl, mirror: true);
+        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, hair, clothes, hairRows: 10, mirror: true);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
         // Vasyl has his own frames (Tools/make_vasyl_frames.py): knee up, kick, high kick, jump kick; elbow drop
         var kick = asVasyl ? Sheet("Vasyl/kick", pivot) : new[] { punch[1], punch[2], punch[2], punch[2] };
@@ -75,15 +85,16 @@ public static class Art
             GetUp = idle[0], Crouch = idle[0], Air = idle[0],
             WindUp = punch[1], Headbutt = punch[2], Throw = new[] { punch[1], punch[2] },
             Bicycle = new[] { kick[1], kick[2] },
-            ElbowRise = elbow[0], ElbowDrop = elbow[1],
+            ElbowRise = elbow[0], ElbowDrop = elbow[1], Sit = S("sit")[0],
         };
     }
 
     static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);
 
-    static Sprite[] Sheet(string path, Vector2 pivot, bool asVasyl = false, bool mirror = false)
+    static Sprite[] Sheet(string path, Vector2 pivot, uint[] hair = null, uint[] clothes = null, int hairRows = 0, bool mirror = false)
     {
-        var tex = asVasyl ? RecolorAsVasyl(Load(path)) : Load(path);
+        var tex = Load(path);
+        if (hair != null) tex = Recolor(tex, hair, clothes, hairRows);
         if (mirror) tex = Mirror(tex);
         var frames = new Sprite[tex.width / FrameW];
         for (int i = 0; i < frames.Length; i++)
@@ -91,18 +102,8 @@ public static class Art
         return frames;
     }
 
-    // the punk's reds, by where they are: hair at the top of the body, vest below it
-    static readonly Dictionary<int, Color32> BlondHair = new Dictionary<int, Color32>
-    {
-        [0xce2038] = C(0xf0d070), [0xed4924] = C(0xfff0a0), [0x8a0b41] = C(0xb08830),
-    };
-    static readonly Dictionary<int, Color32> LeatherVest = new Dictionary<int, Color32>
-    {
-        [0xce2038] = C(0x4a3a32), [0xed4924] = C(0x6a5248), [0x8a0b41] = C(0x2a201c),
-    };
-    const int HairRows = 10; // rows from the top of each frame's body that are hair
-
-    static Texture2D RecolorAsVasyl(Texture2D src)
+    // the sheets use the same reds for hair and clothes: split by height, hair being the top rows of each frame's body
+    static Texture2D Recolor(Texture2D src, uint[] hair, uint[] clothes, int hairRows)
     {
         var px = src.GetPixels32();
         for (int f = 0; f < src.width / FrameW; f++)
@@ -115,8 +116,8 @@ public static class Art
                 for (int x = f * FrameW; x < (f + 1) * FrameW; x++)
                 {
                     ref var c = ref px[y * src.width + x];
-                    var map = y > top - HairRows ? BlondHair : LeatherVest;
-                    if (c.a > 0 && map.TryGetValue(c.r << 16 | c.g << 8 | c.b, out var to)) c = to;
+                    int i = c.a > 0 ? System.Array.IndexOf(SourceReds, c.r << 16 | c.g << 8 | c.b) : -1;
+                    if (i >= 0) c = C((y > top - hairRows ? hair : clothes)[i]);
                 }
         }
         var tex = new Texture2D(src.width, src.height) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
