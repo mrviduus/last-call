@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Fighters and the street: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt). Variants are tinted copies.
-// Rooftop stage, whip and giant boot are drawn in code. 1 texel = 1 screen pixel.
+// Space bar stage, chair, bottle, whip and giant boot are drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
     // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
@@ -201,7 +201,7 @@ public static class Art
     static Color32 Mix(uint a, uint b, float t) => Color32.Lerp(C(a), C(b), t);
     static bool Speckle(int x, int y) => ((x * 73856093) ^ (y * 19349663)) % 7 == 0;
 
-    static Sprite streetScene, shadow, whip, nightSky, skyline, roof, neon, tank;
+    static Sprite streetScene, shadow, whip, spaceBar, chair, bottle;
 
     static Sprite bigBoot;
 
@@ -228,40 +228,57 @@ public static class Art
     public static Sprite Whip => whip != null ? whip : whip = Paint(44, 3, (x, y) =>
         x >= 40 ? C(0xe0c080) : y == 1 ? C(0x6a3a1c) : Clear, new Vector2(0f, 0.5f));
 
-    public static Sprite NightSky => nightSky != null ? nightSky : nightSky = Paint(32, 144, (x, y) =>
-        y < 100 && Speckle(x * 3 + 1, y * 5) && Speckle(x + 7, y) ? C(0xe8e8ff) : Mix(0x0c0c24, 0x3a1a4a, y / 143f), Center);
-
-    // distant buildings with a few lit windows; transparent sky above them
-    public static Sprite Skyline => skyline != null ? skyline : skyline = Paint(128, 72, (x, y) =>
+    // space bar, our own design: window onto space with a planet, neon, a shelf of glowing bottles,
+    // the counter, then a metal floor (the walkable area starts at row 112). Tiles horizontally.
+    public static Sprite SpaceBar => spaceBar != null ? spaceBar : spaceBar = Paint(256, 240, (x, y) =>
     {
-        int height = 24 + x / 16 * 37 % 5 * 9;
-        if (72 - y > height) return Clear;
-        if (x % 16 == 0) return C(0x120e26);
-        return x % 4 == 2 && y % 6 == 3 && (x * 7 + y * 3) % 5 == 0 ? C(0xf0d070) : C(0x1c1636);
+        if (y >= 8 && y < 64 && x >= 24 && x < 232)
+        {
+            if (y == 8 || y == 63 || x == 24 || x == 231 || x == 128) return C(0x5a6078); // window frame
+            float dx = x - 190, dy = y - 70;
+            if (dx * dx + dy * dy < 46 * 46) return Mix(0x2a8c8c, 0x0c3a4a, (y - 24) / 46f); // planet
+            if (Speckle(x * 5, y * 3) && Speckle(x, y * 7)) return C(0xe8f0ff);             // stars
+            return Mix(0x050514, 0x14102e, y / 64f);
+        }
+        if (y < 70)
+        {
+            if (x % 32 == 0 || y % 34 == 0) return C(0x10121c);                // wall panel seams
+            return x % 32 == 2 && y % 17 == 3 ? C(0x3a3e52) : C(0x1c2030);     // rivets
+        }
+        if (y < 72) return x % 6 < 4 ? C(0xff4fd0) : C(0x401436);              // neon tube
+        if (y < 92)
+        {
+            if (y == 91) return C(0x6a6e84);                                   // shelf
+            int b = x / 9, bx = x % 9, top = 76 + b * 7 % 5;                   // bottles of different heights
+            if (bx >= 2 && bx <= 6 && y >= top && (y >= top + 3 || bx == 4))
+            {
+                uint[] glass = { 0x3ae0a0, 0xe0a03a, 0xa03ae0, 0x3aa0e0 };
+                return C(glass[b % 4]);
+            }
+            return C(0x181a28);
+        }
+        if (y < 96) return C(0xb0b4c8);                                         // counter top
+        if (y < 108) return y == 104 ? C(0x3ae0ff) : C(0x2a2e44);              // counter front, cyan strip
+        if (y < 112) return C(0x0c0e16);                                        // shadow under the counter
+        if (y % 16 == 0 || (x + y / 16 * 8) % 48 == 0) return C(0x2a2c3c);     // floor plates
+        return Speckle(x, y) ? C(0x40445a) : C(0x363a4e);
     }, Center);
 
-    // concrete ledge at the far edge, then tar and gravel
-    public static Sprite Roof => roof != null ? roof : roof = Paint(32, 132, (x, y) =>
+    // bar stool: red cushions, metal legs and footrest; pivot at the feet
+    public static Sprite Chair => chair != null ? chair : chair = Paint(20, 28, (x, y) =>
     {
-        if (y < 2) return C(0x9a9aa8);
-        if (y < 6) return C(0x6a6a78);
-        if (y < 8) return C(0x24202a);
-        if (x == 31) return C(0x2e2a34);
-        return Speckle(x, y) ? C(0x4a4652) : C(0x3a3640);
-    }, Center);
+        if (y < 4) return x >= 3 && x <= 16 ? C(0xc0303a) : Clear;               // backrest cushion
+        if (y < 12) return x == 3 || x == 16 ? C(0x8a8ea4) : Clear;              // backrest posts
+        if (y < 15) return C(0xc0303a);                                          // seat
+        if (y == 15) return C(0x7a1c24);
+        if (y == 22 && x >= 2 && x <= 17) return C(0x6a6e84);                    // footrest
+        return x == 2 || x == 3 || x == 16 || x == 17 ? C(0x8a8ea4) : Clear;    // legs
+    }, new Vector2(0.5f, 0f));
 
-    public static Sprite Neon => neon != null ? neon : neon = Paint(56, 22, (x, y) =>
+    // green glass bottle; pivot at the bottom
+    public static Sprite Bottle => bottle != null ? bottle : bottle = Paint(6, 16, (x, y) =>
     {
-        bool frame = x == 3 || x == 52 || y == 3 || y == 18;
-        bool squiggle = x > 6 && x < 50 && y >= 8 && y <= 13 && x % 8 < 4 && (y == 8 || y == 13 || x % 8 == 0);
-        if ((frame && x >= 3 && x <= 52 && y >= 3 && y <= 18) || squiggle) return C(0xff4fd0);
-        return x < 2 || x > 53 || y < 2 || y > 19 ? C(0x101018) : C(0x1a1424);
-    }, Center);
-
-    public static Sprite Tank => tank != null ? tank : tank = Paint(28, 44, (x, y) =>
-    {
-        if (y < 4) return x > 3 && x < 24 ? C(0x3a2a24) : Clear;
-        if (y < 30) return x == 0 || x == 27 ? C(0x1a1020) : y % 9 == 0 ? C(0x2a2a2a) : C(0x6a4a30);
-        return x < 4 || x > 23 || x == 13 || x == 14 ? C(0x2a2a30) : Clear;
-    }, Center);
+        if (y < 5) return x == 2 || x == 3 ? C(0x2a8a4a) : Clear;                // neck
+        return x == 1 ? C(0x9af0b0) : C(0x2a8a4a);                               // body with a highlight
+    }, new Vector2(0.5f, 0f));
 }

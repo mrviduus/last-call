@@ -72,6 +72,19 @@ public static class Feel
     public const int KneeDropRecovery = 10;       // guess
     public const float KneeDropReach = 40f;       // guess
 
+    public const float PickupRange = 22f;         // guess, how close a prop must be to pick it up
+    public const int SwingStartup = 6;            // guess, chair/bottle raised overhead
+    public const int SwingActive = 3;             // guess
+    public const int SwingRecovery = 14;          // guess
+    public const float ChairReach = 46f;          // guess
+    public const float BottleReach = 36f;         // guess
+    public const int ChairHits = 3;               // guess, swings before a chair breaks
+    public const int PropThrowStartup = 6;        // guess
+    public const int PropThrowRecovery = 10;      // guess
+    public const float PropThrowSpeed = 6f;       // guess
+    public const float PropThrowUp = 2f;          // guess
+    public const float PropThrowHeight = 30f;     // guess, released at about hand height
+
     public const int GrabFrames = 120;          // guess, how long a hold lasts
     public const int KneeStartup = 4;             // guess
     public const int KneeRecovery = 10;           // guess

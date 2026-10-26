@@ -9,6 +9,7 @@ public class FeelTests
     public void TearDown()
     {
         foreach (var f in Game.Fighters) Object.DestroyImmediate(f.gameObject);
+        foreach (var p in Game.Props) Object.DestroyImmediate(p.gameObject);
         Game.Reset();
     }
 
@@ -250,5 +251,53 @@ public class FeelTests
         Assert.Greater(p.ground.x - 40f, Feel.FlyingKickSpeed * Feel.FlyingKickActive * 0.8f);
         Assert.AreEqual(State.Launched, near.state);
         Assert.AreEqual(State.Launched, far.state);
+    }
+
+    [Test]
+    public void ChairSwingLaunchesAndBreaksAfterThreeHits()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(45f, -70f));
+        Assert.AreSame(chair, p.PropInReach());
+        p.PickUp(chair);
+        Assert.AreSame(chair, p.held);
+
+        for (int i = 0; i < Feel.ChairHits; i++)
+        {
+            var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 30f, -70f), 10);
+            p.Attack(Move.Swing);
+            Run(Feel.SwingStartup);
+            Assert.AreEqual(State.Launched, e.state);
+            Assert.AreEqual(7, e.health);
+            Run(Feel.SwingActive + Feel.SwingRecovery + Feel.SmashHitstop);
+        }
+        Assert.IsNull(p.held, "the chair broke");
+        Assert.AreEqual(0, Game.Props.Count);
+    }
+
+    [Test]
+    public void ThrownBottleHitsAnEnemyAcrossTheRoom()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(140f, -70f), 10);
+        var bottle = Game.SpawnProp(Prop.Kind.Bottle, new Vector2(40f, -70f));
+        p.PickUp(bottle);
+        p.Attack(Move.ThrowProp);
+        Run(Feel.PropThrowStartup + 40);
+
+        Assert.AreEqual(State.Launched, e.state);
+        Assert.IsNull(p.held);
+        Assert.AreEqual(0, Game.Props.Count, "the bottle smashed");
+    }
+
+    [Test]
+    public void GettingHitDropsTheProp()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f));
+        p.PickUp(chair);
+        p.TakeHit(1, 1, false);
+        Assert.IsNull(p.held);
+        Assert.IsTrue(chair.Free);
     }
 }

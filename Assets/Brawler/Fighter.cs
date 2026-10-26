@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried }
-public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, SpinKick, Pound, KneeDrop, Knee, Throw, Whip }
+public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, SpinKick, Pound, KneeDrop, Knee, Throw, Whip, Swing, ThrowProp }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -22,6 +22,7 @@ public class Fighter : MonoBehaviour
     public Move move;
     public bool whip; // enemy type: long reach, slow telegraphed wind-up
     public Fighter grabbed;
+    public Prop held; // chair or bottle in hand
 
     int flashFrames, invulnFrames;
     bool bounced, strikePending, punchAlt, airKick, finishing;
@@ -33,29 +34,36 @@ public class Fighter : MonoBehaviour
     {
         Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.SpinKick => Feel.SpinKickStartup,
         Move.Pound => Feel.PoundStartup, Move.KneeDrop => Feel.KneeDropStartup, Move.Knee => Feel.KneeStartup,
-        Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup, _ => Feel.PunchStartup,
+        Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup,
+        Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, _ => Feel.PunchStartup,
     };
     int Active => move switch
     {
-        Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.SpinKick => Feel.SpinKickActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive,
+        Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.SpinKick => Feel.SpinKickActive,
+        Move.Swing => Feel.SwingActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive,
     };
     int Recovery => move switch
     {
         Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery,
         Move.FlyingKick => Feel.FlyingKickRecovery, Move.SpinKick => Feel.SpinKickRecovery, Move.Pound => Feel.PoundRecovery,
         Move.KneeDrop => Feel.KneeDropRecovery, Move.Knee => Feel.KneeRecovery,
-        Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery, _ => Feel.PunchRecovery,
+        Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
+        Move.Swing => Feel.SwingRecovery, Move.ThrowProp => Feel.PropThrowRecovery, _ => Feel.PunchRecovery,
     };
     float Reach => move switch
     {
         Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach,
         Move.JumpKick => Feel.JumpKickReach, Move.FlyingKick => Feel.FlyingKickReach, Move.SpinKick => Feel.SpinKickReach, Move.Pound => Feel.PoundReach,
         Move.KneeDrop => Feel.KneeDropReach,
-        Move.Whip => Feel.WhipReach, _ => Feel.PunchReach,
+        Move.Whip => Feel.WhipReach, Move.Swing when held != null => held.Reach, _ => Feel.PunchReach,
     };
     float Push => move switch { Move.Kick => Feel.KickPush, Move.Whip => Feel.WhipPush, _ => Feel.JabPush };
-    int Damage => move switch { Move.Punch or Move.Whip => 1, Move.FlyingKick or Move.SpinKick => 3, _ => 2 };
-    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.SpinKick;
+    int Damage => move switch
+    {
+        Move.Punch or Move.Whip => 1, Move.FlyingKick or Move.SpinKick => 3, Move.Swing when held != null => held.Damage, _ => 2,
+    };
+    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.SpinKick
+        || move == Move.Swing && held != null && held.kind == Prop.Kind.Chair;
     bool WindingUp => state == State.Attack && stateFrames < Startup;
 
     public bool CanAct => state == State.Idle || state == State.Walk || state == State.Run;
@@ -133,6 +141,30 @@ public class Fighter : MonoBehaviour
         move = Move.JumpKick;
     }
 
+    public void PickUp(Prop p)
+    {
+        if (!CanAct || held != null || !p.Free) return;
+        held = p;
+        p.holder = this;
+    }
+
+    // a free prop on the floor right in front or underneath
+    public Prop PropInReach()
+    {
+        foreach (var p in Game.Props)
+            if (p.Free && Mathf.Abs(p.ground.x - ground.x) < Feel.PickupRange
+                && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
+                return p;
+        return null;
+    }
+
+    public bool EnemyInReach(float reach)
+    {
+        foreach (var t in Game.Fighters)
+            if (t.team != team && InReach(t, reach)) return true;
+        return false;
+    }
+
     public void Grab(Fighter t)
     {
         grabbed = t;
@@ -150,6 +182,7 @@ public class Fighter : MonoBehaviour
         if (!CanBeHit) return;
         bool countered = move == Move.Whip && WindingUp; // punished mid wind-up: knocked flying
         Release();
+        if (held != null) { held.Drop(); held = null; }
         health -= damage;
         flashFrames = 8;
         facing = -dir;
@@ -306,6 +339,7 @@ public class Fighter : MonoBehaviour
         if (!strikePending) return;
         strikePending = false;
         if (move == Move.Knee || move == Move.Throw) StrikeHeld();
+        else if (move == Move.ThrowProp) { held?.Throw(this); held = null; }
         else Strike();
     }
 
@@ -325,6 +359,7 @@ public class Fighter : MonoBehaviour
                 if (last) Finish(t);
                 hit = true;
             }
+        if (hit && move == Move.Swing) held?.UseUp(); // a chair breaks after a few hits, a bottle at once
         if (!hit || finishing) return;
         bool big = Launches || move == Move.Pound;
         Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
@@ -418,6 +453,8 @@ public class Fighter : MonoBehaviour
                 Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
                 Move.Smash or Move.Kick or Move.Pound => WindingUp ? art.KickWind : striking ? art.Kick : art.KickRecover,
                 Move.FlyingKick => striking ? art.JumpKick : art.Crouch,
+                Move.Swing => striking ? art.Punch2 : art.WindUp,
+                Move.ThrowProp => striking ? art.Punch2 : art.WindUp,
                 Move.SpinKick => striking ? art.Spin[stateFrames / Feel.SpinTurnFrames % 2] : art.Crouch,
                 Move.KneeDrop => art.Crouch,
                 Move.Knee => striking ? art.Headbutt : art.Punch1,

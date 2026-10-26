@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 // WASD move, K / Space jump, J punch, L kick. Third punch of a quick combo = high kick. S + L = hammer stomp.
 // J in the air = jump kick. Walk into a stunned enemy to grab: J = headbutt (third one throws), K = throw.
 // Double-tap left/right = run; while running J = flying kick, L = tornado kick.
+// J next to a chair or bottle (nobody in reach) picks it up; then J = swing it, L = throw it.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
@@ -52,6 +53,22 @@ public class Player : MonoBehaviour
         {
             if (attackBuffer > 0) { grabHits++; f.Attack(grabHits >= 3 ? Move.Throw : Move.Knee); attackBuffer = 0; }
             else if (jumpBuffer > 0) { f.Attack(Move.Throw); jumpBuffer = 0; }
+        }
+        else if (f.held != null && attackBuffer > 0 && f.CanAct)
+        {
+            f.Attack(Move.Swing); // holding a chair or bottle: swing it
+            attackBuffer = 0;
+        }
+        else if (f.held != null && kickBuffer > 0 && f.CanAct)
+        {
+            f.Attack(Move.ThrowProp); // ...or throw it
+            kickBuffer = 0;
+        }
+        else if (attackBuffer > 0 && f.CanAct && f.held == null && !f.EnemyInReach(Feel.PunchReach)
+                 && f.PropInReach() is Prop prop)
+        {
+            f.PickUp(prop); // nobody to hit, something to grab: pick it up
+            attackBuffer = 0;
         }
         else if (f.state == State.Jump && attackBuffer > 0)
         {

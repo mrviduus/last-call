@@ -8,6 +8,7 @@ public class Game : MonoBehaviour
     public const float MinX = 16f, MinDepth = -105f, MaxDepth = 10f; // the street's sidewalk and road
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
+    public static readonly List<Prop> Props = new List<Prop>();
     public static Fighter Hero;
     public static int Frame;    // every fixed tick
     public static int SimFrame; // ticks that actually simulated (hitstop excluded)
@@ -32,6 +33,7 @@ public class Game : MonoBehaviour
     public static void Reset()
     {
         Fighters.Clear();
+        Props.Clear();
         Hero = null;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = 0;
         RestartRequested = false;
@@ -55,6 +57,7 @@ public class Game : MonoBehaviour
         if (freezeFrames > 0) { freezeFrames--; return; }
         SimFrame++;
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
+        for (int i = Props.Count - 1; i >= 0; i--) Props[i].Step(); // backwards: a prop may break and remove itself
         Separate();
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].ResolveStrike();
     }
@@ -114,24 +117,32 @@ public class Game : MonoBehaviour
     {
         foreach (var g in backdrop) Destroy(g);
         backdrop.Clear();
+        foreach (var p in Props) Destroy(p.gameObject);
+        Props.Clear();
+        foreach (var f in Fighters) f.held = null;
         if (stage == 1)
         {
-            // street: brick wall from the sidewalk up past the top of the screen, road below
             // street panorama, bottom on the screen edge; its sidewalk and road are the walkable area
             cam.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
             MakeBackdrop(Art.StreetScene, new Vector2(1200f * 2f, 0f), new Vector2(1200f * 4f, 240f), -20000);
         }
         else
         {
-            // rooftop at night: sky, skyline behind the ledge, water tanks and neon signs
-            MakeBackdrop(Art.NightSky, new Vector2(1900f, 60f), new Vector2(4200f, 144f), -20002);
-            MakeBackdrop(Art.Skyline, new Vector2(1900f, 46f), new Vector2(4200f, 72f), -20001);
-            MakeBackdrop(Art.Roof, new Vector2(1900f, -56f), new Vector2(4200f, 132f), -20000);
-            for (int i = 0; i < 14; i++)
-                MakeBackdrop(Art.Tank, new Vector2(150f + i * 300f, 32f), new Vector2(28f, 44f), -19999);
-            for (int i = 0; i < 10; i++)
-                MakeBackdrop(Art.Neon, new Vector2(300f + i * 400f, 84f), new Vector2(56f, 22f), -19999);
+            // space bar: counter along the back wall, chairs and bottles to fight with on the floor
+            cam.backgroundColor = new Color(0.03f, 0.03f, 0.08f);
+            MakeBackdrop(Art.SpaceBar, new Vector2(2400f, 0f), new Vector2(4800f, 240f), -20000);
+            for (int i = 0; i < 30; i++)
+                SpawnProp(i % 3 == 2 ? Prop.Kind.Bottle : Prop.Kind.Chair,
+                    new Vector2(120f + i * 70f + Random.Range(-15f, 15f), Random.Range(MinDepth + 10f, MaxDepth - 10f)));
         }
+    }
+
+    public static Prop SpawnProp(Prop.Kind kind, Vector2 pos)
+    {
+        var p = new GameObject(kind.ToString()).AddComponent<Prop>();
+        p.Init(kind, pos);
+        Props.Add(p);
+        return p;
     }
 
     void MakeBackdrop(Sprite sprite, Vector2 pos, Vector2 size, int order)
@@ -166,6 +177,7 @@ public class Game : MonoBehaviour
     void Restart()
     {
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
+        foreach (var p in Props) if (p != null) Destroy(p.gameObject);
         Reset();
         camX = ScreenW / 2f;
         Hero = Spawn(0, Art.Hero, new Vector2(60f, -50f), 10);
@@ -258,7 +270,7 @@ public class Game : MonoBehaviour
         }
         Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}    STAGE {stage}-{stageWave}");
         if (bannerFrames > 0)
-            Text(view.x + 60 * scale, view.y + 80 * scale, scale, stage == 1 ? "STAGE 1   THE STREET" : "STAGE 2   NEON ROOFTOP");
+            Text(view.x + 60 * scale, view.y + 80 * scale, scale, stage == 1 ? "STAGE 1   THE STREET" : "STAGE 2   SPACE BAR");
         if (Hero.state == State.Dead)
             Text(view.x + 72 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
     }
