@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried }
-public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, SpinKick, Pound, KneeDrop, Knee, Throw, Whip, Swing, ThrowProp }
+public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -25,44 +25,50 @@ public class Fighter : MonoBehaviour
     public Prop held; // chair or bottle in hand
 
     int flashFrames, invulnFrames;
-    bool bounced, strikePending, punchAlt, airKick, finishing;
-    SpriteRenderer body, shadow, whipLine, boot;
+    bool bounced, strikePending, punchAlt, airKick;
+    SpriteRenderer body, shadow, whipLine;
     Art.Frames art;
     Color tint = Color.white;
 
     int Startup => move switch
     {
-        Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.SpinKick => Feel.SpinKickStartup,
-        Move.Pound => Feel.PoundStartup, Move.KneeDrop => Feel.KneeDropStartup, Move.Knee => Feel.KneeStartup,
+        Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
+        Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee => Feel.KneeStartup,
         Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup,
         Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, _ => Feel.PunchStartup,
     };
     int Active => move switch
     {
-        Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.SpinKick => Feel.SpinKickActive,
+        Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.BicycleKick => Feel.BicycleKickActive,
         Move.Swing => Feel.SwingActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive,
     };
     int Recovery => move switch
     {
         Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery,
-        Move.FlyingKick => Feel.FlyingKickRecovery, Move.SpinKick => Feel.SpinKickRecovery, Move.Pound => Feel.PoundRecovery,
-        Move.KneeDrop => Feel.KneeDropRecovery, Move.Knee => Feel.KneeRecovery,
+        Move.FlyingKick => Feel.FlyingKickRecovery, Move.BicycleKick => Feel.BicycleKickRecovery, Move.Pound => Feel.PoundRecovery,
+        Move.ElbowDrop => Feel.ElbowDropRecovery, Move.Knee => Feel.KneeRecovery,
         Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
         Move.Swing => Feel.SwingRecovery, Move.ThrowProp => Feel.PropThrowRecovery, _ => Feel.PunchRecovery,
     };
     float Reach => move switch
     {
         Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach,
-        Move.JumpKick => Feel.JumpKickReach, Move.FlyingKick => Feel.FlyingKickReach, Move.SpinKick => Feel.SpinKickReach, Move.Pound => Feel.PoundReach,
-        Move.KneeDrop => Feel.KneeDropReach,
+        Move.JumpKick => Feel.JumpKickReach, Move.FlyingKick => Feel.FlyingKickReach, Move.BicycleKick => Feel.BicycleKickReach, Move.Pound => Feel.PoundReach,
+        Move.ElbowDrop => Feel.ElbowDropReach,
         Move.Whip => Feel.WhipReach, Move.Swing when held != null => held.Reach, _ => Feel.PunchReach,
     };
-    float Push => move switch { Move.Kick => Feel.KickPush, Move.Whip => Feel.WhipPush, _ => Feel.JabPush };
+    float Push => move switch
+    {
+        Move.Kick => Feel.KickPush, Move.Whip => Feel.WhipPush,
+        Move.BicycleKick => Feel.BicycleKickSpeed * 1.6f, // carries them along in front of the kicks
+        _ => Feel.JabPush,
+    };
     int Damage => move switch
     {
-        Move.Punch or Move.Whip => 1, Move.FlyingKick or Move.SpinKick => 3, Move.Swing when held != null => held.Damage, _ => 2,
+        Move.Punch or Move.Whip or Move.BicycleKick => 1, Move.FlyingKick or Move.ElbowDrop => 3, Move.Swing when held != null => held.Damage, _ => 2,
     };
-    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.SpinKick
+    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick
+        || move == Move.BicycleKick && stateFrames >= Startup + Active - Feel.BicycleHitGap // only its last kick
         || move == Move.Swing && held != null && held.kind == Prop.Kind.Chair;
     bool WindingUp => state == State.Attack && stateFrames < Startup;
 
@@ -83,7 +89,6 @@ public class Fighter : MonoBehaviour
         shadow.sortingOrder = -10000; // under every body
         body = MakeSprite("Body", art.Idle[0]);
         whipLine = MakeSprite("Whip", Art.Whip);
-        boot = MakeSprite("BigBoot", Art.BigBoot);
     }
 
     SpriteRenderer MakeSprite(string name, Sprite sprite)
@@ -102,8 +107,8 @@ public class Fighter : MonoBehaviour
         if (!CanAct && !holding) return;
         move = m;
         punchAlt = !punchAlt;
-        if (m != Move.SpinKick && m != Move.FlyingKick) vel = Vector2.zero; // running kicks keep the momentum
-        if (m == Move.KneeDrop) heightVel = Feel.KneeDropHop;
+        if (m != Move.BicycleKick && m != Move.FlyingKick) vel = Vector2.zero; // running kicks keep the momentum
+        if (m == Move.ElbowDrop) heightVel = Feel.ElbowDropHop;
         Enter(State.Attack);
     }
 
@@ -213,11 +218,6 @@ public class Fighter : MonoBehaviour
         Enter(State.Buried);
     }
 
-    // the spinning leg reaches both sides
-    bool InSpinReach(Fighter t) => t.CanBeHit && Mathf.Abs(t.ground.x - ground.x) < Reach
-        && Mathf.Abs(t.ground.y - ground.y) < Feel.DepthBand
-        && Mathf.Abs(t.height - height) < Feel.JumpKickHeight;
-
     public bool InReach(Fighter t, float reach, float heightBand = Feel.HeightBand)
     {
         float dx = (t.ground.x - ground.x) * facing;
@@ -268,13 +268,13 @@ public class Fighter : MonoBehaviour
                     heightVel = 0f;
                     strikePending = true;
                 }
-                if (move == Move.SpinKick && stateFrames >= Startup && stateFrames < Startup + Active)
+                if (move == Move.BicycleKick && stateFrames >= Startup && stateFrames < Startup + Active)
                 {
-                    // spins forward just above the ground, leg out, hitting everyone on both sides
-                    vel = new Vector2(facing * Feel.SpinKickSpeed, 0f);
-                    height = Feel.SpinKickHeight;
+                    // flies forward low, kicking left-right-left: a separate hit every BicycleHitGap frames
+                    vel = new Vector2(facing * Feel.BicycleKickSpeed, 0f);
+                    height = Feel.BicycleKickHeight;
                     heightVel = 0f;
-                    strikePending = true;
+                    if ((stateFrames - Startup) % Feel.BicycleHitGap == 0) strikePending = true;
                 }
                 if (stateFrames >= Startup + Active + Recovery)
                     Enter(grabbed != null && grabbed.state == State.Held ? State.Grab : State.Idle);
@@ -347,33 +347,28 @@ public class Fighter : MonoBehaviour
 
     void Strike()
     {
-        if (move == Move.KneeDrop) { StrikeDowned(); return; }
+        if (move == Move.ElbowDrop) { StrikeDowned(); return; }
         bool hit = false, solidHit = false, finished = false;
-        bool spin = move == Move.SpinKick;
-        float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.SpinKick ? Feel.JumpKickHeight : Feel.HeightBand;
+        float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.BicycleKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
-            if (t.team != team && t.state != State.Held && (spin ? InSpinReach(t) : InReach(t, Reach, heightBand)))
+            if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand))
             {
-                int dir = spin ? (t.ground.x >= ground.x ? 1 : -1) : facing; // a spin knocks them away from us
                 bool last = team == 0 && t.health <= Damage;
-                if (move == Move.Pound && !last) t.Bury(Damage, dir);
-                else t.TakeHit(Damage, dir, Launches || last, Push);
+                if (move == Move.Pound && !last) t.Bury(Damage, facing);
+                else t.TakeHit(Damage, facing, Launches || last, Push);
                 if (last) { Finish(t); finished = true; }
                 hit = solidHit = true;
             }
-        // tables tip over and slide, bottles get swept off the counter (backwards: a bottle may break);
-        // a spin reaches both sides, like it does for fighters
+        // tables tip over and slide, bottles get swept off the counter (backwards: a bottle may break)
         for (int i = Game.Props.Count - 1; i >= 0; i--)
         {
             var p = Game.Props[i];
-            float dx = p.ground.x - ground.x;
-            int dir = spin ? (dx >= 0f ? 1 : -1) : facing;
-            float ahead = spin ? Mathf.Abs(dx) : dx * facing;
+            float ahead = (p.ground.x - ground.x) * facing;
             if (p.holder == null && p.thrower == null && ahead > -4f && ahead < Reach
                 && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
             {
                 bool table = p.kind == Prop.Kind.Table;
-                if (p.Struck(dir, this)) { hit = true; solidHit |= table; }
+                if (p.Struck(facing, this)) { hit = true; solidHit |= table; }
             }
         }
         if (solidHit && move == Move.Swing) held?.UseUp(); // wears out on people and tables, not on loose bottles
@@ -382,31 +377,37 @@ public class Fighter : MonoBehaviour
         Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
     }
 
-    // the player's last hit on an enemy: long freeze, flash, giant boot, sent flying far
+    // the player's last hit on an enemy: long freeze, flash, shake, sent flying far
     void Finish(Fighter t)
     {
-        finishing = true;
         t.vel *= Feel.FinisherLaunch;
         t.heightVel *= Feel.FinisherLaunch;
         Game.Freeze(Feel.FinisherHitstop, Feel.FinisherShake);
         Game.Flash(Feel.FinisherFlash);
     }
 
-    // knee drop: lands on enemies lying on the ground and keeps them down
+    // wrestling elbow drop: lands elbow-first on enemies lying on the ground and keeps them down;
+    // when it knocks one out it is the finisher (long freeze, flash, shake)
     void StrikeDowned()
     {
-        bool hit = false;
+        bool hit = false, finished = false;
         foreach (var t in Game.Fighters)
         {
             float dx = (t.ground.x - ground.x) * facing;
             if (t.team == team || t.state != State.Down || dx <= -4f || dx >= Reach
                 || Mathf.Abs(t.ground.y - ground.y) >= Feel.DepthBand) continue;
-            t.health -= 2;
+            t.health -= Damage;
             t.flashFrames = 8;
             t.Enter(State.Down);
             hit = true;
+            finished |= !t.Alive;
         }
-        if (hit) Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
+        if (finished)
+        {
+            Game.Freeze(Feel.FinisherHitstop, Feel.FinisherShake);
+            Game.Flash(Feel.FinisherFlash);
+        }
+        else if (hit) Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
     }
 
     // knee: damage without letting go (the last point knocks them flying); throw: over the shoulder
@@ -445,7 +446,6 @@ public class Fighter : MonoBehaviour
     {
         state = s;
         stateFrames = 0;
-        finishing = false;
     }
 
     void LateUpdate()
@@ -472,8 +472,8 @@ public class Fighter : MonoBehaviour
                 Move.FlyingKick => striking ? art.JumpKick : art.Crouch,
                 Move.Swing => striking ? art.Punch2 : art.WindUp,
                 Move.ThrowProp => striking ? art.Punch2 : art.WindUp,
-                Move.SpinKick => striking ? art.Spin[stateFrames / Feel.SpinTurnFrames % 2] : art.Crouch,
-                Move.KneeDrop => art.Crouch,
+                Move.BicycleKick => striking ? art.Bicycle[stateFrames / 3 % 2] : art.KickWind, // left-right-left
+                Move.ElbowDrop => heightVel > 0f ? art.ElbowRise : art.ElbowDrop, // up with the elbow raised, down flat
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
                 Move.Throw => art.Throw[WindingUp ? 0 : 1],
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : art.Idle[0],
@@ -482,10 +482,7 @@ public class Fighter : MonoBehaviour
             State.Launched => art.Fall,
             _ => art.Down, // down, dead
         };
-        // spinning: the body turns to face the other way every few frames
-        bool spinning = state == State.Attack && move == Move.SpinKick && striking;
-        int look = spinning && stateFrames / Feel.SpinTurnFrames % 2 == 1 ? -facing : facing;
-        body.flipX = look < 0;
+        body.flipX = facing < 0;
         body.transform.localPosition = new Vector3(0f, h, 0f);
         shadow.enabled = state != State.Buried;
         body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
@@ -493,14 +490,6 @@ public class Fighter : MonoBehaviour
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
             : Alive ? tint : tint * new Color(0.6f, 0.6f, 0.6f);
-
-        // finishing kicks: the foot swells into a giant boot at the moment of impact
-        boot.enabled = finishing && (striking || state == State.Jump)
-            || striking && (move == Move.Smash || move == Move.FlyingKick || move == Move.SpinKick);
-        float swell = stateFrames - Startup < 2 ? 1.2f : 1.6f;
-        boot.transform.localScale = new Vector3(look * swell, swell, 1f);
-        // on the toe of the kick frame, slightly overlapping the leg
-        boot.transform.localPosition = new Vector3(look * (art.KickTip.x - 8f), h + art.KickTip.y, 0f);
 
         whipLine.enabled = move == Move.Whip && striking;
         whipLine.transform.localScale = new Vector3(facing * 1.8f, 1f, 1f);
@@ -510,6 +499,5 @@ public class Fighter : MonoBehaviour
         int order = -Mathf.RoundToInt(ground.y) * 2;
         body.sortingOrder = order;
         whipLine.sortingOrder = order + 1;
-        boot.sortingOrder = order + 1;
     }
 }

@@ -303,7 +303,7 @@ public class Game : MonoBehaviour
                 GUI.color = Color.white;
             }
             Text(view.x + 8 * scale, view.y + 190 * scale, scale, "WASD MOVE   J PUNCH   L KICK   K JUMP   S+L STOMP");
-            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L TORNADO");
+            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L BICYCLE KICK");
             Text(view.x + 8 * scale, view.y + 222 * scale, scale, "J BY A CHAIR OR BOTTLE = PICK UP      HOLD H = HELP");
         }
         else if (Hero.held != null)

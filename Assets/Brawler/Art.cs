@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Fighters: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt). Variants are tinted copies.
-// The ORBIT 9 bar is PNGs from Tools/make_bar_art.py; the whip and giant boot are drawn in code. 1 texel = 1 screen pixel.
+// The bar is PNGs from Tools/make_bar_art.py; Vasyl's own frames from Tools/make_vasyl_frames.py; the whip is drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
     // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
@@ -19,9 +19,9 @@ public static class Art
 
     public class Frames
     {
-        public Sprite[] Idle, Walk, Throw, Spin, Sinking;
+        public Sprite[] Idle, Walk, Throw, Bicycle, Sinking;
         public Sprite Punch1, Punch2, KickWind, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
-        public Vector2 KickTip; // toe of the kick frame, relative to the feet
+        public Sprite ElbowRise, ElbowDrop;
     }
 
     const int FrameW = 96; // every sheet is a row of 96 px wide frames
@@ -34,7 +34,6 @@ public static class Art
         if (cache.TryGetValue(name, out var f)) return f;
         f = name == "Girl" ? Girl() : Punk(name == "Vasyl");
         f.Sinking = Sinking(f.Hurt);
-        f.KickTip = Tip(f.Kick);
         return cache[name] = f;
     }
 
@@ -52,7 +51,8 @@ public static class Art
             Hurt = hurt[0], Fall = hurt[1], Down = LyingDown(hurt[1]),
             GetUp = jump[0], Crouch = jump[0], Air = jump[2],
             WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
-            Spin = new[] { dive[1], jumpKick[1] },
+            Bicycle = new[] { kick[3], jumpKick[2] },
+            ElbowRise = jump[1], ElbowDrop = hurt[1],
         };
     }
 
@@ -64,27 +64,19 @@ public static class Art
         var pivot = new Vector2(1f - raw.x, raw.y); // the sheets are mirrored below
         Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, asVasyl, mirror: true);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
+        // Vasyl has his own frames (Tools/make_vasyl_frames.py): knee up, kick, high kick, jump kick; elbow drop
+        var kick = asVasyl ? Sheet("Vasyl/kick", pivot) : new[] { punch[1], punch[2], punch[2], punch[2] };
+        var elbow = asVasyl ? Sheet("Vasyl/elbow", pivot) : new[] { idle[0], hurt[2] };
         return new Frames
         {
             Idle = idle, Walk = S("walk"),
-            Punch1 = punch[2], Punch2 = punch[2], KickWind = punch[1], Kick = punch[2], KickRecover = idle[0], JumpKick = punch[2],
+            Punch1 = punch[2], Punch2 = punch[2], KickWind = kick[0], Kick = kick[1], KickRecover = idle[0], JumpKick = kick[3],
             Hurt = hurt[1], Fall = hurt[2], Down = hurt[3],
             GetUp = idle[0], Crouch = idle[0], Air = idle[0],
             WindUp = punch[1], Headbutt = punch[2], Throw = new[] { punch[1], punch[2] },
-            Spin = new[] { punch[2], punch[2] },
+            Bicycle = new[] { kick[1], kick[2] },
+            ElbowRise = elbow[0], ElbowDrop = elbow[1],
         };
-    }
-
-    // the right-most opaque pixel of a frame (the toe of a kick), relative to the sprite's pivot
-    static Vector2 Tip(Sprite s)
-    {
-        var r = s.rect;
-        var px = s.texture.GetPixels32();
-        for (int x = (int)r.width - 1; x >= 0; x--)
-            for (int y = 0; y < (int)r.height; y++)
-                if (px[((int)r.y + y) * s.texture.width + (int)r.x + x].a > 0)
-                    return new Vector2(x, y) - s.pivot;
-        return Vector2.zero;
     }
 
     static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);
@@ -223,22 +215,6 @@ public static class Art
     static bool Speckle(int x, int y) => ((x * 73856093) ^ (y * 19349663)) % 7 == 0;
 
     static Sprite shadow, whip;
-
-    static Sprite bigBoot;
-
-    // oversized boot for finishing kicks: shaft on the left, toe pointing right, pivot at the ankle
-    public static Sprite BigBoot => bigBoot != null ? bigBoot : bigBoot = Paint(24, 14, (x, y) =>
-    {
-        bool inShaft = x < 10 && y < 8;
-        bool inFoot = y >= 6 && !(x > 20 && y < 9); // rounded toe
-        if (!inShaft && !inFoot) return Clear;
-        bool edge = x == 0 || y == 0 && x < 10 || x == 23 || y == 13 || x == 10 && y < 6 || x > 20 && y == 9;
-        if (edge) return C(0x1a1020);
-        if (y >= 11) return C(0x3a3a44);                                          // sole
-        if ((y == 7 || y == 9) && x >= 3 && x <= 15 && x % 3 == 0) return C(0xffffff); // laces
-        return y < 3 || x < 2 ? C(0x801c14) : C(0xd03020);                        // shaded red leather
-    }, new Vector2(0f, 0.5f));
-
 
     // ORBIT 9 bar, drawn by Tools/make_bar_art.py: separate layers and props (redraw the PNGs freely)
     static Sprite barSpace, barBack, barCounter, barFloor, barPillar, chair, stool, bottle, table, tableFlipped, shard;

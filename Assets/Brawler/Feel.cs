@@ -12,13 +12,13 @@ public static class Feel
     public const float FlyingKickReach = 40f;     // guess, contact range ahead while flying
     public const float FlyingKickSpeed = 7f;      // guess, px/frame straight across the screen
     public const float FlyingKickHeight = 18f;    // guess, flies just above the ground
-    public const int SpinKickStartup = 4;         // guess, crouch before the hop
-    public const int SpinKickActive = 30;         // guess, frames of spinning
-    public const int SpinKickRecovery = 12;       // guess, landing
-    public const float SpinKickReach = 38f;       // guess, leg length on both sides while spinning
-    public const float SpinKickSpeed = 5f;      // guess, px/frame travelled while spinning
-    public const float SpinKickHeight = 20f;      // guess, hop height
-    public const int SpinTurnFrames = 3;          // guess, frames per half turn
+    public const int BicycleKickStartup = 4;      // guess, crouch before take-off
+    public const int BicycleKickActive = 30;      // guess, frames of flying kicks
+    public const int BicycleKickRecovery = 12;    // guess, landing
+    public const float BicycleKickReach = 40f;    // guess
+    public const float BicycleKickSpeed = 3.5f;   // guess, px/frame forward while kicking
+    public const float BicycleKickHeight = 16f;   // guess, flies low
+    public const int BicycleHitGap = 6;           // guess, frames between the alternating kicks
     public const float JumpVel = 6f;           // guess
     public const float Gravity = 0.3f;            // guess
     public const float Friction = 0.3f;          // guess
@@ -67,10 +67,10 @@ public static class Feel
     public const int BuriedFrames = 100;          // guess, stuck in the ground before popping out
     public const float BurySink = 36f;            // guess, pixels below the ground
 
-    public const float KneeDropHop = 3f;        // guess, small hop onto a downed enemy
-    public const int KneeDropStartup = 20;        // ~ the hop's airtime: lands knee-first
-    public const int KneeDropRecovery = 10;       // guess
-    public const float KneeDropReach = 40f;       // guess
+    public const float ElbowDropHop = 4.5f;       // guess, wrestling-style jump onto a downed enemy
+    public const int ElbowDropStartup = 30;       // ~ the jump's airtime: lands elbow-first
+    public const int ElbowDropRecovery = 14;      // guess, getting back up off the floor
+    public const float ElbowDropReach = 40f;      // guess
 
     public const float PickupRange = 22f;         // guess, how close a prop must be to pick it up
     public const int SwingStartup = 6;            // guess, chair/bottle raised overhead

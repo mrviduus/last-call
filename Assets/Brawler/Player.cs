@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 // WASD move, K / Space jump, J punch, L kick. Third punch of a quick combo = high kick. S + L = hammer stomp.
 // J in the air = jump kick. Walk into a stunned enemy to grab: J = headbutt (third one throws), K = throw.
-// Double-tap left/right = run; while running J = flying kick, L = tornado kick.
+// Double-tap left/right = run; while running J = flying kick, L = bicycle kick.
 // J next to a chair or bottle (nobody in reach) picks it up; then J = swing it, L = throw it.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
@@ -75,7 +75,7 @@ public class Player : MonoBehaviour
         }
         else if (f.state == State.Run && kickBuffer > 0)
         {
-            f.Attack(Move.SpinKick); // run + kick: tornado kick
+            f.Attack(Move.BicycleKick); // run + kick: bicycle kick
             kickBuffer = 0;
         }
         else if (runRequested != 0 && f.CanAct)
@@ -83,9 +83,9 @@ public class Player : MonoBehaviour
             f.StartRun(runRequested);
             runRequested = 0;
         }
-        else if (attackBuffer > 0 && f.CanAct && f.IsDownedEnemyInReach(Feel.KneeDropReach))
+        else if (attackBuffer > 0 && f.CanAct && f.IsDownedEnemyInReach(Feel.ElbowDropReach))
         {
-            f.Attack(Move.KneeDrop); // enemy lying in front: drop a knee on them
+            f.Attack(Move.ElbowDrop); // enemy lying in front: wrestling elbow drop
             attackBuffer = 0;
         }
         else if (kickBuffer > 0 && f.CanAct && f.moveInput.y < 0f)

@@ -174,7 +174,7 @@ public class FeelTests
     }
 
     [Test]
-    public void RunIsFasterThanWalkAndSpinKickLaunches()
+    public void RunIsFasterThanWalkAndBicycleKickHitsSeveralTimes()
     {
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         p.moveInput = Vector2.right;
@@ -184,17 +184,15 @@ public class FeelTests
         Assert.AreEqual(Feel.RunX, p.vel.x);
         Assert.Greater(Feel.RunX, Feel.WalkX);
 
-        var near = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 20f, -70f), 10);
-        var far = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 90f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 20f, -70f), 20);
         float start = p.ground.x;
-        p.Attack(Move.SpinKick);
-        Run(Feel.SpinKickStartup);
-        Assert.AreEqual(State.Launched, near.state);
-        Assert.AreEqual(7, near.health);
+        p.Attack(Move.BicycleKick);
+        Run(Feel.BicycleKickStartup);
+        Assert.AreEqual(State.Hurt, e.state, "the first kicks only stagger");
 
-        Run(Feel.SpinKickActive + Feel.SpinKickRecovery + 2 * Feel.SmashHitstop);
-        Assert.Greater(p.ground.x - start, 80f, "flies across the screen");
-        Assert.AreEqual(State.Launched, far.state, "hits everyone in the path");
+        Run(Feel.BicycleKickActive + Feel.BicycleKickRecovery + 6 * Feel.Hitstop + Feel.SmashHitstop);
+        Assert.Less(e.health, 20 - 2, "kicked again and again while flying");
+        Assert.Greater(p.ground.x - start, 60f, "travels forward while kicking");
     }
 
     [Test]
@@ -211,7 +209,7 @@ public class FeelTests
     }
 
     [Test]
-    public void KneeDropHitsEnemyLyingDown()
+    public void ElbowDropHitsEnemyLyingDown()
     {
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
@@ -219,11 +217,11 @@ public class FeelTests
         while (e.state != State.Down) Game.Simulate();
         e.ground.x = 55f; // the launch carried them away; put them back in front, no longer sliding
         e.vel = Vector2.zero;
-        Assert.IsTrue(p.IsDownedEnemyInReach(Feel.KneeDropReach));
+        Assert.IsTrue(p.IsDownedEnemyInReach(Feel.ElbowDropReach));
 
-        p.Attack(Move.KneeDrop);
-        Run(Feel.KneeDropStartup);
-        Assert.AreEqual(7, e.health);
+        p.Attack(Move.ElbowDrop);
+        Run(Feel.ElbowDropStartup);
+        Assert.AreEqual(6, e.health, "9 left after the knockdown, the elbow does 3");
         Assert.AreEqual(State.Down, e.state);
     }
 
@@ -406,5 +404,22 @@ public class FeelTests
         Run(Feel.PunchStartup + 10);
         Assert.IsTrue(table.flipped);
         Assert.AreEqual(10, e.health);
+    }
+
+    [Test]
+    public void ElbowDropThatKnocksOutIsAFinisher()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 4);
+        e.TakeHit(1, 1, true);
+        while (e.state != State.Down) Game.Simulate();
+        e.ground.x = 55f;
+        e.vel = Vector2.zero;
+
+        p.Attack(Move.ElbowDrop);
+        Run(Feel.ElbowDropStartup);
+        Assert.IsFalse(e.Alive);
+        Run(Feel.FinisherHitstop);
+        Assert.IsTrue(e.state == State.Down || e.state == State.Dead, "stays down for good");
     }
 }
