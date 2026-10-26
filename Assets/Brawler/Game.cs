@@ -5,7 +5,7 @@ using UnityEngine;
 public class Game : MonoBehaviour
 {
     public const int ScreenW = 256, ScreenH = 224;
-    public const float MinX = 8f, MinDepth = -100f, MaxDepth = -40f;
+    public const float MinX = 8f, MinDepth = -100f, MaxDepth = -50f;
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
     public static Fighter Hero;
@@ -73,11 +73,11 @@ public class Game : MonoBehaviour
             }
     }
 
-    public static Fighter Spawn(int team, string palette, Vector2 pos, int hp, string[] head = null)
+    public static Fighter Spawn(int team, string palette, Vector2 pos, int hp)
     {
         var f = new GameObject(team == 0 ? "Player" : "Enemy").AddComponent<Fighter>();
         f.maxHealth = hp;
-        f.Init(team, palette, head ?? Art.HeroHead, pos);
+        f.Init(team, palette, pos);
         Fighters.Add(f);
         return f;
     }
@@ -114,10 +114,9 @@ public class Game : MonoBehaviour
         if (stage == 1)
         {
             // street: brick wall from the sidewalk up past the top of the screen, road below
-            MakeBackdrop(Art.Bricks, new Vector2(1900f, 40f), new Vector2(4200f, 144f), -20000);
-            MakeBackdrop(Art.Street, new Vector2(1900f, -74f), new Vector2(4200f, 84f), -20000);
-            for (int i = 0; i < 40; i++)
-                MakeBackdrop(Art.Window(i % 3 == 1), new Vector2(48f + i * 96f, 50f), new Vector2(24f, 32f), -19999);
+            // street panorama, bottom on the screen edge; its sidewalk and road are the walkable area
+            cam.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
+            MakeBackdrop(Art.StreetScene, new Vector2(784f * 3f, -16f), new Vector2(784f * 6f, 192f), -20000);
         }
         else
         {
@@ -184,9 +183,9 @@ public class Game : MonoBehaviour
             // rooftop: every other enemy is a whip fighter; punk: quick, fragile; bruiser: slow, tough
             bool lasher = stage == 2 && i % 2 == 0;
             bool bruiser = !lasher && Random.value < 0.35f;
-            var e = lasher ? Spawn(1, Art.Lasher, pos, 4, Art.PonytailHead)
-                : bruiser ? Spawn(1, Art.GruntB, pos, 5, Art.BruiserHead)
-                : Spawn(1, Art.GruntA, pos, 3, Art.PunkHead);
+            var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
+                : bruiser ? Spawn(1, Art.GruntB, pos, 5)
+                : Spawn(1, Art.GruntA, pos, 3);
             e.whip = lasher;
             e.gameObject.AddComponent<Enemy>();
             if (bruiser) e.walkX = Feel.EnemyWalkX * 0.7f;

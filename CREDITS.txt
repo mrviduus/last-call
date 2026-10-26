@@ -1,0 +1,7 @@
+Art
+- Fighter sprites: "Brawler Asset Character" (Renegade, SMS) by Chasersgaming, CC0
+  https://opengameart.org/content/brawler-asset-character-vigilante-sms
+  Recoloured at runtime for each character.
+- Street backdrop: "Brawler Asset Tile Set 'Market Street' SMS" by Chasersgaming, CC0
+  https://opengameart.org/content/brawler-asset-tile-set-market-street-sms
+- Rooftop stage, shadow, whip: drawn in code for this project.

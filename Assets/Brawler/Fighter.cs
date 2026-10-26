@@ -22,8 +22,8 @@ public class Fighter : MonoBehaviour
     public bool whip; // long reach, slow telegraphed wind-up
 
     int flashFrames, invulnFrames;
-    bool bounced, strikePending;
-    SpriteRenderer body, shadow, fist, whipLine;
+    bool bounced, strikePending, punchAlt;
+    SpriteRenderer body, shadow, whipLine;
     Art.Frames art;
 
     int Startup => whip ? Feel.WhipStartup : Feel.PunchStartup;
@@ -37,17 +37,15 @@ public class Fighter : MonoBehaviour
     public bool CanBeHit => Alive && invulnFrames == 0
         && state != State.Launched && state != State.Down && state != State.GetUp;
 
-    public void Init(int team, string palette, string[] head, Vector2 start)
+    public void Init(int team, string palette, Vector2 start)
     {
         this.team = team;
         ground = start;
         health = maxHealth;
-        art = Art.For(palette, head);
+        art = Art.For(palette);
         shadow = MakeSprite("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000; // under every body
-        body = MakeSprite("Body", art.Stand);
-        fist = MakeSprite("Fist", art.Fist);
-        fist.transform.localScale = new Vector3(2f, 2f, 1f);
+        body = MakeSprite("Body", art.Idle[0]);
         whipLine = MakeSprite("Whip", Art.Whip);
     }
 
@@ -64,6 +62,7 @@ public class Fighter : MonoBehaviour
     {
         if (!CanAct) return;
         smash = isSmash;
+        punchAlt = !punchAlt;
         vel = Vector2.zero;
         Enter(State.Attack);
     }
@@ -216,29 +215,23 @@ public class Fighter : MonoBehaviour
         bool striking = state == State.Attack && stateFrames >= Startup && stateFrames < Startup + Active + 6;
         body.sprite = state switch
         {
-            State.Walk => Game.Frame / 8 % 2 == 0 ? art.Walk : art.Stand,
-            State.Jump or State.GetUp => art.Air,
-            State.Attack when whip && WindingUp => art.Hurt, // arms raised = whip wound back
-            State.Attack => striking ? art.Punch : art.Stand,
-            State.Hurt or State.Launched => art.Hurt,
-            _ => art.Stand,
+            State.Idle => art.Idle[Game.Frame / 10 % 4],
+            State.Walk => art.Walk[Game.Frame / 8 % 4],
+            State.Jump => art.Crouch,
+            State.GetUp => art.GetUp,
+            State.Attack when whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
+            State.Attack when smash => striking ? art.Kick : art.Crouch,
+            State.Attack => striking ? (punchAlt ? art.Punch2 : art.Punch1) : art.Idle[0],
+            State.Hurt => art.Hurt,
+            _ => art.Fall, // launched, down, dead
         };
         body.flipX = facing < 0;
-
-        // lying = sprite rotated 90 degrees around its feet, head pointing backwards
-        bool lying = state == State.Down || state == State.Dead;
-        body.transform.localPosition = lying ? new Vector3(16f * facing, 8f, 0f) : new Vector3(0f, h, 0f);
-        float tilt = lying ? 90f : state == State.Launched ? 30f : 0f;
-        body.transform.localRotation = Quaternion.Euler(0f, 0f, tilt * facing);
+        body.transform.localPosition = new Vector3(0f, h, 0f);
         body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
         bool telegraph = whip && WindingUp && stateFrames / 3 % 2 == 0;
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
             : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
-
-        fist.enabled = smash && striking;
-        fist.flipX = facing < 0;
-        fist.transform.localPosition = new Vector3(facing * 18f, h + 17f, 0f);
 
         whipLine.enabled = whip && striking;
         whipLine.transform.localScale = new Vector3(facing, 1f, 1f);
@@ -247,7 +240,6 @@ public class Fighter : MonoBehaviour
         // nearer to the camera (lower depth) draws on top; shadows under everything
         int order = -Mathf.RoundToInt(ground.y) * 2;
         body.sortingOrder = order;
-        fist.sortingOrder = order + 1;
         whipLine.sortingOrder = order + 1;
     }
 }

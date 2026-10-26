@@ -96,7 +96,7 @@ public class FeelTests
 
     static Fighter Lasher(float x)
     {
-        var w = Game.Spawn(1, Art.Lasher, new Vector2(x, -70f), 10, Art.PonytailHead);
+        var w = Game.Spawn(1, Art.Lasher, new Vector2(x, -70f), 10);
         w.whip = true;
         w.facing = -1;
         return w;

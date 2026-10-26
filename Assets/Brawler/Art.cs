@@ -1,191 +1,53 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
-// Original placeholder pixel art, built at startup. 1 char / 1 texel = 1 screen pixel.
+// Fighters and the street use CC0 art by Chasersgaming (see CREDITS.txt); fighters are palette-swapped per role.
+// Rooftop stage, shadow and whip are drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
-    // palette keys: K outline, H hair, S skin, s skin shade, W eye, A arms/sleeves,
-    // T shirt, t shirt shade, P pants, p pants shade, O boots/belt
-    // VOLT: short blond hair, leather jacket over a white tee, jeans
-    public const string Hero = "K1a1020 Hf0d070 Sf0b890 sc88860 Wffffff A3a2a26 Te8e8e8 tb8b8c0 P3050a0 p203878 O2a1a14";
-    public const string GruntA = "K1a1020 H9030b0 Sd09070 sa06040 Wffffff Ad09070 Tc07820 t8a5414 P4a4a52 p34343a O202020";
-    public const string GruntB = "K1a1020 Hd0d0d0 S8a5a40 s6a4028 Wffffff A8a5a40 T3a4a8a t283460 P6a3a2a p4a2818 O181818";
-    // whip fighter: crimson ponytail, teal jumpsuit
-    public const string Lasher = "K1a1020 Hd04060 Se0a080 sb07858 Wffffff A206060 T206060 t144444 P206060 p144444 O101010";
+    // palette swap keys: H hair, T shirt, t shirt shade, P pants, p pants shade, S skin, s skin shade
+    public const string Hero = "Hf0d070 T4a3a32 t2e241f";                                    // VOLT: blond, leather jacket
+    public const string GruntA = "H9030b0 Tc07820 t8a5414 P4a4a52 p34343a";                  // punk
+    public const string GruntB = "Hd0d0d0 T3a4a8a t283460 P6a3a2a p4a2818 Sc08860 s8a5030";  // bruiser
+    public const string Lasher = "Hd04060 T208080 t145454 P1a6a6a p104848";                  // whip fighter
 
-    public static readonly string[] PonytailHead =
+    // which palette key each colour of the source sprites belongs to (0xRRGGBB)
+    static readonly Dictionary<int, char> SourceKeys = new Dictionary<int, char>
     {
-        "......KKKK......",
-        ".....KHHHHK.....",
-        "....KHHHHHHK....",
-        "..HHKHHHHHHK....",
-        ".HHHKSSSSKWK....",
-        ".HH.KSSSSSSK....",
-        ".....KSSSSK.....",
-        "......KssK......",
-    };
-
-    public static readonly string[] PunkHead =
-    {
-        ".......HH.......",
-        "......HHHH......",
-        ".....KHHHHK.....",
-        "....KSSSSSSK....",
-        "....KSSSSKWK....",
-        "....KSSSSSSK....",
-        ".....KSSssK.....",
-        "......KssK......",
-    };
-
-    public static readonly string[] BruiserHead =
-    {
-        "......KKKK......",
-        ".....KSSSSK.....",
-        "....KSSSSSSK....",
-        "....KSSSSSSK....",
-        "....KSSSKKWK....",
-        "....KHSSSSSK....",
-        ".....KHHHHK.....",
-        "......KHHK......",
-    };
-
-    public static readonly string[] HeroHead =
-    {
-        "......KKKK......",
-        ".....KHHHHK.....",
-        "....KHHHHHHK....",
-        "....KHHHHHHK....",
-        "....KHSSSKWK....",
-        "....KSSSSSSK....",
-        ".....KSSSSK.....",
-        "......KssK......",
-    };
-
-    static readonly string[] TorsoIdle =
-    {
-        "....KKTTTTKK....",
-        "...KAKTTTTKAK...",
-        "..KAAKTTTTKAAK..",
-        "..KAAKtTTtKAAK..",
-        "..KAAKtTTtKAAK..",
-        "..KAAKTTTTKAAK..",
-        "..KSSKTTTTKSSK..",
-        "...KKKOOOOKKK...",
-    };
-
-    static readonly string[] TorsoPunch =
-    {
-        "....KKTTTTKK....",
-        "...KAKTTTTKKKKK.",
-        "..KAAKTTTTAAAASK",
-        "..KAAKtTTtKKKKK.",
-        "..KAAKtTTtK.....",
-        "...KSKTTTTK.....",
-        "...KKKTTTTK.....",
-        "...KKKOOOOKK....",
-    };
-
-    static readonly string[] TorsoHurt =
-    {
-        "KSK.KKTTTTKK.KSK",
-        "KAAKKTTTTTTKKAAK",
-        ".KAAKTTTTTTKAAK.",
-        "..KKKtTTTTtKKK..",
-        "....KtTTTTtK....",
-        "....KTTTTTTK....",
-        "....KTTTTTTK....",
-        "...KKKOOOOKKK...",
-    };
-
-    static readonly string[] LegsStand =
-    {
-        "....KPPPPPPPK...",
-        "....KPPPPPPPK...",
-        "....KPPKKKPPK...",
-        "....KPPK.KPPK...",
-        "....KPPK.KPPK...",
-        "....KPPK.KPPK...",
-        "....KPpK.KPpK...",
-        "....KPpK.KPpK...",
-        "....KPpK.KPpK...",
-        "...KOOOK.KOOOOK.",
-        "...KOOOK.KOOOOK.",
-        "...KKKKK.KKKKKK.",
-    };
-
-    static readonly string[] LegsWalk =
-    {
-        "....KPPPPPPK....",
-        "....KPPPPPPK....",
-        "...KPPPKKPPPK...",
-        "...KPPK..KPPK...",
-        "..KPPK....KPPK..",
-        "..KPpK....KPpK..",
-        ".KPpK......KPpK.",
-        ".KPpK......KPpK.",
-        ".KPpK......KPpK.",
-        "KOOOK......KOOOK",
-        "KOOOK......KOOOK",
-        "KKKKK......KKKKK",
-    };
-
-    static readonly string[] LegsAir =
-    {
-        "....KPPPPPPPK...",
-        "....KPPPPPPPPK..",
-        "....KPPKKPPPPPK.",
-        "....KPpK.KKPPPK.",
-        "....KPpK...KOOK.",
-        "...KOOOK...KOOK.",
-        "...KOOOK...KKKK.",
-        "...KKKKK........",
-        "................",
-        "................",
-        "................",
-        "................",
-    };
-
-    static readonly string[] BigFist =
-    {
-        "...KKKKKK...",
-        "..KSSSSSSK..",
-        ".KSSKSSKSSK.",
-        "KSSSKSSKSSSK",
-        "KSSSSSSSSSSK",
-        "KSSSSSSSSSSK",
-        "KsSSSSSSSSsK",
-        ".KsSSSSSSsK.",
-        "..KssssssK..",
-        "...KKKKKK...",
+        [0x550000] = 'H', [0x5a1a00] = 'H',
+        [0xffffff] = 'T', [0xaaaaaa] = 't',
+        [0x0055aa] = 'P', [0x0000aa] = 'p',
+        [0xffaa55] = 'S', [0xff5500] = 's',
     };
 
     public class Frames
     {
-        public Sprite Stand, Walk, Punch, Hurt, Air, Fist;
+        public Sprite[] Idle, Walk;
+        public Sprite Punch1, Punch2, Kick, Hurt, Fall, GetUp, Crouch, WindUp;
     }
 
     static readonly Dictionary<string, Frames> cache = new Dictionary<string, Frames>();
-    static readonly Vector2 Feet = new Vector2(0.5f, 0f), Center = new Vector2(0.5f, 0.5f);
+    static readonly Vector2 Center = new Vector2(0.5f, 0.5f);
 
-    public static Frames For(string palette, string[] head)
+    public static Frames For(string palette)
     {
-        string key = palette + string.Concat(head);
-        if (cache.TryGetValue(key, out var f)) return f;
+        if (cache.TryGetValue(palette, out var f)) return f;
         var pal = ParsePalette(palette);
         f = new Frames
         {
-            Stand = FromRows(Join(head, TorsoIdle, LegsStand), pal, Feet),
-            Walk = FromRows(Join(head, TorsoIdle, LegsWalk), pal, Feet),
-            Punch = FromRows(Join(head, TorsoPunch, LegsStand), pal, Feet),
-            Hurt = FromRows(Join(head, TorsoHurt, LegsStand), pal, Feet),
-            Air = FromRows(Join(head, TorsoIdle, LegsAir), pal, Feet),
-            Fist = FromRows(BigFist, pal, Center),
+            Idle = Strip("Idle", 4, pal),
+            Walk = Strip("Walk", 4, pal),
+            Punch1 = Strip("Punch1", 1, pal)[0],
+            Punch2 = Strip("Punch2", 1, pal)[0],
+            Kick = Strip("Kick", 1, pal)[0],
+            Hurt = Strip("Hurt", 1, pal)[0],
+            Fall = Strip("Fall", 1, pal, 0.5f)[0],
+            GetUp = Strip("GetUp", 1, pal)[0],
+            Crouch = Strip("Crouch", 1, pal)[0],
+            WindUp = Strip("HeadButt", 2, pal)[0],
         };
-        return cache[key] = f;
+        return cache[palette] = f;
     }
-
-    static string[] Join(params string[][] parts) => parts.SelectMany(p => p).ToArray();
 
     static Dictionary<char, Color32> ParsePalette(string palette)
     {
@@ -195,14 +57,34 @@ public static class Art
         return pal;
     }
 
-    static Sprite FromRows(string[] rows, Dictionary<char, Color32> pal, Vector2 pivot)
+    // equal-width frames from a horizontal strip in Resources/Art/Fighter, recoloured.
+    // Frames face right; wide frames keep the body on the left with the limb reaching right.
+    static Sprite[] Strip(string name, int count, Dictionary<char, Color32> pal, float? pivotX = null)
     {
-        int w = rows.Max(r => r.Length);
-        return Paint(w, rows.Length, (x, y) =>
-            x < rows[y].Length && pal.TryGetValue(rows[y][x], out var c) ? c : Clear, pivot);
+        var src = Resources.Load<Texture2D>("Art/Fighter/" + name);
+        var px = src.GetPixels32();
+        for (int i = 0; i < px.Length; i++)
+            if (SourceKeys.TryGetValue(px[i].r << 16 | px[i].g << 8 | px[i].b, out char k) && pal.TryGetValue(k, out var c))
+                px[i] = new Color32(c.r, c.g, c.b, px[i].a);
+        var tex = new Texture2D(src.width, src.height) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        tex.SetPixels32(px);
+        tex.Apply();
+
+        int w = src.width / count;
+        var pivot = new Vector2(pivotX ?? (w > 16 ? 8f / w : 0.5f), 0f);
+        var frames = new Sprite[count];
+        for (int i = 0; i < count; i++)
+            frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, src.height), pivot, 1f, 0, SpriteMeshType.FullRect);
+        return frames;
     }
 
-    // f(x, y) with y counted from the top, like the ASCII rows
+    static Sprite FromResource(string path)
+    {
+        var tex = Resources.Load<Texture2D>(path);
+        return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Center, 1f, 0, SpriteMeshType.FullRect);
+    }
+
+    // f(x, y) with y counted from the top
     public static Sprite Paint(int w, int h, System.Func<int, int, Color32> f, Vector2 pivot)
     {
         var px = new Color32[w * h];
@@ -217,11 +99,19 @@ public static class Art
 
     static readonly Color32 Clear = new Color32(0, 0, 0, 0);
     static Color32 C(uint rgb, byte a = 255) => new Color32((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, a);
+    static Color32 Mix(uint a, uint b, float t) => Color32.Lerp(C(a), C(b), t);
     static bool Speckle(int x, int y) => ((x * 73856093) ^ (y * 19349663)) % 7 == 0;
 
-    static Sprite shadow, bricks, street, window, litWindow, whip, nightSky, skyline, roof, neon, tank;
+    static Sprite streetScene, shadow, whip, nightSky, skyline, roof, neon, tank;
 
-    static Color32 Mix(uint a, uint b, float t) => Color32.Lerp(C(a), C(b), t);
+    // 784x192 street: buildings on top, sidewalk and road along the bottom 64 px
+    public static Sprite StreetScene => streetScene != null ? streetScene : streetScene = FromResource("Art/Street/panorama");
+
+    public static Sprite Shadow => shadow != null ? shadow : shadow = Paint(18, 6, (x, y) =>
+    {
+        float dx = (x - 8.5f) / 9f, dy = (y - 2.5f) / 3f;
+        return dx * dx + dy * dy <= 1f ? C(0x000000, 90) : Clear;
+    }, Center);
 
     // pivot at the handle end; flip by negative x scale
     public static Sprite Whip => whip != null ? whip : whip = Paint(44, 3, (x, y) =>
@@ -263,42 +153,4 @@ public static class Art
         if (y < 30) return x == 0 || x == 27 ? C(0x1a1020) : y % 9 == 0 ? C(0x2a2a2a) : C(0x6a4a30);
         return x < 4 || x > 23 || x == 13 || x == 14 ? C(0x2a2a30) : Clear;
     }, Center);
-
-    public static Sprite Shadow => shadow != null ? shadow : shadow = Paint(18, 6, (x, y) =>
-    {
-        float dx = (x - 8.5f) / 9f, dy = (y - 2.5f) / 3f;
-        return dx * dx + dy * dy <= 1f ? C(0x000000, 90) : Clear;
-    }, Center);
-
-    public static Sprite Bricks => bricks != null ? bricks : bricks = Paint(32, 16, (x, y) =>
-    {
-        int row = y / 8, bx = x + row % 2 * 8;
-        if (y % 8 == 7 || bx % 16 == 15) return C(0x3a2a30);
-        if (y % 8 == 6) return C(0x5e2c26);
-        return (bx / 16 + row * 3) % 3 == 0 ? C(0x7a3a30) : C(0x8a4434);
-    }, Center);
-
-    // sidewalk on top, curb, then road with lane dashes; tiles horizontally
-    public static Sprite Street => street != null ? street : street = Paint(32, 84, (x, y) =>
-    {
-        if (y < 3) return C(0x302830);
-        if (y < 26) return x == 0 || y == 14 ? C(0x6a6a72) : Speckle(x, y) ? C(0x8a8a92) : C(0x82828a);
-        if (y < 30) return C(0xa8a8b0);
-        if (y < 32) return C(0x404048);
-        if ((y == 55 || y == 56) && x < 16) return C(0xc8b040);
-        return Speckle(x, y) ? C(0x34343c) : C(0x2c2c34);
-    }, Center);
-
-    public static Sprite Window(bool lit)
-    {
-        if (lit && litWindow != null) return litWindow;
-        if (!lit && window != null) return window;
-        var s = Paint(24, 32, (x, y) =>
-        {
-            if (x < 2 || x > 21 || y < 2 || y > 29 || x == 11 || x == 12 || y == 15 || y == 16) return C(0x2a2028);
-            if (lit) return (x + y) % 9 < 2 ? C(0xfff0a0) : C(0xe0b050);
-            return (x + y) % 9 < 2 ? C(0x9ab8e0) : C(0x4a6898);
-        }, Center);
-        return lit ? litWindow = s : window = s;
-    }
 }
