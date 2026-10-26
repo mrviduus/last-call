@@ -43,6 +43,14 @@ public class Enemy : MonoBehaviour
         return behind ? 1f : -1f;
     }
 
+    // teammates already swinging at the hero
+    int Attackers()
+    {
+        int n = 0;
+        foreach (var o in Game.Fighters) if (o.team == f.team && o.state == State.Attack) n++;
+        return n;
+    }
+
     void Think()
     {
         var p = Game.Hero;
@@ -66,7 +74,7 @@ public class Enemy : MonoBehaviour
         f.facing = side;
         if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table); // step around it instead of pushing into it
 
-        if (cooldown == 0 && f.InReach(p, reach))
+        if (cooldown == 0 && f.InReach(p, reach) && Attackers() < Feel.MaxAttackers)
         {
             f.Attack(f.whip ? Move.Whip : Move.Punch);
             cooldown = (f.whip ? Feel.WhipCooldown : Feel.EnemyAttackCooldown) + Random.Range(0, 30);

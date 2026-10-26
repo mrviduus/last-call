@@ -67,6 +67,7 @@ public class Game : MonoBehaviour
         for (int i = Props.Count - 1; i >= 0; i--) Props[i].Step(); // backwards: a prop may break and remove itself
         Separate();
         BlockByTables();
+        if (Hero != null) Hero.ResolveStrike(); // the hero wins ties
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].ResolveStrike();
     }
 

@@ -83,17 +83,18 @@ public class FeelTests
     }
 
     [Test]
-    public void SamePunchFrameTrades()
+    public void HeroWinsASameFramePunch()
     {
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10); // first in the list on purpose
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        Game.Hero = p;
         e.facing = -1;
         p.Attack(Move.Punch);
         e.Attack(Move.Punch);
 
         Run(Feel.PunchStartup);
-        Assert.AreEqual(State.Hurt, p.state);
         Assert.AreEqual(State.Hurt, e.state);
+        Assert.AreEqual(10, p.health, "no trade: being hit cancels the enemy's punch");
     }
 
     static Fighter Lasher(float x)
@@ -628,5 +629,22 @@ public class FeelTests
         Run(10);
         Assert.Greater(e.ground.x, 50f, "too close: steps back");
         Assert.AreEqual(-1, e.facing, "still facing the hero");
+    }
+
+    [Test]
+    public void AtMostTwoEnemiesSwingAtOnce()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(200f, -70f), 1000);
+        Game.Hero = p;
+        foreach (float x in new[] { 140f, 260f, 150f, 250f }) // whips: long wind-ups would overlap without the cap
+            Lasher(x).gameObject.AddComponent<Enemy>().Setup();
+        int most = 0;
+        for (int i = 0; i < 600; i++)
+        {
+            Game.Simulate();
+            int n = Game.Fighters.FindAll(f => f.team == 1 && f.state == State.Attack).Count;
+            most = Mathf.Max(most, n);
+        }
+        Assert.That(most, Is.InRange(1, Feel.MaxAttackers));
     }
 }

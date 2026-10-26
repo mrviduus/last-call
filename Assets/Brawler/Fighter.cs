@@ -249,6 +249,7 @@ public class Fighter : MonoBehaviour
     public void TakeHit(int damage, int dir, bool launch, float push = Feel.JabPush)
     {
         if (!CanBeHit) return;
+        strikePending = false; // hit first: our own blow never lands
         bool countered = move == Move.Whip && WindingUp; // punished mid wind-up: knocked flying
         Release();
         if (hangingOn != null) { hangingOn.hanger = null; hangingOn = null; } // knocked off the lamp
@@ -427,7 +428,7 @@ public class Fighter : MonoBehaviour
         return true;
     }
 
-    // called by Game after every fighter has stepped, so same-frame punches trade
+    // called by Game after every fighter has stepped; the hero's first, so the hero wins a same-frame tie
     public void ResolveStrike()
     {
         if (!strikePending) return;
