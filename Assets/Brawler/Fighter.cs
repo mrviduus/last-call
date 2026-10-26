@@ -7,7 +7,7 @@ public enum Move { Punch, Smash, Kick, JumpKick, SpinKick, Pound, KneeDrop, Knee
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
 public class Fighter : MonoBehaviour
 {
-    const float Width = 16f;
+    const float Width = 28f; // body width for bodies hitting bodies
 
     public int team;
     public int maxHealth = 5;
@@ -27,6 +27,7 @@ public class Fighter : MonoBehaviour
     bool bounced, strikePending, punchAlt, airKick, airKickSpent;
     SpriteRenderer body, shadow, whipLine, boot;
     Art.Frames art;
+    Color tint = Color.white;
 
     int Startup => move switch
     {
@@ -63,12 +64,13 @@ public class Fighter : MonoBehaviour
     public bool CanBeHit => Alive && invulnFrames == 0
         && state != State.Launched && state != State.Down && state != State.GetUp;
 
-    public void Init(int team, string palette, Vector2 start)
+    public void Init(int team, string look, Vector2 start)
     {
         this.team = team;
         ground = start;
         health = maxHealth;
-        art = Art.For(palette);
+        art = Art.For(look);
+        tint = Art.Tint(look);
         shadow = MakeSprite("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000; // under every body
         body = MakeSprite("Body", art.Idle[0]);
@@ -383,10 +385,10 @@ public class Fighter : MonoBehaviour
         bool striking = state == State.Attack && stateFrames >= Startup && stateFrames < Startup + Active + 6;
         body.sprite = state switch
         {
-            State.Idle => art.Idle[Game.Frame / 10 % 4],
-            State.Walk => art.Walk[Game.Frame / 8 % 4],
-            State.Run => art.Run[Game.Frame / 5 % 4],
-            State.Jump => airKick ? art.Kick : art.Crouch,
+            State.Idle => art.Idle[Game.Frame / 10 % art.Idle.Length],
+            State.Walk => art.Walk[Game.Frame / 5 % art.Walk.Length],
+            State.Run => art.Walk[Game.Frame / 3 % art.Walk.Length], // walk cycle, played fast
+            State.Jump => airKick ? art.JumpKick : art.Air,
             State.GetUp => art.GetUp,
             State.Grab => art.Punch1,
             State.Held => art.Hurt,
@@ -395,7 +397,7 @@ public class Fighter : MonoBehaviour
             {
                 Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
                 Move.Smash or Move.Kick => striking ? art.Kick : art.Crouch,
-                Move.SpinKick => striking ? art.Kick : art.Run[0],
+                Move.SpinKick => striking ? art.Spin[stateFrames / Feel.SpinTurnFrames % 2] : art.Crouch,
                 Move.Pound => striking ? art.Kick : art.Crouch,
                 Move.KneeDrop => art.Crouch,
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
@@ -403,7 +405,8 @@ public class Fighter : MonoBehaviour
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : art.Idle[0],
             },
             State.Hurt => art.Hurt,
-            _ => art.Fall, // launched, down, dead
+            State.Launched => art.Fall,
+            _ => art.Down, // down, dead
         };
         // spinning: the body turns to face the other way every few frames
         bool spinning = state == State.Attack && move == Move.SpinKick && striking;
@@ -415,17 +418,17 @@ public class Fighter : MonoBehaviour
         bool telegraph = move == Move.Whip && WindingUp && stateFrames / 3 % 2 == 0;
         body.color = flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
-            : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
+            : Alive ? tint : tint * new Color(0.6f, 0.6f, 0.6f);
 
         // finishing kicks: the foot swells into a giant boot at the moment of impact
         boot.enabled = striking && state == State.Attack && (move == Move.Smash || move == Move.SpinKick);
-        float swell = stateFrames - Startup < 2 ? 1.5f : 2f;
+        float swell = stateFrames - Startup < 2 ? 2f : 2.5f;
         boot.transform.localScale = new Vector3(look * swell, swell, 1f);
-        boot.transform.localPosition = new Vector3(look * 10f, h + 15f, 0f);
+        boot.transform.localPosition = new Vector3(look * 22f, h + 30f, 0f);
 
         whipLine.enabled = move == Move.Whip && striking;
-        whipLine.transform.localScale = new Vector3(facing, 1f, 1f);
-        whipLine.transform.localPosition = new Vector3(facing * 10f, h + 19f, 0f);
+        whipLine.transform.localScale = new Vector3(facing * 1.8f, 1f, 1f);
+        whipLine.transform.localPosition = new Vector3(facing * 20f, h + 38f, 0f);
 
         // nearer to the camera (lower depth) draws on top; shadows under everything
         int order = -Mathf.RoundToInt(ground.y) * 2;

@@ -1,56 +1,117 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Fighters and the street use CC0 art by Chasersgaming (see CREDITS.txt); fighters are palette-swapped per role.
-// Rooftop stage, shadow and whip are drawn in code. 1 texel = 1 screen pixel.
+// Fighters and the street: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt). Variants are tinted copies.
+// Rooftop stage, whip and giant boot are drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
-    // palette swap keys: H hair, T shirt, t shirt shade, P pants, p pants shade, S skin, s skin shade
-    public const string Hero = "Hf0d070 T4a3a32 t2e241f";                                    // VOLT: blond, leather jacket
-    public const string GruntA = "H9030b0 Tc07820 t8a5414 P4a4a52 p34343a";                  // punk
-    public const string GruntB = "Hd0d0d0 T3a4a8a t283460 P6a3a2a p4a2818 Sc08860 s8a5030";  // bruiser
-    public const string Lasher = "Hd04060 T208080 t145454 P1a6a6a p104848";                  // whip fighter
+    // a look is "<character>" or "<character>:<tint>"; characters are folders under Resources/Art
+    public const string Hero = "Girl";            // placeholder until Leha's VOLT
+    public const string GruntA = "Punk";          // punk
+    public const string GruntB = "Punk:9fb4ff";   // bruiser, blue tint
+    public const string Lasher = "Girl:b0ffd8";   // whip fighter, teal tint
 
-    // which palette key each colour of the source sprites belongs to (0xRRGGBB)
-    static readonly Dictionary<int, char> SourceKeys = new Dictionary<int, char>
+    public static Color Tint(string look)
     {
-        [0x550000] = 'H', [0x5a1a00] = 'H',
-        [0xffffff] = 'T', [0xaaaaaa] = 't',
-        [0x0055aa] = 'P', [0x0000aa] = 'p',
-        [0xffaa55] = 'S', [0xff5500] = 's',
-    };
+        int i = look.IndexOf(':');
+        return i >= 0 && ColorUtility.TryParseHtmlString("#" + look.Substring(i + 1), out var c) ? c : Color.white;
+    }
 
     public class Frames
     {
-        public Sprite[] Idle, Walk, Run, Throw, Sinking;
-        public Sprite Punch1, Punch2, Kick, Hurt, Fall, GetUp, Crouch, WindUp, Headbutt;
+        public Sprite[] Idle, Walk, Throw, Spin, Sinking;
+        public Sprite Punch1, Punch2, Kick, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
     }
 
+    const int FrameW = 96; // every sheet is a row of 96 px wide frames
     static readonly Dictionary<string, Frames> cache = new Dictionary<string, Frames>();
     static readonly Vector2 Center = new Vector2(0.5f, 0.5f);
 
-    public static Frames For(string palette)
+    public static Frames For(string look)
     {
-        if (cache.TryGetValue(palette, out var f)) return f;
-        var pal = ParsePalette(palette);
-        f = new Frames
-        {
-            Idle = Strip("Idle", 4, pal),
-            Walk = Strip("Walk", 4, pal),
-            Run = Strip("Run", 4, pal),
-            Punch1 = Strip("Punch1", 1, pal)[0],
-            Punch2 = Strip("Punch2", 1, pal)[0],
-            Kick = Strip("Kick", 1, pal)[0],
-            Hurt = Strip("Hurt", 1, pal)[0],
-            Fall = Strip("Fall", 1, pal, 0.5f)[0],
-            GetUp = Strip("GetUp", 1, pal)[0],
-            Crouch = Strip("Crouch", 1, pal)[0],
-            WindUp = Strip("HeadButt", 2, pal)[0],
-            Headbutt = Strip("HeadButt", 2, pal)[1],
-            Throw = Strip("Throw", 2, pal),
-        };
+        string name = look.Split(':')[0];
+        if (cache.TryGetValue(name, out var f)) return f;
+        f = name == "Girl" ? Girl() : Punk();
         f.Sinking = Sinking(f.Hurt);
-        return cache[palette] = f;
+        return cache[name] = f;
+    }
+
+    // full move set
+    static Frames Girl()
+    {
+        var pivot = FeetPivot(Load("Girl/idle"), FrameW);
+        Sprite[] S(string sheet) => Sheet("Girl/" + sheet, pivot);
+        var jab = S("jab"); var punch = S("punch"); var kick = S("kick"); var jump = S("jump");
+        var jumpKick = S("jump_kick"); var dive = S("dive_kick"); var hurt = S("hurt");
+        return new Frames
+        {
+            Idle = S("idle"), Walk = S("walk"),
+            Punch1 = jab[1], Punch2 = punch[1], Kick = kick[3], JumpKick = dive[3],
+            Hurt = hurt[0], Fall = hurt[1], Down = LyingDown(hurt[1]),
+            GetUp = jump[0], Crouch = jump[0], Air = jump[2],
+            WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
+            Spin = new[] { dive[1], jumpKick[1] },
+        };
+    }
+
+    // only idle, walk, punch and hurt; the last hurt frame lies on the ground
+    static Frames Punk()
+    {
+        var pivot = FeetPivot(Load("Punk/idle"), FrameW);
+        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot);
+        var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
+        return new Frames
+        {
+            Idle = idle, Walk = S("walk"),
+            Punch1 = punch[2], Punch2 = punch[2], Kick = punch[2], JumpKick = punch[2],
+            Hurt = hurt[1], Fall = hurt[2], Down = hurt[3],
+            GetUp = idle[0], Crouch = idle[0], Air = idle[0],
+            WindUp = punch[1], Headbutt = punch[2], Throw = new[] { punch[1], punch[2] },
+            Spin = new[] { punch[2], punch[2] },
+        };
+    }
+
+    static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);
+
+    static Sprite[] Sheet(string path, Vector2 pivot)
+    {
+        var tex = Load(path);
+        var frames = new Sprite[tex.width / FrameW];
+        for (int i = 0; i < frames.Length; i++)
+            frames[i] = Sprite.Create(tex, new Rect(i * FrameW, 0, FrameW, tex.height), pivot, 1f, 0, SpriteMeshType.FullRect);
+        return frames;
+    }
+
+    // pivot under the feet: lowest opaque row, centred on the body (first frame of the sheet)
+    static Vector2 FeetPivot(Texture2D tex, int frameW)
+    {
+        var px = tex.GetPixels32();
+        int minX = frameW, maxX = -1, bottom = tex.height;
+        for (int y = 0; y < tex.height; y++)
+            for (int x = 0; x < frameW; x++)
+                if (px[y * tex.width + x].a > 0)
+                {
+                    bottom = Mathf.Min(bottom, y);
+                    minX = Mathf.Min(minX, x);
+                    maxX = Mathf.Max(maxX, x);
+                }
+        return new Vector2((minX + maxX + 1) / 2f / frameW, bottom / (float)tex.height);
+    }
+
+    // a frame turned 90 degrees counter-clockwise: lying on the back, head behind (no lying frame in the sheet)
+    static Sprite LyingDown(Sprite standing)
+    {
+        var r = standing.rect;
+        int w = (int)r.width, h = (int)r.height;
+        var src = standing.texture.GetPixels((int)r.x, (int)r.y, w, h);
+        var px = new Color[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+                px[x * h + (h - 1 - y)] = src[y * w + x];
+        var tex = new Texture2D(h, w) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, h, w), FeetPivot(tex, h), 1f, 0, SpriteMeshType.FullRect);
     }
 
     // the hurt pose with its bottom rows cut off, deeper each frame: a body hammered into the ground
@@ -58,47 +119,19 @@ public static class Art
     {
         var frames = new Sprite[(int)(Feel.BurySink / 3f) + 1];
         var r = hurt.rect;
+        var pivot = new Vector2(hurt.pivot.x / r.width, 0f);
         for (int i = 0; i < frames.Length; i++)
         {
             float cut = i * 3f;
             frames[i] = Sprite.Create(hurt.texture, new Rect(r.x, r.y + cut, r.width, r.height - cut),
-                new Vector2(0.5f, 0f), 1f, 0, SpriteMeshType.FullRect);
+                pivot, 1f, 0, SpriteMeshType.FullRect);
         }
-        return frames;
-    }
-
-    static Dictionary<char, Color32> ParsePalette(string palette)
-    {
-        var pal = new Dictionary<char, Color32>();
-        foreach (var entry in palette.Split(' '))
-            if (ColorUtility.TryParseHtmlString("#" + entry.Substring(1), out var c)) pal[entry[0]] = c;
-        return pal;
-    }
-
-    // equal-width frames from a horizontal strip in Resources/Art/Fighter, recoloured.
-    // Frames face right; wide frames keep the body on the left with the limb reaching right.
-    static Sprite[] Strip(string name, int count, Dictionary<char, Color32> pal, float? pivotX = null)
-    {
-        var src = Resources.Load<Texture2D>("Art/Fighter/" + name);
-        var px = src.GetPixels32();
-        for (int i = 0; i < px.Length; i++)
-            if (SourceKeys.TryGetValue(px[i].r << 16 | px[i].g << 8 | px[i].b, out char k) && pal.TryGetValue(k, out var c))
-                px[i] = new Color32(c.r, c.g, c.b, px[i].a);
-        var tex = new Texture2D(src.width, src.height) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
-        tex.SetPixels32(px);
-        tex.Apply();
-
-        int w = src.width / count;
-        var pivot = new Vector2(pivotX ?? (w > 16 ? 8f / w : 0.5f), 0f);
-        var frames = new Sprite[count];
-        for (int i = 0; i < count; i++)
-            frames[i] = Sprite.Create(tex, new Rect(i * w, 0, w, src.height), pivot, 1f, 0, SpriteMeshType.FullRect);
         return frames;
     }
 
     static Sprite FromResource(string path)
     {
-        var tex = Resources.Load<Texture2D>(path);
+        var tex = Load(path);
         return Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Center, 1f, 0, SpriteMeshType.FullRect);
     }
 
@@ -138,14 +171,10 @@ public static class Art
     }, new Vector2(0f, 0.5f));
 
 
-    // 784x192 street: buildings on top, sidewalk and road along the bottom 64 px
-    public static Sprite StreetScene => streetScene != null ? streetScene : streetScene = FromResource("Art/Street/panorama");
+    // 1200x240 street: buildings on top, sidewalk and road below
+    public static Sprite StreetScene => streetScene != null ? streetScene : streetScene = FromResource("Street/stage");
 
-    public static Sprite Shadow => shadow != null ? shadow : shadow = Paint(18, 6, (x, y) =>
-    {
-        float dx = (x - 8.5f) / 9f, dy = (y - 2.5f) / 3f;
-        return dx * dx + dy * dy <= 1f ? C(0x000000, 90) : Clear;
-    }, Center);
+    public static Sprite Shadow => shadow != null ? shadow : shadow = FromResource("shadow");
 
     // pivot at the handle end; flip by negative x scale
     public static Sprite Whip => whip != null ? whip : whip = Paint(44, 3, (x, y) =>
@@ -164,7 +193,7 @@ public static class Art
     }, Center);
 
     // concrete ledge at the far edge, then tar and gravel
-    public static Sprite Roof => roof != null ? roof : roof = Paint(32, 84, (x, y) =>
+    public static Sprite Roof => roof != null ? roof : roof = Paint(32, 132, (x, y) =>
     {
         if (y < 2) return C(0x9a9aa8);
         if (y < 6) return C(0x6a6a78);

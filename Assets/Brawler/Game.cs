@@ -4,8 +4,8 @@ using UnityEngine;
 // Boots itself in any scene: 60 Hz fixed loop, 256x224 pixel screen, floor, player, enemy waves.
 public class Game : MonoBehaviour
 {
-    public const int ScreenW = 256, ScreenH = 224;
-    public const float MinX = 8f, MinDepth = -100f, MaxDepth = -50f;
+    public const int ScreenW = 384, ScreenH = 240;
+    public const float MinX = 16f, MinDepth = -105f, MaxDepth = 10f; // the street's sidewalk and road
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
     public static Fighter Hero;
@@ -73,11 +73,11 @@ public class Game : MonoBehaviour
             }
     }
 
-    public static Fighter Spawn(int team, string palette, Vector2 pos, int hp)
+    public static Fighter Spawn(int team, string look, Vector2 pos, int hp)
     {
         var f = new GameObject(team == 0 ? "Player" : "Enemy").AddComponent<Fighter>();
         f.maxHealth = hp;
-        f.Init(team, palette, pos);
+        f.Init(team, look, pos);
         Fighters.Add(f);
         return f;
     }
@@ -116,18 +116,18 @@ public class Game : MonoBehaviour
             // street: brick wall from the sidewalk up past the top of the screen, road below
             // street panorama, bottom on the screen edge; its sidewalk and road are the walkable area
             cam.backgroundColor = new Color(0.05f, 0.05f, 0.15f);
-            MakeBackdrop(Art.StreetScene, new Vector2(784f * 3f, -16f), new Vector2(784f * 6f, 192f), -20000);
+            MakeBackdrop(Art.StreetScene, new Vector2(1200f * 2f, 0f), new Vector2(1200f * 4f, 240f), -20000);
         }
         else
         {
             // rooftop at night: sky, skyline behind the ledge, water tanks and neon signs
-            MakeBackdrop(Art.NightSky, new Vector2(1900f, 40f), new Vector2(4200f, 144f), -20002);
-            MakeBackdrop(Art.Skyline, new Vector2(1900f, 4f), new Vector2(4200f, 72f), -20001);
-            MakeBackdrop(Art.Roof, new Vector2(1900f, -74f), new Vector2(4200f, 84f), -20000);
+            MakeBackdrop(Art.NightSky, new Vector2(1900f, 60f), new Vector2(4200f, 144f), -20002);
+            MakeBackdrop(Art.Skyline, new Vector2(1900f, 46f), new Vector2(4200f, 72f), -20001);
+            MakeBackdrop(Art.Roof, new Vector2(1900f, -56f), new Vector2(4200f, 132f), -20000);
             for (int i = 0; i < 14; i++)
-                MakeBackdrop(Art.Tank, new Vector2(150f + i * 300f, -6f), new Vector2(28f, 44f), -19999);
+                MakeBackdrop(Art.Tank, new Vector2(150f + i * 300f, 32f), new Vector2(28f, 44f), -19999);
             for (int i = 0; i < 10; i++)
-                MakeBackdrop(Art.Neon, new Vector2(300f + i * 400f, 64f), new Vector2(56f, 22f), -19999);
+                MakeBackdrop(Art.Neon, new Vector2(300f + i * 400f, 84f), new Vector2(56f, 22f), -19999);
         }
     }
 
@@ -165,7 +165,7 @@ public class Game : MonoBehaviour
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
         Reset();
         camX = ScreenW / 2f;
-        Hero = Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        Hero = Spawn(0, Art.Hero, new Vector2(60f, -50f), 10);
         Hero.gameObject.AddComponent<Player>();
         SetStage(1);
     }

@@ -1,7 +1,5 @@
 Art
-- Fighter sprites: "Brawler Asset Character" (Renegade, SMS) by Chasersgaming, CC0
-  https://opengameart.org/content/brawler-asset-character-vigilante-sms
-  Recoloured at runtime for each character.
-- Street backdrop: "Brawler Asset Tile Set 'Market Street' SMS" by Chasersgaming, CC0
-  https://opengameart.org/content/brawler-asset-tile-set-market-street-sms
-- Rooftop stage, shadow, whip: drawn in code for this project.
+- Fighters (Brawler Girl, Enemy Punk) and the street stage: "Streets of Fight" by Luis Zuno (ansimuz), CC0
+  https://ansimuz.itch.io/streets-of-fight
+  Whip fighters and bruisers are tinted copies.
+- Rooftop stage, whip and giant boot: drawn in code for this project.

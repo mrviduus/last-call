@@ -131,8 +131,9 @@ public class FeelTests
     public void KickReachesFurtherThanPunch()
     {
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + 25f, -70f), 10);
-        Assert.Greater(25f, Feel.PunchReach);
+        float gap = (Feel.PunchReach + Feel.KickReach) / 2f; // too far for a punch, close enough for a kick
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + gap, -70f), 10);
+        Assert.Greater(gap, Feel.PunchReach);
 
         p.Attack(Move.Kick);
         Run(Feel.KickStartup);
