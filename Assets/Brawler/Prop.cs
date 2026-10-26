@@ -6,7 +6,7 @@ using UnityEngine;
 // Same ground plane as fighters: (x, depth) + height; stepped by Game at 60 Hz.
 public class Prop : MonoBehaviour
 {
-    public enum Kind { Chair, Stool, Bottle, Table, PoolTable, Cue, Ball }
+    public enum Kind { Chair, Stool, Bottle, Table, PoolTable, Cue, Ball, Lamp }
 
     public Kind kind;
     public Vector2 ground, vel;
@@ -41,7 +41,7 @@ public class Prop : MonoBehaviour
         mirrored = faceLeft;
         hitsLeft = k switch
         {
-            Kind.Bottle => 1, Kind.Table => Feel.TableHits, Kind.Cue => Feel.CueHits,
+            Kind.Bottle => 1, Kind.Table => Feel.TableHits, Kind.Cue => Feel.CueHits, Kind.Lamp => Feel.LampHits,
             Kind.Ball or Kind.PoolTable => int.MaxValue, _ => Feel.ChairHits,
         };
         shadow = Child("Shadow", Art.Shadow);
@@ -49,7 +49,7 @@ public class Prop : MonoBehaviour
         sr = Child("Sprite", k switch
         {
             Kind.Chair => Art.Chair, Kind.Stool => Art.Stool, Kind.Bottle => Art.Bottle, Kind.PoolTable => Art.PoolTable,
-            Kind.Cue => Art.Cue, Kind.Ball => Art.Ball, _ => Art.Table,
+            Kind.Cue => Art.Cue, Kind.Ball => Art.Ball, Kind.Lamp => Art.LampShade, _ => Art.Table,
         });
     }
 
@@ -134,12 +134,12 @@ public class Prop : MonoBehaviour
     {
         if (holder != null) holder.held = null;
         Game.Props.Remove(this);
-        Sfx.Play(kind == Kind.Bottle ? "glass" : "wood");
+        Sfx.Play(kind is Kind.Bottle or Kind.Lamp ? "glass" : "wood");
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
         var color = kind switch
         {
             Kind.Bottle => new Color32(0x4a, 0x2a, 0x10, 255),   // brown glass
-            Kind.Chair => new Color32(0x17, 0x58, 0x2f, 255),    // green cushion
+            Kind.Chair or Kind.Lamp => new Color32(0x17, 0x58, 0x2f, 255), // green cushion or shade
             Kind.Stool => new Color32(0xa0, 0x2a, 0x28, 255),    // red leather
             _ => new Color32(0x9a, 0x5e, 0x2e, 255),             // wood
         };

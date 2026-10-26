@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 // J in the air = jump kick. Walk into a stunned enemy to grab: J = headbutt (third one throws), K = throw.
 // Double-tap left/right = run; while running J = flying kick, L = bicycle kick.
 // J next to a chair or bottle (nobody in reach) picks it up; then J = swing it, L = throw it.
+// Jump into a pool lamp to hang on: A/D swing, J/L kick, K let go, S+J rip it down.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
@@ -49,7 +50,13 @@ public class Player : MonoBehaviour
         if (attackPressed || kickPressed) Game.Brawl = true; // the first swing starts the bar fight
         attackPressed = jumpPressed = kickPressed = false;
 
-        if (f.state == State.Grab)
+        if (f.state == State.Hang)
+        {
+            if (attackBuffer > 0 && f.moveInput.y < 0f) { f.RipLamp(); attackBuffer = 0; } // S+J: rip it down
+            else if (attackBuffer > 0 || kickBuffer > 0) { f.HangKick(); attackBuffer = kickBuffer = 0; }
+            else if (jumpBuffer > 0) { f.LetGo(); jumpBuffer = 0; }
+        }
+        else if (f.state == State.Grab)
         {
             if (attackBuffer > 0) { grabHits++; f.Attack(grabHits >= 3 ? Move.Throw : Move.Knee); attackBuffer = 0; }
             else if (jumpBuffer > 0) { f.Attack(Move.Throw); jumpBuffer = 0; }

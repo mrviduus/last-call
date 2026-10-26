@@ -10,6 +10,7 @@ public class FeelTests
     {
         foreach (var f in Game.Fighters) Object.DestroyImmediate(f.gameObject);
         foreach (var p in Game.Props) Object.DestroyImmediate(p.gameObject);
+        foreach (var l in Game.Lamps) Object.DestroyImmediate(l.gameObject);
         Game.Reset();
     }
 
@@ -502,5 +503,67 @@ public class FeelTests
         Assert.IsTrue(Game.Props.Contains(ball), "still there");
         Assert.AreEqual(0f, ball.height);
         Assert.Greater(ball.ground.x, 80f, "flew and rolled away");
+    }
+
+    static Fighter HeroUnderALamp(out Lamp lamp)
+    {
+        lamp = Lamp.Spawn(100f, -70f, Feel.LampBottom);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(100f, -82f), 10); // in front of where its pool table would be
+        p.Jump();
+        int frames = 0;
+        while (p.state == State.Jump && frames++ < 60) Game.Simulate();
+        return p;
+    }
+
+    [Test]
+    public void JumpingIntoALampHangsFromIt()
+    {
+        var p = HeroUnderALamp(out var lamp);
+        Assert.AreEqual(State.Hang, p.state);
+        Assert.AreSame(p, lamp.hanger);
+        Assert.AreEqual(Feel.LampBottom - Feel.HangReach, p.height, 0.01f);
+    }
+
+    [Test]
+    public void PumpingSwingsTheLampAndTheHeroWithIt()
+    {
+        var p = HeroUnderALamp(out var lamp);
+        p.moveInput = Vector2.right;
+        Run(40);
+        Assert.Greater(lamp.angle, 0.05f);
+        Assert.AreEqual(lamp.SwingX, p.ground.x, 0.01f);
+    }
+
+    [Test]
+    public void KickFromTheLampLaunches()
+    {
+        var p = HeroUnderALamp(out _);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 30f, -82f), 10);
+        p.HangKick();
+        Run(Feel.HangKickStartup + 1);
+        Assert.AreEqual(State.Launched, e.state);
+    }
+
+    [Test]
+    public void RippingTheLampGivesAWeaponAndLetGoKeepsItSwinging()
+    {
+        var p = HeroUnderALamp(out var lamp);
+        p.moveInput = Vector2.right;
+        Run(30);
+        p.moveInput = Vector2.zero;
+        p.LetGo();
+        Assert.IsNull(lamp.hanger);
+        float swing = Mathf.Abs(lamp.angle) + Mathf.Abs(lamp.angVel);
+        Run(10);
+        Assert.Greater(Mathf.Abs(lamp.angle) + Mathf.Abs(lamp.angVel), 0f, "still swinging");
+        Assert.Greater(swing, 0f);
+
+        var lamp2 = Lamp.Spawn(300f, -70f, Feel.LampBottom);
+        var q = Game.Spawn(0, Art.Hero, new Vector2(300f, -82f), 10);
+        q.Hang(lamp2);
+        q.RipLamp();
+        Assert.IsFalse(Game.Lamps.Contains(lamp2), "torn down");
+        Assert.IsNotNull(q.held);
+        Assert.AreEqual(Prop.Kind.Lamp, q.held.kind);
     }
 }

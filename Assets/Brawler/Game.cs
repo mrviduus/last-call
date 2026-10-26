@@ -11,6 +11,7 @@ public class Game : MonoBehaviour
 
     public static readonly List<Fighter> Fighters = new List<Fighter>();
     public static readonly List<Prop> Props = new List<Prop>();
+    public static readonly List<Lamp> Lamps = new List<Lamp>();
     public static Fighter Hero;
     public static int Frame;    // every fixed tick
     public static int SimFrame; // ticks that actually simulated (hitstop excluded)
@@ -38,6 +39,7 @@ public class Game : MonoBehaviour
     {
         Fighters.Clear();
         Props.Clear();
+        Lamps.Clear();
         Hero = null;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = 0;
         RestartRequested = false;
@@ -60,6 +62,7 @@ public class Game : MonoBehaviour
         if (flashFrames > 0) flashFrames--;
         if (freezeFrames > 0) { freezeFrames--; return; }
         SimFrame++;
+        foreach (var l in Lamps) l.Step(); // before the fighters, so whoever hangs on one moves with it this frame
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
         for (int i = Props.Count - 1; i >= 0; i--) Props[i].Step(); // backwards: a prop may break and remove itself
         Separate();
@@ -196,7 +199,7 @@ public class Game : MonoBehaviour
             for (int i = 0; i < ballColours.Length; i++)
                 SpawnProp(Prop.Kind.Ball, new Vector2(x - 30f + i * 13f, depth - 9f), FeltTop).Tint(ballColours[i]);
             SpawnProp(Prop.Kind.Cue, new Vector2(x, depth - 9f), FeltTop + 2f);
-            Lamp(x, depth);
+            Lamp.Spawn(x, depth, Feel.LampBottom);
         }
 
         // a couple at each round table: a guy on the left chair, a girl on the right, facing each other
@@ -214,18 +217,6 @@ public class Game : MonoBehaviour
         }
     }
 
-    // a lamp hanging over a pool table, drawn just in front of the table so it sits above the felt
-    static void Lamp(float x, float depth)
-    {
-        var sr = new GameObject("PoolLamp").AddComponent<SpriteRenderer>();
-        sr.sprite = Art.PoolLamp;
-        sr.sortingOrder = -Mathf.RoundToInt(depth) * 2 + 2;
-        sr.transform.position = new Vector3(x, depth + FeltTop + 26f, 0f);
-        lamps.Add(sr.gameObject);
-    }
-
-    static readonly List<GameObject> lamps = new List<GameObject>();
-
     public static Fighter Seat(string look, Prop chair, int faceDir, int hp, float seatHeight = 0f)
     {
         var f = Spawn(1, look, chair.ground, hp);
@@ -239,8 +230,7 @@ public class Game : MonoBehaviour
     {
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
         foreach (var p in Props) if (p != null) Destroy(p.gameObject);
-        foreach (var l in lamps) Destroy(l);
-        lamps.Clear();
+        foreach (var l in Lamps) if (l != null) Destroy(l.gameObject);
         Reset();
         wave = toSpawn = 0;
         Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), 10); // at the counter

@@ -1,7 +1,7 @@
 using UnityEngine;
 
-public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit }
-public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp }
+public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit, Hang }
+public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -23,6 +23,8 @@ public class Fighter : MonoBehaviour
     public bool whip; // enemy type: long reach, slow telegraphed wind-up
     public Fighter grabbed;
     public Prop held; // chair or bottle in hand
+    public Lamp hangingOn;
+    int hangKick; // frames left of a kick from the lamp
 
     int flashFrames, invulnFrames;
     bool bounced, strikePending, punchAlt, airKick;
@@ -53,7 +55,7 @@ public class Fighter : MonoBehaviour
     {
         Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach,
         Move.JumpKick => Feel.JumpKickReach, Move.FlyingKick => Feel.FlyingKickReach, Move.BicycleKick => Feel.BicycleKickReach, Move.Pound => Feel.PoundReach,
-        Move.ElbowDrop => Feel.ElbowDropReach,
+        Move.ElbowDrop => Feel.ElbowDropReach, Move.HangKick => Feel.HangKickReach,
         Move.Whip => Feel.WhipReach, Move.Swing when held != null => held.Reach, _ => Feel.PunchReach,
     };
     float Push => move switch
@@ -66,14 +68,14 @@ public class Fighter : MonoBehaviour
     {
         Move.Punch or Move.Whip or Move.BicycleKick => 1, Move.FlyingKick or Move.ElbowDrop => 3, Move.Swing when held != null => held.Damage, _ => 2,
     };
-    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick
+    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick
         || move == Move.BicycleKick && stateFrames >= Startup + Active - Feel.BicycleHitGap // only its last kick
-        || move == Move.Swing && held != null && held.kind == Prop.Kind.Chair;
+        || move == Move.Swing && held != null && held.kind is Prop.Kind.Chair or Prop.Kind.Lamp;
     bool WindingUp => state == State.Attack && stateFrames < Startup;
 
     public bool CanAct => state == State.Idle || state == State.Walk || state == State.Run;
     public bool Alive => health > 0;
-    public bool Solid => Alive && height <= 0f && state != State.Launched && state != State.Down && state != State.Sit;
+    public bool Solid => Alive && height <= 0f && state != State.Launched && state != State.Down && state != State.Sit && state != State.Hang;
     public bool CanBeHit => Alive && invulnFrames == 0
         && state != State.Launched && state != State.Down && state != State.GetUp;
 
@@ -145,6 +147,52 @@ public class Fighter : MonoBehaviour
         if (state == State.Sit) Enter(State.Idle);
     }
 
+    // jumped into a lamp: hang from it by the hands
+    public void Hang(Lamp lamp)
+    {
+        hangingOn = lamp;
+        lamp.hanger = this;
+        vel = Vector2.zero;
+        heightVel = 0f;
+        ground.x = lamp.SwingX; // hands on the rim right away
+        height = lamp.bottom - Feel.HangReach;
+        hangKick = 0;
+        Enter(State.Hang);
+    }
+
+    public void HangKick()
+    {
+        if (state != State.Hang || hangKick > 0) return;
+        hangKick = Feel.HangKickFrames;
+        Sfx.Play("whoosh", 0.5f);
+    }
+
+    // let go: flung off in the direction of the swing
+    public void LetGo()
+    {
+        if (hangingOn == null) return;
+        vel = new Vector2(Mathf.Clamp(hangingOn.angVel * Lamp.Length, -5f, 5f), 0f);
+        hangingOn.hanger = null;
+        hangingOn = null;
+        heightVel = 1f;
+        airKick = false;
+        Enter(State.Jump);
+    }
+
+    // pull the lamp off its cord and drop down holding it
+    public void RipLamp()
+    {
+        var lamp = hangingOn;
+        if (lamp == null) return;
+        LetGo();
+        vel = Vector2.zero;
+        lamp.Rip();
+        Sfx.Play("glass", 0.5f);
+        var shade = Game.SpawnProp(Prop.Kind.Lamp, ground);
+        held = shade;
+        shade.holder = this;
+    }
+
     public void Jump()
     {
         if (!CanAct) return;
@@ -202,6 +250,7 @@ public class Fighter : MonoBehaviour
         if (!CanBeHit) return;
         bool countered = move == Move.Whip && WindingUp; // punished mid wind-up: knocked flying
         Release();
+        if (hangingOn != null) { hangingOn.hanger = null; hangingOn = null; } // knocked off the lamp
         if (held != null) { held.Drop(); held = null; }
         health -= damage;
         flashFrames = 8;
@@ -269,6 +318,7 @@ public class Fighter : MonoBehaviour
                 break;
             case State.Jump:
                 if (airKick) strikePending = true; // hits everyone it passes through
+                if (team == 0 && heightVel > 0f && !airKick && LampToGrab() is Lamp lamp) Hang(lamp);
                 if (landed) Enter(State.Idle);
                 break;
             case State.Attack:
@@ -303,6 +353,18 @@ public class Fighter : MonoBehaviour
             case State.Sit:
                 vel = Vector2.zero;
                 break;
+            case State.Hang:
+                // swinging from the lamp: pump with left/right, kick with J/L
+                hangingOn.Pump(moveInput.x);
+                ground.x = hangingOn.SwingX;
+                height = hangingOn.bottom - Feel.HangReach;
+                if (moveInput.x != 0f) facing = moveInput.x > 0f ? 1 : -1;
+                if (hangKick > 0 && --hangKick == Feel.HangKickFrames - Feel.HangKickStartup)
+                {
+                    move = Move.HangKick;
+                    strikePending = true;
+                }
+                break;
             case State.Buried:
                 vel = Vector2.zero;
                 if (stateFrames >= Feel.BuriedFrames) Enter(State.GetUp); // pops out
@@ -324,6 +386,11 @@ public class Fighter : MonoBehaviour
         }
     }
 
+    Lamp LampToGrab() => Game.Lamps.Find(l => l.hanger == null
+        && Mathf.Abs(l.SwingX - ground.x) < Feel.LampGrabX
+        && Mathf.Abs(l.depth - ground.y) < Feel.LampGrabDepth
+        && height >= l.bottom - Feel.HangReach - 6f);
+
     void HoldVictim() => grabbed.ground = new Vector2(ground.x + facing * Feel.BodyGap, ground.y);
 
     // lets go of the held fighter (if any); they stagger free
@@ -337,7 +404,7 @@ public class Fighter : MonoBehaviour
     // returns true on the frame the body touches the ground
     bool ApplyPhysics()
     {
-        if (state == State.Sit) return false; // seated: held up by the chair or stool
+        if (state == State.Sit || state == State.Hang) return false; // held up by a seat, or hanging from a lamp
         bool grounded = height <= 0f && heightVel <= 0f;
         if (grounded && !CanAct) vel.x = Mathf.MoveTowards(vel.x, 0f, Feel.Friction);
         ground += vel;
@@ -367,7 +434,7 @@ public class Fighter : MonoBehaviour
     {
         if (move == Move.ElbowDrop) { StrikeDowned(); return; }
         bool hit = false, solidHit = false, finished = false;
-        float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.BicycleKick ? Feel.JumpKickHeight : Feel.HeightBand;
+        float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.BicycleKick or Move.HangKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
             if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand))
             {
@@ -487,6 +554,7 @@ public class Fighter : MonoBehaviour
             State.Grab => art.Punch1,
             State.Held => art.Hurt,
             State.Sit => art.Sit,
+            State.Hang => hangKick > 0 ? art.JumpKick : art.ElbowRise, // arms up on the lamp, or kicking
             State.Buried => art.Sinking[Mathf.Min(stateFrames, art.Sinking.Length - 1)], // hammered in over a few frames
             State.Attack => move switch
             {

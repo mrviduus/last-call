@@ -412,6 +412,21 @@ def pool_lamp():
     cv.save("pool_lamp", spread=0)
 
 
+def lamp_shade():
+    """The lamp ripped off its cord, 36x14: a weapon. Green shade, brass rim, bulbs."""
+    cv = Canvas(36, 14)
+    for y in range(0, 10):
+        half = 5 + y * 1.3
+        cv.rect(int(18 - half), y, int(18 + half), y + 1, 0x17582f if y < 8 else 0x0e3a22)
+        cv.set(int(18 - half), y, 0x3a9a58)
+    cv.rect(1, 10, 35, 12, 0xa87a24)
+    cv.rect(1, 10, 35, 11, 0xe0b040)
+    cv.rect(11, 12, 25, 14, 0xffe9c0)
+    cv.rect(17, 0, 19, 1, 0x16100c)                                       # torn cord stub
+    outlined(cv)
+    cv.save("lamp_shade", spread=0)
+
+
 def outlined(cv):
     """Dark outline around every opaque pixel cluster (props read clearly against the floor)."""
     edge = []
@@ -566,5 +581,5 @@ def ball():
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for draw in (view, back, counter, floor, pillar, chair, stool, bottle, table, table_flipped, pool_table, pool_lamp, cue, ball):
+    for draw in (view, back, counter, floor, pillar, chair, stool, bottle, table, table_flipped, pool_table, pool_lamp, lamp_shade, cue, ball):
         draw()

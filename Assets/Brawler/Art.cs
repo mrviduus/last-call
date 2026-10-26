@@ -219,7 +219,7 @@ public static class Art
 
     // ORBIT 9 bar, drawn by Tools/make_bar_art.py: separate layers and props (redraw the PNGs freely)
     static Sprite barView, barBack, barCounter, barFloor, barPillar, chair, stool, bottle, table, tableFlipped, shard;
-    static Sprite poolTable, poolLamp, cue, ball;
+    static Sprite poolTable, poolLamp, lampShade, cue, ball;
     static readonly Vector2 Feet = new Vector2(0.5f, 0f);
     public static Sprite BarView => barView != null ? barView : barView = FromResource("Bar/bar_view");
     public static Sprite BarBack => barBack != null ? barBack : barBack = FromResource("Bar/bar_back");
@@ -231,7 +231,8 @@ public static class Art
     public static Sprite Stool => stool != null ? stool : stool = FromResource("Bar/stool", Feet);
     public static Sprite Table => table != null ? table : table = FromResource("Bar/table", Feet);
     public static Sprite PoolTable => poolTable != null ? poolTable : poolTable = FromResource("Bar/pool_table", Feet);
-    public static Sprite PoolLamp => poolLamp != null ? poolLamp : poolLamp = FromResource("Bar/pool_lamp", Feet);
+    public static Sprite PoolLamp => poolLamp != null ? poolLamp : poolLamp = FromResource("Bar/pool_lamp", new Vector2(0.5f, 1f)); // swings from the ceiling
+    public static Sprite LampShade => lampShade != null ? lampShade : lampShade = FromResource("Bar/lamp_shade", Feet);
     public static Sprite Cue => cue != null ? cue : cue = FromResource("Bar/cue");
     public static Sprite Ball => ball != null ? ball : ball = FromResource("Bar/ball", Feet);
     public static Sprite TableFlipped => tableFlipped != null ? tableFlipped : tableFlipped = FromResource("Bar/table_flipped", Feet);
