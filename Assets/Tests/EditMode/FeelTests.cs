@@ -172,7 +172,7 @@ public class FeelTests
     }
 
     [Test]
-    public void RunIsFasterThanWalkAndDashKickLaunches()
+    public void RunIsFasterThanWalkAndSpinKickLaunches()
     {
         var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
         p.moveInput = Vector2.right;
@@ -182,11 +182,17 @@ public class FeelTests
         Assert.AreEqual(Feel.RunX, p.vel.x);
         Assert.Greater(Feel.RunX, Feel.WalkX);
 
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 20f, -70f), 10);
-        p.Attack(Move.DashKick);
-        Run(Feel.DashKickStartup);
-        Assert.AreEqual(State.Launched, e.state);
-        Assert.AreEqual(7, e.health);
+        var near = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 20f, -70f), 10);
+        var far = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 90f, -70f), 10);
+        float start = p.ground.x;
+        p.Attack(Move.SpinKick);
+        Run(Feel.SpinKickStartup);
+        Assert.AreEqual(State.Launched, near.state);
+        Assert.AreEqual(7, near.health);
+
+        Run(Feel.SpinKickActive + Feel.SpinKickRecovery + 2 * Feel.SmashHitstop);
+        Assert.Greater(p.ground.x - start, 80f, "flies across the screen");
+        Assert.AreEqual(State.Launched, far.state, "hits everyone in the path");
     }
 
     [Test]

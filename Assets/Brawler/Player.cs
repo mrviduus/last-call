@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 // WASD move, K / Space jump, J punch, L kick. Third punch of a quick combo = high kick.
 // J in the air = jump kick. Walk into a stunned enemy to grab: J = headbutt (third one throws), K = throw.
-// Double-tap left/right = run; J or L while running = dash kick.
+// Double-tap left/right = run; J or L while running = spin kick.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
@@ -60,7 +60,7 @@ public class Player : MonoBehaviour
         }
         else if (f.state == State.Run && (attackBuffer > 0 || kickBuffer > 0))
         {
-            f.Attack(Move.DashKick);
+            f.Attack(Move.SpinKick);
             attackBuffer = kickBuffer = 0;
         }
         else if (runRequested != 0 && f.CanAct)

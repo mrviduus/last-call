@@ -6,10 +6,13 @@ public static class Feel
     public const float WalkDepth = 1f;            // guess
     public const float RunX = 3f;                 // guess
     public const int DoubleTapFrames = 15;        // guess, max gap between the two taps that start a run
-    public const int DashKickStartup = 4;         // guess
-    public const int DashKickActive = 6;          // guess
-    public const int DashKickRecovery = 16;       // guess
-    public const float DashKickReach = 30f;       // guess
+    public const int SpinKickStartup = 4;         // guess, crouch before the hop
+    public const int SpinKickActive = 30;         // guess, frames of spinning
+    public const int SpinKickRecovery = 12;       // guess, landing
+    public const float SpinKickReach = 22f;       // guess, leg length on both sides while spinning
+    public const float SpinKickSpeed = 3.5f;      // guess, px/frame travelled while spinning
+    public const float SpinKickHeight = 12f;      // guess, hop height
+    public const int SpinTurnFrames = 3;          // guess, frames per half turn
     public const float JumpVel = 4.5f;           // guess
     public const float Gravity = 0.3f;            // guess
     public const float Friction = 0.25f;          // guess
