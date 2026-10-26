@@ -349,7 +349,7 @@ public class Game : MonoBehaviour
         Bar(view.x + 44 * scale, view.y + 8 * scale, 100 * scale, 6 * scale, Hero);
         if (LastHit != null) // the enemy you're fighting, Streets of Rage style
         {
-            Text(view.x + 200 * scale, view.y + 6 * scale, scale, LastHit.look.ToUpper());
+            Text(view.x + 200 * scale, view.y + 6 * scale, scale, Art.Name(LastHit.look));
             Bar(view.x + 270 * scale, view.y + 8 * scale, 100 * scale * LastHit.maxHealth / Feel.HeroHealth, 6 * scale, LastHit);
         }
         if (ShowHelp || Frame < 8 * 60) // controls for the first seconds, then while H is held

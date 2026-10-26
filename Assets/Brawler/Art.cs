@@ -25,6 +25,11 @@ public static class Art
             ["GirlBlue"] = (true, new[] { 0x5a3a2au, 0x7a5038u, 0x3a2418u }, new[] { 0x2a5ab0u, 0x4a8ae0u, 0x1a3470u }),
             ["GirlBlack"] = (true, new[] { 0x8a3ab0u, 0xb05ae0u, 0x5a1a7au }, new[] { 0x2a2a34u, 0x4a4a58u, 0x16161cu }),
         };
+    // what the HUD calls them
+    public static string Name(string look) => look switch
+    {
+        Guy => "MOHAWK", GuyDenim => "BIKER", GruntA => "RUBY", GruntB => "SKYE", Lasher => "WHIP", _ => look.ToUpper(),
+    };
     static readonly int[] SourceReds = { 0xce2038, 0xed4924, 0x8a0b41 }; // red, light red, dark red
 
     public class Frames

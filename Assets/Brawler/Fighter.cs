@@ -78,7 +78,7 @@ public class Fighter : MonoBehaviour
         Move.Smash => Feel.SmashDamage, Move.Kick => Feel.KickDamage, Move.JumpKick or Move.HangKick => Feel.JumpKickDamage,
         Move.FlyingKick => Feel.FlyingKickDamage, Move.BicycleKick => Feel.BicycleKickDamage, Move.Pound => Feel.PoundDamage,
         Move.ElbowDrop => Feel.ElbowDropDamage, Move.Whip => Feel.WhipDamage, Move.Special => Feel.SpecialDamage, Move.Swing when held != null => held.Damage,
-        _ => Feel.PunchDamage,
+        _ => team == 0 ? Feel.PunchDamage : Feel.EnemyPunchDamage,
     };
     bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick or Move.Special
         || move == Move.BicycleKick && stateFrames >= Startup + Active - Feel.BicycleHitGap // only its last kick
@@ -138,7 +138,7 @@ public class Fighter : MonoBehaviour
         recoverable += Feel.SpecialCost;
         move = Move.Special;
         vel = Vector2.zero;
-        heightVel = Mathf.Min(heightVel, 0f);
+        height = heightVel = 0f; // on the ground: J+K a moment apart may have started a jump first
         airKick = false;
         Enter(State.Attack);
         invulnFrames = Feel.SpecialStartup + Feel.SpecialActive;
@@ -544,7 +544,7 @@ public class Fighter : MonoBehaviour
         t.heightVel *= Feel.FinisherLaunch;
         Game.Freeze(Feel.FinisherHitstop, Feel.FinisherShake);
         Game.Flash(Feel.FinisherFlash);
-        if (!Game.Fighters.Exists(o => o.team != team && o.Alive)) Game.SlowMo(Feel.LastKillSlowMo); // the last one: slow motion
+        if (!Game.Fighters.Exists(o => o.team != team && o.Alive && o.state != State.Sit)) Game.SlowMo(Feel.LastKillSlowMo); // the last one: slow motion
     }
 
     // wrestling elbow drop: lands elbow-first on enemies lying on the ground (doesn't keep them down longer);
@@ -565,7 +565,7 @@ public class Fighter : MonoBehaviour
         {
             Game.Freeze(Feel.FinisherHitstop, Feel.FinisherShake);
             Game.Flash(Feel.FinisherFlash);
-            if (!Game.Fighters.Exists(o => o.team != team && o.Alive)) Game.SlowMo(Feel.LastKillSlowMo);
+            if (!Game.Fighters.Exists(o => o.team != team && o.Alive && o.state != State.Sit)) Game.SlowMo(Feel.LastKillSlowMo);
         }
         else if (hit) Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
         if (hit) Sfx.Play("hit_heavy");

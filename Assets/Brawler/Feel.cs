@@ -38,7 +38,8 @@ public static class Feel
     public const int HeroHealth = 100;
     public const int GuyHealth = 40;              // a grunt dies to about one full combo
     public const int GirlHealth = 30;
-    public const int PunchDamage = 7;             // the hero's and the enemies' jab
+    public const int PunchDamage = 7;             // the hero's jab
+    public const int EnemyPunchDamage = 5;        // an enemy's jab: about 20 to put the hero down
     public const int SmashDamage = 14;            // combo finisher
     public const int KickDamage = 12;
     public const int JumpKickDamage = 14;         // also the kick from a lamp

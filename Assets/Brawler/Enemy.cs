@@ -10,6 +10,7 @@ public class Enemy : MonoBehaviour
     int cooldown, wakeDelay, giveUp;
     bool engaging;     // our turn: allowed into the hero's lane to strike
     float laneOffset;  // where we wait: this far in front of or behind the hero's lane
+    float ringX;       // ...and this far off the hero (x)
     float pace;        // phase of the slow drift while waiting, so the ring never stands still
 
     // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
@@ -23,7 +24,8 @@ public class Enemy : MonoBehaviour
         f.walkDepth = Feel.EnemyWalkX * 0.7f;
         cooldown = Random.Range(30, 90);
         this.wakeDelay = wakeDelay;
-        laneOffset = (Random.value < 0.5f ? -1f : 1f) * Random.Range(Feel.RingDepth * 0.6f, Feel.RingDepth);
+        laneOffset = (Random.value < 0.5f ? -1f : 1f) * Random.Range(Feel.RingDepth * 0.6f, Feel.RingDepth * 1.6f);
+        ringX = Random.Range(Feel.RingX - 10f, Feel.RingX + 40f);
         pace = Random.Range(0f, 100f);
     }
 
@@ -78,7 +80,7 @@ public class Enemy : MonoBehaviour
         // otherwise wait on the ring, off the lane, drifting a little
         float reach = f.whip ? Feel.WhipReach : Feel.PunchReach;
         float wantX = engaging ? to.x - side * reach * (f.whip ? 0.8f : 0.7f)
-            : to.x - side * (Feel.RingX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
+            : to.x - side * (ringX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
         float laneY = p.ground.y + laneOffset;
         if (laneY > Game.MaxDepth || laneY < Game.MinDepth) laneY = p.ground.y - laneOffset; // the floor ends there: other side
         float wantY = engaging ? to.y : laneY - f.ground.y;
