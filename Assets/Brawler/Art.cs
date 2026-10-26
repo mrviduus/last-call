@@ -60,7 +60,8 @@ public static class Art
     // the punk's sheets face left (he was drawn as an enemy); mirrored so every character faces right
     static Frames Punk(bool asVasyl)
     {
-        var pivot = FeetPivot(Mirror(Load("Punk/idle")), FrameW);
+        var raw = FeetPivot(Load("Punk/idle"), FrameW);
+        var pivot = new Vector2(1f - raw.x, raw.y); // the sheets are mirrored below
         Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, asVasyl, mirror: true);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
         return new Frames
@@ -187,9 +188,10 @@ public static class Art
         var frames = new Sprite[(int)(Feel.BurySink / 3f) + 1];
         var r = hurt.rect;
         var pivot = new Vector2(hurt.pivot.x / r.width, 0f);
+        float soles = hurt.pivot.y; // empty rows under the feet: the first frame stands exactly on the floor
         for (int i = 0; i < frames.Length; i++)
         {
-            float cut = i * 3f;
+            float cut = soles + i * 3f;
             frames[i] = Sprite.Create(hurt.texture, new Rect(r.x, r.y + cut, r.width, r.height - cut),
                 pivot, 1f, 0, SpriteMeshType.FullRect);
         }

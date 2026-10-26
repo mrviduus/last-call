@@ -16,6 +16,29 @@ public class Enemy : MonoBehaviour
         cooldown = Random.Range(30, 90);
     }
 
+    // a standing table right in the way of where we're walking
+    Prop TableAhead()
+    {
+        if (f.moveInput.x == 0f) return null;
+        foreach (var t in Game.Props)
+        {
+            float dx = (t.ground.x - f.ground.x) * Mathf.Sign(f.moveInput.x);
+            if (t.kind == Prop.Kind.Table && t.vel == Vector2.zero && dx > 0f && dx < Feel.TableHalfWidth + 24f
+                && Mathf.Abs(t.ground.y - f.ground.y) < Feel.TableHalfDepth + 6f)
+                return t;
+        }
+        return null;
+    }
+
+    // go around on the side we're already leaning to, unless the floor ends there
+    float AroundSide(Prop table)
+    {
+        bool behind = f.ground.y >= table.ground.y;
+        if (behind && table.ground.y + Feel.TableHalfDepth + 8f > Game.MaxDepth) behind = false;
+        if (!behind && table.ground.y - Feel.TableHalfDepth - 8f < Game.MinDepth) behind = true;
+        return behind ? 1f : -1f;
+    }
+
     void Think()
     {
         var p = Game.Hero;
@@ -32,6 +55,7 @@ public class Enemy : MonoBehaviour
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
             Mathf.Abs(to.y) > 2f ? Mathf.Sign(to.y) : 0f);
         if (f.moveInput.x == 0f) f.facing = side;
+        if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table); // step around it instead of pushing into it
 
         if (cooldown == 0 && f.InReach(p, reach))
         {

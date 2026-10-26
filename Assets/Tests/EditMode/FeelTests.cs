@@ -373,4 +373,38 @@ public class FeelTests
         }
         Assert.IsFalse(Game.Props.Contains(table));
     }
+
+    [Test]
+    public void NoRunningWhileCarrying()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        p.PickUp(Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f)));
+        p.StartRun(1);
+        Assert.AreNotEqual(State.Run, p.state);
+    }
+
+    [Test]
+    public void ThrownChairIntoATableTipsItAndBreaks()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f));
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(110f, -70f));
+        p.PickUp(chair);
+        p.Attack(Move.ThrowProp);
+        Run(Feel.PropThrowStartup + 30);
+        Assert.IsTrue(table.flipped);
+        Assert.IsFalse(Game.Props.Contains(chair));
+    }
+
+    [Test]
+    public void TippingATableDoesNotHurtSomeoneStandingNextToIt()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(70f, -70f));
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(80f, -62f), 10);
+        p.Attack(Move.Punch);
+        Run(Feel.PunchStartup + 10);
+        Assert.IsTrue(table.flipped);
+        Assert.AreEqual(10, e.health);
+    }
 }

@@ -107,4 +107,5 @@ public static class Feel
     public const float EnemyWalkX = 1.1f;         // guess
     public const int EnemyAttackCooldown = 70;    // guess
     public const int CorpseFrames = 60;
+    public const int SpawnGap = 40;               // guess, frames between enemies walking in
 }

@@ -15,12 +15,13 @@ public class Game : MonoBehaviour
     public static int Frame;    // every fixed tick
     public static int SimFrame; // ticks that actually simulated (hitstop excluded)
     public static bool RestartRequested;
+    public static bool ShowHelp; // H held
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames, flashFrames;
 
     Camera cam;
     float camX = ScreenW / 2f;
-    int wave;
+    int wave, toSpawn, spawnDelay;
 
     // layers that scroll at their own speed: < 1 is further away, > 1 is in front of the fighters
     readonly List<(Transform layer, float speed, float x)> parallax = new List<(Transform, float, float)>();
@@ -192,7 +193,7 @@ public class Game : MonoBehaviour
         foreach (var f in Fighters) if (f != null) Destroy(f.gameObject);
         foreach (var p in Props) if (p != null) Destroy(p.gameObject);
         Reset();
-        wave = 0;
+        wave = toSpawn = 0;
         Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), 10); // at the counter
         Hero.gameObject.AddComponent<Player>();
         camX = CameraX(Hero.ground.x);
@@ -201,27 +202,30 @@ public class Game : MonoBehaviour
 
     static float CameraX(float target) => Mathf.Clamp(target, ScreenW / 2f, LevelW - ScreenW / 2f);
 
+    // a wave walks in one at a time (SpawnGap apart), so nobody pops in on top of anyone
     void SpawnWave()
     {
         wave++;
-        for (int i = 0; i < Mathf.Min(1 + wave, 5); i++)
-        {
-            // they come in through the entrance door or from the stage end, whichever is further from the hero
-            const float Door = 60f, StageEnd = LevelW - 40f;
-            float entrance = Mathf.Abs(Hero.ground.x - Door) > Mathf.Abs(Hero.ground.x - StageEnd) ? Door : StageEnd;
-            float x = entrance + (entrance == Door ? -1f : 1f) * i * 14f;
-            var pos = new Vector2(Mathf.Clamp(x, MinX, MaxX), entrance == Door ? MaxDepth - 4f : Random.Range(MinDepth, MaxDepth));
+        toSpawn = Mathf.Min(1 + wave, 5);
+        spawnDelay = 0;
+    }
 
-            // every other enemy is a whip fighter; others: quick and fragile, or slow and tough
-            bool lasher = i % 2 == 0;
-            bool bruiser = !lasher && Random.value < 0.35f;
-            var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
-                : bruiser ? Spawn(1, Art.GruntB, pos, 5)
-                : Spawn(1, Art.GruntA, pos, 3);
-            e.whip = lasher;
-            e.gameObject.AddComponent<Enemy>();
-            if (bruiser) e.walkX = Feel.EnemyWalkX * 0.7f;
-        }
+    void SpawnNext()
+    {
+        // through the entrance door or from the stage end, whichever is further from the hero
+        const float Door = 60f, StageEnd = LevelW - 40f;
+        bool door = Mathf.Abs(Hero.ground.x - Door) > Mathf.Abs(Hero.ground.x - StageEnd);
+        var pos = new Vector2(door ? Door : StageEnd, door ? MaxDepth - 4f : Random.Range(MinDepth, MaxDepth));
+
+        // every other enemy is a whip fighter; others: quick and fragile, or slow and tough
+        bool lasher = toSpawn % 2 == 1;
+        bool bruiser = !lasher && Random.value < 0.35f;
+        var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
+            : bruiser ? Spawn(1, Art.GruntB, pos, 5)
+            : Spawn(1, Art.GruntA, pos, 3);
+        e.whip = lasher;
+        e.gameObject.AddComponent<Enemy>();
+        if (bruiser) e.walkX = Feel.EnemyWalkX * 0.7f;
     }
 
     void FixedUpdate()
@@ -238,7 +242,13 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (Hero.Alive && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (toSpawn > 0 && --spawnDelay <= 0)
+        {
+            SpawnNext();
+            toSpawn--;
+            spawnDelay = Feel.SpawnGap;
+        }
 
         camX += (CameraX(Hero.ground.x) - camX) * 0.1f;
     }
@@ -284,7 +294,19 @@ public class Game : MonoBehaviour
             GUI.color = Color.white;
         }
         Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}");
-        if (Hero.held != null)
+        if (ShowHelp || Frame < 8 * 60) // controls for the first seconds, then while H is held
+        {
+            if (Event.current.type == EventType.Repaint)
+            {
+                GUI.color = new Color(0f, 0f, 0f, 0.6f);
+                GUI.DrawTexture(new Rect(view.x, view.y + 186 * scale, view.width, 54 * scale), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+            Text(view.x + 8 * scale, view.y + 190 * scale, scale, "WASD MOVE   J PUNCH   L KICK   K JUMP   S+L STOMP");
+            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L TORNADO");
+            Text(view.x + 8 * scale, view.y + 222 * scale, scale, "J BY A CHAIR OR BOTTLE = PICK UP      HOLD H = HELP");
+        }
+        else if (Hero.held != null)
             Text(view.x + 8 * scale, view.y + 224 * scale, scale, "J - SWING      L - THROW");
         if (Hero.state == State.Dead)
             Text(view.x + 120 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");

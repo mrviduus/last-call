@@ -137,7 +137,7 @@ public class Prop : MonoBehaviour
         ground += vel;
         ground.x = Mathf.Clamp(ground.x, Game.MinX, Game.MaxX);
         ground.y = Mathf.Clamp(ground.y, Game.MinDepth, Game.MaxDepth);
-        if (thrower != null && HitSomeone()) return;
+        if (thrower != null && (HitSomeone() || HitTable())) return;
 
         if (airborne)
         {
@@ -156,7 +156,7 @@ public class Prop : MonoBehaviour
 
     bool HitSomeone()
     {
-        if (kind == Kind.Table && Mathf.Abs(vel.x) < 2f) return false; // only a fast table hurts
+        if (kind == Kind.Table && Mathf.Abs(vel.x) < 3f) return false; // only a table sent sliding hurts, not one tipping over
         foreach (var f in Game.Fighters)
             if (f.team != thrower.team && f.CanBeHit
                 && Mathf.Abs(f.ground.x - ground.x) < 16f
@@ -170,6 +170,19 @@ public class Prop : MonoBehaviour
                 return true;
             }
         return false;
+    }
+
+    // a thrown chair or bottle that flies into a table knocks it over and breaks
+    bool HitTable()
+    {
+        if (kind == Kind.Table || height > Feel.TableHeight + 10f) return false;
+        Prop table = Game.Props.Find(t => t.kind == Kind.Table && t.holder == null
+            && Mathf.Abs(t.ground.x - ground.x) < Feel.TableHalfWidth
+            && Mathf.Abs(t.ground.y - ground.y) < Feel.TableHalfDepth + 4f);
+        if (table == null) return false;
+        table.Struck(vel.x > 0f ? 1 : -1, thrower);
+        Break();
+        return true;
     }
 
     void LateUpdate()

@@ -37,6 +37,7 @@ public class Player : MonoBehaviour
         }
 
         if (f.state == State.Dead && attackPressed) Game.RestartRequested = true;
+        Game.ShowHelp = HelpHeld();
     }
 
     void Think()
@@ -61,12 +62,6 @@ public class Player : MonoBehaviour
         {
             f.Attack(Move.ThrowProp); // ...or throw it
             kickBuffer = 0;
-        }
-        else if (attackBuffer > 0 && f.CanAct && f.held == null && !f.EnemyInReach(Feel.PunchReach)
-                 && f.PropInReach() is Prop prop)
-        {
-            f.PickUp(prop); // nobody to hit, something to grab: pick it up
-            attackBuffer = 0;
         }
         else if (f.state == State.Jump && attackBuffer > 0)
         {
@@ -98,6 +93,12 @@ public class Player : MonoBehaviour
             f.Attack(Move.Pound); // down + kick = hammer stomp
             kickBuffer = 0;
         }
+        else if (attackBuffer > 0 && f.CanAct && f.state != State.Run && f.held == null
+                 && !f.EnemyInReach(Feel.PunchReach) && f.PropInReach() is Prop prop)
+        {
+            f.PickUp(prop); // nobody to hit, something to grab: pick it up
+            attackBuffer = 0;
+        }
         else if (attackBuffer > 0 && f.CanAct)
         {
             combo = Game.SimFrame - lastPunchFrame <= Feel.ComboWindow ? combo + 1 : 1;
@@ -127,7 +128,7 @@ public class Player : MonoBehaviour
     // walking into a stunned enemy grabs them
     void TryGrab()
     {
-        if (f.moveInput.x == 0f) return;
+        if (f.moveInput.x == 0f || f.held != null) return; // hands full
         int dir = f.moveInput.x > 0f ? 1 : -1;
         foreach (var e in Game.Fighters)
         {
@@ -157,6 +158,7 @@ public class Player : MonoBehaviour
 
     static bool AttackPressed() => Keyboard.current != null && Keyboard.current.jKey.wasPressedThisFrame;
     static bool KickPressed() => Keyboard.current != null && Keyboard.current.lKey.wasPressedThisFrame;
+    static bool HelpHeld() => Keyboard.current != null && Keyboard.current.hKey.isPressed;
 
     static int TapDirection()
     {
@@ -170,6 +172,7 @@ public class Player : MonoBehaviour
     static bool JumpPressed() => Input.GetKeyDown(KeyCode.K) || Input.GetKeyDown(KeyCode.Space);
     static bool AttackPressed() => Input.GetKeyDown(KeyCode.J);
     static bool KickPressed() => Input.GetKeyDown(KeyCode.L);
+    static bool HelpHeld() => Input.GetKey(KeyCode.H);
     static int TapDirection() => Input.GetKeyDown(KeyCode.D) ? 1 : Input.GetKeyDown(KeyCode.A) ? -1 : 0;
 #endif
 }

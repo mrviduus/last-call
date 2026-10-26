@@ -121,7 +121,7 @@ public class Fighter : MonoBehaviour
 
     public void StartRun(int dir)
     {
-        if (!CanAct) return;
+        if (!CanAct || held != null) return; // no running with a chair in your hands
         facing = dir;
         Enter(State.Run);
     }
@@ -348,7 +348,7 @@ public class Fighter : MonoBehaviour
     void Strike()
     {
         if (move == Move.KneeDrop) { StrikeDowned(); return; }
-        bool hit = false;
+        bool hit = false, solidHit = false, finished = false;
         bool spin = move == Move.SpinKick;
         float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.SpinKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
@@ -358,20 +358,26 @@ public class Fighter : MonoBehaviour
                 bool last = team == 0 && t.health <= Damage;
                 if (move == Move.Pound && !last) t.Bury(Damage, dir);
                 else t.TakeHit(Damage, dir, Launches || last, Push);
-                if (last) Finish(t);
-                hit = true;
+                if (last) { Finish(t); finished = true; }
+                hit = solidHit = true;
             }
-        // tables tip over and slide, bottles get swept off the counter (backwards: a bottle may break)
+        // tables tip over and slide, bottles get swept off the counter (backwards: a bottle may break);
+        // a spin reaches both sides, like it does for fighters
         for (int i = Game.Props.Count - 1; i >= 0; i--)
         {
             var p = Game.Props[i];
-            float dx = (p.ground.x - ground.x) * facing;
-            if (p.holder == null && p.thrower == null && dx > -4f && dx < Reach
+            float dx = p.ground.x - ground.x;
+            int dir = spin ? (dx >= 0f ? 1 : -1) : facing;
+            float ahead = spin ? Mathf.Abs(dx) : dx * facing;
+            if (p.holder == null && p.thrower == null && ahead > -4f && ahead < Reach
                 && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
-                hit |= p.Struck(facing, this);
+            {
+                bool table = p.kind == Prop.Kind.Table;
+                if (p.Struck(dir, this)) { hit = true; solidHit |= table; }
+            }
         }
-        if (hit && move == Move.Swing) held?.UseUp(); // a chair breaks after a few hits, a bottle at once
-        if (!hit || finishing) return;
+        if (solidHit && move == Move.Swing) held?.UseUp(); // wears out on people and tables, not on loose bottles
+        if (!hit || finished) return; // a finisher already set its own freeze
         bool big = Launches || move == Move.Pound;
         Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
     }
@@ -489,7 +495,8 @@ public class Fighter : MonoBehaviour
             : Alive ? tint : tint * new Color(0.6f, 0.6f, 0.6f);
 
         // finishing kicks: the foot swells into a giant boot at the moment of impact
-        boot.enabled = striking && (state == State.Attack && (move == Move.Smash || move == Move.FlyingKick || move == Move.SpinKick) || finishing);
+        boot.enabled = finishing && (striking || state == State.Jump)
+            || striking && (move == Move.Smash || move == Move.FlyingKick || move == Move.SpinKick);
         float swell = stateFrames - Startup < 2 ? 1.2f : 1.6f;
         boot.transform.localScale = new Vector3(look * swell, swell, 1f);
         // on the toe of the kick frame, slightly overlapping the leg
