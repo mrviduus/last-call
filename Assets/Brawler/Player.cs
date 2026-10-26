@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 // Double-tap left/right = run; while running J = flying kick, L = bicycle kick.
 // J next to a chair or bottle (nobody in reach) picks it up; then J = swing it, L = throw it.
 // Jump into a pool lamp to hang on: A/D swing, J/L kick, K let go, S+J rip it down.
+// J+K = special: spinning kick all round, costs health you win back by landing hits.
 [RequireComponent(typeof(Fighter))]
 public class Player : MonoBehaviour
 {
@@ -51,7 +52,12 @@ public class Player : MonoBehaviour
         if (attackPressed || kickPressed) Game.Brawl = true; // the first swing starts the bar fight
         attackPressed = jumpPressed = kickPressed = false;
 
-        if (f.state == State.Hang)
+        // J+K together (either one a few frames first) = the special
+        bool special = attackBuffer > 0 && jumpBuffer > 0
+            || jumpBuffer > 0 && f.state == State.Attack && f.move == Move.Punch && f.stateFrames <= Feel.SpecialLeniency
+            || attackBuffer > 0 && f.state == State.Jump && f.stateFrames <= Feel.SpecialLeniency;
+        if (special && f.Special()) attackBuffer = jumpBuffer = 0;
+        else if (f.state == State.Hang)
         {
             if (attackBuffer > 0 && f.moveInput.y < 0f) { f.RipLamp(); attackBuffer = 0; } // S+J: rip it down
             else if (attackBuffer > 0 || kickBuffer > 0) { f.HangKick(); attackBuffer = kickBuffer = 0; }

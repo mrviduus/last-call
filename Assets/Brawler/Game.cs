@@ -360,7 +360,7 @@ public class Game : MonoBehaviour
                 GUI.DrawTexture(new Rect(view.x, view.y + 186 * scale, view.width, 54 * scale), Texture2D.whiteTexture);
                 GUI.color = Color.white;
             }
-            Text(view.x + 8 * scale, view.y + 190 * scale, scale, "WASD MOVE   J PUNCH   L KICK   K JUMP   S+L STOMP");
+            Text(view.x + 8 * scale, view.y + 190 * scale, scale, "WASD MOVE  J PUNCH  L KICK  K JUMP  S+L STOMP  J+K SPECIAL");
             Text(view.x + 8 * scale, view.y + 206 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L BICYCLE KICK");
             Text(view.x + 8 * scale, view.y + 222 * scale, scale, "J BY A CHAIR OR BOTTLE = PICK UP      HOLD H = HELP");
         }
@@ -372,7 +372,7 @@ public class Game : MonoBehaviour
 
     GUIStyle hud;
 
-    // health bar: black frame, dark red back, yellow fill
+    // health bar: black frame, dark red back, yellow fill, green for health the special spent and you can win back
     static void Bar(float x, float y, float w, float h, Fighter f)
     {
         if (Event.current.type != EventType.Repaint) return;
@@ -383,6 +383,11 @@ public class Game : MonoBehaviour
         GUI.DrawTexture(new Rect(x, y, w, h), Texture2D.whiteTexture);
         GUI.color = new Color(1f, 0.82f, 0.2f);
         GUI.DrawTexture(new Rect(x, y, w * full, h), Texture2D.whiteTexture);
+        if (f.recoverable > 0) // the special's cost, still to be won back
+        {
+            GUI.color = new Color(0.35f, 0.85f, 0.35f);
+            GUI.DrawTexture(new Rect(x + w * full, y, w * f.recoverable / f.maxHealth, h), Texture2D.whiteTexture);
+        }
         GUI.color = Color.white;
     }
 

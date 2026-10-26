@@ -696,4 +696,50 @@ public class FeelTests
         Run(Feel.PunchStartup);
         Assert.IsTrue(p.lastStrikeHit);
     }
+
+    [Test]
+    public void SpecialHitsBothSidesUntouchableAndCostsHealth()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(200f, -70f), 100);
+        Game.Hero = p;
+        var front = Game.Spawn(1, Art.GruntA, new Vector2(225f, -70f), 100);
+        var back = Game.Spawn(1, Art.GruntA, new Vector2(175f, -70f), 100);
+        back.facing = 1;
+        Assert.IsTrue(p.Special());
+        Assert.AreEqual(100 - Feel.SpecialCost, p.health);
+        Assert.AreEqual(Feel.SpecialCost, p.recoverable);
+
+        back.Attack(Move.Punch);
+        Run(Feel.SpecialStartup + 2);
+        Assert.AreEqual(State.Launched, front.state);
+        Assert.AreEqual(State.Launched, back.state);
+        Assert.Less(back.vel.x, 0f, "the one behind flies off backwards");
+        Assert.AreEqual(100 - Feel.SpecialCost, p.health, "untouchable while spinning");
+    }
+
+    [Test]
+    public void SpecialCostIsWonBackByHitsAndLostWhenHit()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(200f, -70f), 100);
+        Game.Hero = p;
+        p.Special();
+        Run(Feel.SpecialStartup + Feel.SpecialActive + Feel.SpecialRecovery + 1);
+
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(215f, -70f), 100);
+        p.Attack(Move.Punch);
+        Run(Feel.PunchStartup);
+        Assert.AreEqual(100 - Feel.SpecialCost + Feel.RecoverPerHit, p.health);
+        Assert.AreEqual(Feel.SpecialCost - Feel.RecoverPerHit, p.recoverable);
+
+        p.TakeHit(1, -1, false);
+        Assert.AreEqual(0, p.recoverable, "hit before winning it all back: the rest is gone");
+    }
+
+    [Test]
+    public void NoSpecialOnTheLastBitOfHealth()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(200f, -70f), Feel.SpecialCost);
+        Assert.IsFalse(p.Special());
+        Assert.AreEqual(Feel.SpecialCost, p.health);
+    }
 }

@@ -140,6 +140,15 @@ public static class Feel
     public const float TableSlide = 6f;           // guess, a tipped table hit again slides this fast
     public const float PropThrowHeight = 30f;     // guess, released at about hand height
 
+    public const int SpecialStartup = 4;          // J+K spinning kick all round
+    public const int SpecialActive = 16;          // untouchable from the start to the end of this
+    public const int SpecialRecovery = 16;
+    public const float SpecialReach = 40f;        // both sides
+    public const int SpecialDamage = 15;
+    public const int SpecialCost = 8;             // health; can't be used with this little left
+    public const int RecoverPerHit = 2;           // of the cost won back per enemy hit afterwards
+    public const int SpecialLeniency = 3;         // frames J may come before K (or K before J) and still count as together
+
     public const int GrabFrames = 120;          // guess, how long a hold lasts
     public const int KneeStartup = 4;             // guess
     public const int KneeRecovery = 10;           // guess

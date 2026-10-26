@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit, Hang }
-public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick }
+public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick, Special }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -20,6 +20,7 @@ public class Fighter : MonoBehaviour
     public Vector2 ground, vel, moveInput;
     public float height, heightVel;
     public int health, facing = 1;
+    public int recoverable; // health spent on the special, won back by landing hits, lost when hit (Streets of Rage 4)
     public Move move;
     public bool whip; // enemy type: long reach, slow telegraphed wind-up
     public bool faceMove = true; // walking turns us; enemies turn to the hero themselves
@@ -42,13 +43,13 @@ public class Fighter : MonoBehaviour
         Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
         Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee => Feel.KneeStartup,
         Move.Throw => Feel.ThrowStartup, Move.Whip => Feel.WhipStartup,
-        Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup,
+        Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, Move.Special => Feel.SpecialStartup,
         _ => team == 0 ? Feel.PunchStartup : Feel.EnemyPunchStartup,
     };
     int Active => move switch
     {
         Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.BicycleKick => Feel.BicycleKickActive,
-        Move.Swing => Feel.SwingActive, Move.Whip => Feel.WhipActive, _ => Feel.PunchActive,
+        Move.Swing => Feel.SwingActive, Move.Whip => Feel.WhipActive, Move.Special => Feel.SpecialActive, _ => Feel.PunchActive,
     };
     int Recovery => move switch
     {
@@ -56,11 +57,12 @@ public class Fighter : MonoBehaviour
         Move.FlyingKick => Feel.FlyingKickRecovery, Move.BicycleKick => Feel.BicycleKickRecovery, Move.Pound => Feel.PoundRecovery,
         Move.ElbowDrop => Feel.ElbowDropRecovery, Move.Knee => Feel.KneeRecovery,
         Move.Throw => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
-        Move.Swing => Feel.SwingRecovery, Move.ThrowProp => Feel.PropThrowRecovery, _ => Feel.PunchRecovery,
+        Move.Swing => Feel.SwingRecovery, Move.ThrowProp => Feel.PropThrowRecovery, Move.Special => Feel.SpecialRecovery,
+        _ => Feel.PunchRecovery,
     };
     float Reach => move switch
     {
-        Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach,
+        Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach, Move.Special => Feel.SpecialReach,
         Move.JumpKick => Feel.JumpKickReach, Move.FlyingKick => Feel.FlyingKickReach, Move.BicycleKick => Feel.BicycleKickReach, Move.Pound => Feel.PoundReach,
         Move.ElbowDrop => Feel.ElbowDropReach, Move.HangKick => Feel.HangKickReach,
         Move.Whip => Feel.WhipReach, Move.Swing when held != null => held.Reach, _ => Feel.PunchReach,
@@ -75,10 +77,10 @@ public class Fighter : MonoBehaviour
     {
         Move.Smash => Feel.SmashDamage, Move.Kick => Feel.KickDamage, Move.JumpKick or Move.HangKick => Feel.JumpKickDamage,
         Move.FlyingKick => Feel.FlyingKickDamage, Move.BicycleKick => Feel.BicycleKickDamage, Move.Pound => Feel.PoundDamage,
-        Move.ElbowDrop => Feel.ElbowDropDamage, Move.Whip => Feel.WhipDamage, Move.Swing when held != null => held.Damage,
+        Move.ElbowDrop => Feel.ElbowDropDamage, Move.Whip => Feel.WhipDamage, Move.Special => Feel.SpecialDamage, Move.Swing when held != null => held.Damage,
         _ => Feel.PunchDamage,
     };
-    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick
+    bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick or Move.Special
         || move == Move.BicycleKick && stateFrames >= Startup + Active - Feel.BicycleHitGap // only its last kick
         || move == Move.Swing && held != null && held.kind is Prop.Kind.Chair or Prop.Kind.Lamp;
     bool WindingUp => state == State.Attack && stateFrames < Startup;
@@ -123,6 +125,25 @@ public class Fighter : MonoBehaviour
         if (m == Move.ElbowDrop) heightVel = Feel.ElbowDropHop;
         Enter(State.Attack);
         Sfx.Play("whoosh", team == 0 ? 0.5f : 0.3f);
+    }
+
+    // desperation move (J+K): a spinning kick all round that can't be interrupted, even from hitstun;
+    // costs health, which comes back by landing hits before getting hit again
+    public bool Special()
+    {
+        bool from = CanAct || state == State.Hurt || state == State.Jump || state == State.Attack && move == Move.Punch;
+        if (!from || health <= Feel.SpecialCost) return false;
+        if (held != null) { held.Drop(); held = null; }
+        health -= Feel.SpecialCost;
+        recoverable += Feel.SpecialCost;
+        move = Move.Special;
+        vel = Vector2.zero;
+        heightVel = Mathf.Min(heightVel, 0f);
+        airKick = false;
+        Enter(State.Attack);
+        invulnFrames = Feel.SpecialStartup + Feel.SpecialActive;
+        Sfx.Play("whoosh", 0.8f);
+        return true;
     }
 
     public bool IsDownedEnemyInReach(float reach)
@@ -262,6 +283,7 @@ public class Fighter : MonoBehaviour
     {
         if (!CanBeHit) return;
         strikePending = false; // hit first: our own blow never lands
+        recoverable = 0;
         bool countered = move == Move.Whip && WindingUp; // punished mid wind-up: knocked flying
         Release();
         if (hangingOn != null) { hangingOn.hanger = null; hangingOn = null; } // knocked off the lamp
@@ -307,9 +329,10 @@ public class Fighter : MonoBehaviour
         if (team != 0) Game.LastHit = this; // its health bar shows in the HUD
     }
 
-    public bool InReach(Fighter t, float reach, float heightBand = Feel.HeightBand)
+    public bool InReach(Fighter t, float reach, float heightBand = Feel.HeightBand, bool allRound = false)
     {
         float dx = (t.ground.x - ground.x) * facing;
+        if (allRound) dx = Mathf.Abs(dx);
         return t.CanBeHit && dx > -4f && dx < reach
             && Mathf.Abs(t.ground.y - ground.y) < Feel.DepthBand
             && Mathf.Abs(t.height - height) < heightBand;
@@ -371,6 +394,11 @@ public class Fighter : MonoBehaviour
                     heightVel = 0f;
                     if (stateFrames % Feel.GhostGap == 0) Fx.Ghost(body);
                     if ((stateFrames - Startup) % Feel.BicycleHitGap == 0) strikePending = true;
+                }
+                if (move == Move.Special && stateFrames >= Startup && stateFrames < Startup + Active)
+                {
+                    strikePending = true; // hits everyone around, each once (they fly off untouchable)
+                    if (stateFrames % Feel.GhostGap == 0) Fx.Ghost(body);
                 }
                 if (stateFrames >= Startup + Active + Recovery)
                     Enter(grabbed != null && grabbed.state == State.Held ? State.Grab : State.Idle);
@@ -471,14 +499,17 @@ public class Fighter : MonoBehaviour
     {
         if (move == Move.ElbowDrop) { StrikeDowned(); return; }
         bool hit = false, solidHit = false, finished = false;
+        int landed = 0;
+        bool allRound = move == Move.Special;
         float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.BicycleKick or Move.HangKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
-            if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand))
+            if (t.team != team && t.state != State.Held && InReach(t, Reach, heightBand, allRound))
             {
                 if (move == Move.Pound) t.Bury(Damage, facing); // a knockout launches instead
-                else t.TakeHit(Damage, facing, Launches, Push);
+                else t.TakeHit(Damage, allRound ? (t.ground.x >= ground.x ? 1 : -1) : facing, Launches, Push);
                 if (team == 0 && !t.Alive) { Finish(t); finished = true; }
                 hit = solidHit = true;
+                landed++;
             }
         // tables tip over and slide, bottles get swept off the counter (backwards: a bottle may break)
         for (int i = Game.Props.Count - 1; i >= 0; i--)
@@ -493,6 +524,12 @@ public class Fighter : MonoBehaviour
             }
         }
         lastStrikeHit = hit;
+        if (landed > 0 && recoverable > 0 && move != Move.Special) // hits win back the special's cost
+        {
+            int back = Mathf.Min(recoverable, landed * Feel.RecoverPerHit);
+            health += back;
+            recoverable -= back;
+        }
         if (solidHit && move == Move.Swing) held?.UseUp(); // wears out on people and tables, not on loose bottles
         if (hit) Sfx.Play(finished || Launches ? "hit_heavy" : "hit");
         if (!hit || finished) return; // a finisher already set its own freeze
@@ -603,22 +640,24 @@ public class Fighter : MonoBehaviour
                 Move.ElbowDrop => heightVel > 0f ? art.ElbowRise : art.ElbowDrop, // up with the elbow raised, down flat
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
                 Move.Throw => art.Throw[WindingUp ? 0 : 1],
+                Move.Special => striking ? art.Kick : art.KickWind,
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : WindingUp && team != 0 ? art.WindUp : art.Idle[0],
             },
             State.Hurt => art.Hurt,
             State.Launched => art.Fall,
             _ => art.Down, // down, dead
         };
-        body.flipX = facing < 0;
+        bool spinning = state == State.Attack && move == Move.Special && striking;
+        body.flipX = spinning ? stateFrames / 4 % 2 == 0 : facing < 0; // the kick turns round and round
         // shakes in place through the hitstop; leans back winding up, lunges into the blow
         float jolt = Game.Frozen && flashFrames > 0 ? (Game.Frame % 2 == 0 ? Feel.HitJolt : -Feel.HitJolt) : 0f;
-        float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw ? 0f
+        float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw or Move.Special ? 0f
             : WindingUp ? -Feel.WindUpLean : striking ? (move is Move.Punch or Move.Knee ? Feel.JabLunge : Feel.HeavyLunge) : 0f;
         body.transform.localPosition = new Vector3(jolt + lunge * facing, h, 0f);
         body.transform.localScale = landSquash > 0 ? new Vector3(1.12f, 0.88f, 1f)
             : jumpStretch > 0 ? new Vector3(0.9f, 1.1f, 1f) : Vector3.one;
         shadow.enabled = state != State.Buried;
-        body.enabled = invulnFrames == 0 || invulnFrames / 3 % 2 == 0;
+        body.enabled = invulnFrames == 0 || spinning || invulnFrames / 3 % 2 == 0;
         bool telegraph = team != 0 && WindingUp && stateFrames / 3 % 2 == 0; // every enemy blow flashes as it winds up
         bool white = flashFrames > 5; // solid white the moment a blow lands, then red
         body.sharedMaterial = white ? Art.Silhouette : normalMat;
