@@ -83,6 +83,7 @@ public static class Feel
     public const int PropThrowRecovery = 10;      // guess
     public const float PropThrowSpeed = 6f;       // guess
     public const float PropThrowUp = 2f;          // guess
+    public const float TableSlide = 6f;           // guess, a tipped table hit again slides this fast
     public const float PropThrowHeight = 30f;     // guess, released at about hand height
 
     public const int GrabFrames = 120;          // guess, how long a hold lasts

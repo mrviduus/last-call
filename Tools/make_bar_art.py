@@ -457,7 +457,27 @@ def table():
     cv.save("table", spread=0)
 
 
+def table_flipped():
+    """The round table knocked onto its side, 34x32: the top stands up as an edge-on disc, legs point out."""
+    cv = Canvas(34, 32)
+    for y in range(1, 31):
+        for x in range(1, 12):
+            dx, dy = (x - 6) / 5, (y - 16) / 14.5
+            if dx * dx + dy * dy < 1:
+                cv.set(x, y, 0xd0d6e8 if dx < -0.4 else 0x9aa2bc if dx < 0.3 else 0x6a7290)
+    cv.rect(11, 2, 12, 30, 0x2ad0f0)                       # rim light, now facing us
+    cv.rect(12, 14, 28, 16, 0x6a7290)                      # pedestal lying sideways
+    cv.rect(12, 16, 28, 18, 0x4a5068)
+    for y in range(8, 26):                                 # base disc, edge-on at the end
+        for x in range(27, 33):
+            dx, dy = (x - 29.5) / 3, (y - 17) / 9
+            if dx * dx + dy * dy < 1:
+                cv.set(x, y, 0x4a5068 if dx < 0 else 0x2a3046)
+    outlined(cv)
+    cv.save("table_flipped", spread=0)
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for draw in (space, back, counter, floor, pillar, chair, stool, bottle, table):
+    for draw in (space, back, counter, floor, pillar, chair, stool, bottle, table, table_flipped):
         draw()

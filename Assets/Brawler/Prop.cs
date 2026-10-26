@@ -1,31 +1,42 @@
 using UnityEngine;
 
-// Things lying around a stage that can be picked up, swung and thrown (chairs, bottles).
+// Things in the bar: chairs, stools and bottles can be picked up, swung and thrown; tables are too heavy
+// to lift but tip over when hit (spilling what stands on them) and then slide into people when hit again.
 // Same ground plane as fighters: (x, depth) + height; stepped by Game at 60 Hz.
 public class Prop : MonoBehaviour
 {
-    public enum Kind { Chair, Bottle }
+    public enum Kind { Chair, Stool, Bottle, Table }
 
     public Kind kind;
     public Vector2 ground, vel;
     public float height, heightVel;
-    public Fighter holder, thrower;
+    public Fighter holder, thrower; // thrower: who threw it, or who sent a tipped table sliding
     public int hitsLeft;
+    public bool resting;            // standing on a table or the counter, at its height
+    public bool flipped;            // a table knocked onto its side
+    public bool mirrored;           // drawn facing left (a chair turned towards its table)
 
     SpriteRenderer sr, shadow;
 
     public bool Free => holder == null && thrower == null;
-    public float Reach => kind == Kind.Chair ? Feel.ChairReach : Feel.BottleReach;
-    public int Damage => kind == Kind.Chair ? 3 : 2;
+    public bool Pickable => Free && kind != Kind.Table;
+    public float Reach => kind == Kind.Bottle ? Feel.BottleReach : Feel.ChairReach;
+    public int Damage => kind == Kind.Bottle ? 2 : 3;
 
-    public void Init(Kind k, Vector2 pos)
+    public void Init(Kind k, Vector2 pos, float onHeight, bool faceLeft)
     {
         kind = k;
         ground = pos;
-        hitsLeft = k == Kind.Chair ? Feel.ChairHits : 1;
+        height = onHeight;
+        resting = onHeight > 0f;
+        mirrored = faceLeft;
+        hitsLeft = k == Kind.Bottle ? 1 : Feel.ChairHits;
         shadow = Child("Shadow", Art.Shadow);
         shadow.sortingOrder = -10000;
-        sr = Child("Sprite", k == Kind.Chair ? Art.Chair : Art.Bottle);
+        sr = Child("Sprite", k switch
+        {
+            Kind.Chair => Art.Chair, Kind.Stool => Art.Stool, Kind.Bottle => Art.Bottle, _ => Art.Table,
+        });
     }
 
     SpriteRenderer Child(string name, Sprite sprite)
@@ -41,6 +52,7 @@ public class Prop : MonoBehaviour
     {
         holder = null;
         thrower = by;
+        resting = false;
         ground = by.ground;
         height = Feel.PropThrowHeight;
         vel = new Vector2(by.facing * Feel.PropThrowSpeed, 0f);
@@ -51,6 +63,41 @@ public class Prop : MonoBehaviour
     {
         holder = null;
         height = 0f;
+        resting = false;
+    }
+
+    // hit by a punch, kick or a swung prop; returns true if it reacted (counts as a hit)
+    public bool Struck(int dir, Fighter by)
+    {
+        if (kind == Kind.Table && !flipped)
+        {
+            flipped = true;
+            vel = new Vector2(dir * 2f, 0f);
+            thrower = by;
+            KnockOffWhatStandsOnMe(dir);
+            return true;
+        }
+        if (kind == Kind.Table)
+        {
+            vel = new Vector2(dir * Feel.TableSlide, 0f); // a tipped table slides into people
+            thrower = by;
+            return true;
+        }
+        if (resting)
+        {
+            resting = false; // bottle swept off the counter or a table: falls and smashes
+            vel = new Vector2(dir * 1.5f, 0f);
+            heightVel = 1.5f;
+            return true;
+        }
+        return false;
+    }
+
+    void KnockOffWhatStandsOnMe(int dir)
+    {
+        foreach (var p in Game.Props)
+            if (p != this && p.resting && Mathf.Abs(p.ground.x - ground.x) < 24f && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
+                p.Struck(dir, null);
     }
 
     // one swing landed; a worn-out prop breaks
@@ -63,8 +110,11 @@ public class Prop : MonoBehaviour
     {
         if (holder != null) holder.held = null;
         Game.Props.Remove(this);
-        if (Application.isPlaying) Destroy(gameObject);
-        else DestroyImmediate(gameObject); // edit-mode tests
+        if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
+        var color = kind == Kind.Bottle ? new Color32(0x2a, 0x8a, 0x4a, 255) : new Color32(0xa0, 0x2a, 0x3a, 255);
+        for (int i = 0; i < 7; i++)
+            Shard.Spawn(new Vector3(ground.x, ground.y + height + 6f, 0f), i % 3 == 0 ? new Color32(0x9a, 0xa2, 0xbc, 255) : color);
+        Destroy(gameObject);
     }
 
     public void Step()
@@ -75,11 +125,32 @@ public class Prop : MonoBehaviour
             height = holder.height;
             return;
         }
-        if (thrower == null) return;
+        if (resting) return;
 
+        bool airborne = height > 0f || heightVel > 0f;
         ground += vel;
-        heightVel -= Feel.Gravity;
-        height += heightVel;
+        ground.x = Mathf.Clamp(ground.x, Game.MinX, Game.MaxX);
+        ground.y = Mathf.Clamp(ground.y, Game.MinDepth, Game.MaxDepth);
+        if (thrower != null && HitSomeone()) return;
+
+        if (airborne)
+        {
+            heightVel -= Feel.Gravity;
+            height += heightVel;
+            if (height > 0f) return;
+            height = 0f;
+            heightVel = 0f;
+            if (kind == Kind.Bottle || thrower != null) { Break(); return; } // bottles shatter, thrown chairs smash
+            vel = Vector2.zero;
+            return;
+        }
+        vel = Vector2.MoveTowards(vel, Vector2.zero, Feel.Friction); // a sliding table slows down
+        if (vel == Vector2.zero && kind == Kind.Table) thrower = null;
+    }
+
+    bool HitSomeone()
+    {
+        if (kind == Kind.Table && Mathf.Abs(vel.x) < 2f) return false; // only a fast table hurts
         foreach (var f in Game.Fighters)
             if (f.team != thrower.team && f.CanBeHit
                 && Mathf.Abs(f.ground.x - ground.x) < 16f
@@ -88,14 +159,11 @@ public class Prop : MonoBehaviour
             {
                 f.TakeHit(Damage, vel.x > 0f ? 1 : -1, true);
                 Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
-                Break();
-                return;
+                if (kind == Kind.Table) vel *= 0.5f;
+                else Break();
+                return true;
             }
-        if (height > 0f) return;
-        if (kind == Kind.Bottle) { Break(); return; } // smashes on the floor
-        height = 0f;
-        vel = Vector2.zero;
-        thrower = null;
+        return false;
     }
 
     void LateUpdate()
@@ -103,6 +171,8 @@ public class Prop : MonoBehaviour
         transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y), 0f);
         float h = Mathf.Round(height);
         var pose = sr.transform;
+        if (kind == Kind.Table) sr.sprite = flipped ? Art.TableFlipped : Art.Table;
+        sr.flipX = holder == null && mirrored;
         if (holder != null)
         {
             // raised overhead, swung down in front while attacking
@@ -114,10 +184,35 @@ public class Prop : MonoBehaviour
         else
         {
             pose.localPosition = new Vector3(0f, h, 0f);
-            pose.localRotation = Quaternion.Euler(0f, 0f, thrower != null ? Game.Frame * 25f : 0f); // tumbles in the air
+            pose.localRotation = Quaternion.Euler(0f, 0f, thrower != null && kind != Kind.Table ? Game.Frame * 25f : 0f); // tumbles in the air
         }
-        shadow.enabled = holder == null;
+        shadow.enabled = holder == null && !resting;
         int order = -Mathf.RoundToInt(ground.y) * 2;
-        sr.sortingOrder = holder != null ? order + 1 : order;
+        sr.sortingOrder = holder != null || resting ? order + 1 : order; // on top of the table it stands on
+    }
+}
+
+// a bit of glass or wood flying off a broken prop; cosmetic only
+public class Shard : MonoBehaviour
+{
+    Vector2 vel;
+    int life = 40;
+
+    public static void Spawn(Vector3 at, Color32 color)
+    {
+        var sr = new GameObject("Shard").AddComponent<SpriteRenderer>();
+        sr.sprite = Art.Shard;
+        sr.color = color;
+        sr.sortingOrder = 20000;
+        sr.transform.position = at;
+        var s = sr.gameObject.AddComponent<Shard>();
+        s.vel = new Vector2(Random.Range(-2.5f, 2.5f), Random.Range(1.5f, 4f));
+    }
+
+    void FixedUpdate()
+    {
+        vel.y -= Feel.Gravity;
+        transform.position += (Vector3)vel;
+        if (--life <= 0) Destroy(gameObject);
     }
 }

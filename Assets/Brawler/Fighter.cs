@@ -143,16 +143,17 @@ public class Fighter : MonoBehaviour
 
     public void PickUp(Prop p)
     {
-        if (!CanAct || held != null || !p.Free) return;
+        if (!CanAct || held != null || !p.Pickable) return;
         held = p;
         p.holder = this;
+        p.resting = false;
     }
 
     // a free prop on the floor right in front or underneath
     public Prop PropInReach()
     {
         foreach (var p in Game.Props)
-            if (p.Free && Mathf.Abs(p.ground.x - ground.x) < Feel.PickupRange
+            if (p.Pickable && Mathf.Abs(p.ground.x - ground.x) < Feel.PickupRange
                 && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
                 return p;
         return null;
@@ -359,6 +360,15 @@ public class Fighter : MonoBehaviour
                 if (last) Finish(t);
                 hit = true;
             }
+        // tables tip over and slide, bottles get swept off the counter (backwards: a bottle may break)
+        for (int i = Game.Props.Count - 1; i >= 0; i--)
+        {
+            var p = Game.Props[i];
+            float dx = (p.ground.x - ground.x) * facing;
+            if (p.holder == null && p.thrower == null && dx > -4f && dx < Reach
+                && Mathf.Abs(p.ground.y - ground.y) < Feel.DepthBand)
+                hit |= p.Struck(facing, this);
+        }
         if (hit && move == Move.Swing) held?.UseUp(); // a chair breaks after a few hits, a bottle at once
         if (!hit || finishing) return;
         bool big = Launches || move == Move.Pound;

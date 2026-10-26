@@ -89,10 +89,10 @@ public class Game : MonoBehaviour
         return f;
     }
 
-    public static Prop SpawnProp(Prop.Kind kind, Vector2 pos)
+    public static Prop SpawnProp(Prop.Kind kind, Vector2 pos, float onHeight = 0f, bool faceLeft = false)
     {
         var p = new GameObject(kind.ToString()).AddComponent<Prop>();
-        p.Init(kind, pos);
+        p.Init(kind, pos, onHeight, faceLeft);
         Props.Add(p);
         return p;
     }
@@ -143,15 +143,28 @@ public class Game : MonoBehaviour
         if (speed != 1f) parallax.Add((sr.transform, speed, pos.x));
     }
 
-    // chairs and bottles where a bar would have them: by the tables and along the counter
+    const float TableTop = 26f;   // height of a table's top surface (table.png)
+    const float CounterTop = 47f; // height of the counter top above its front edge (bar_counter.png)
+    const float CounterEdge = 9f; // depth of the counter's front edge
+
+    // furniture the way a bar would have it: stools along the counter with drinks on it,
+    // and tables on the floor, each with chairs turned towards it and bottles on top
     static void SpawnBarProps()
     {
-        SpawnProp(Prop.Kind.Chair, new Vector2(170f, -40f));
-        SpawnProp(Prop.Kind.Chair, new Vector2(480f, -70f));
-        SpawnProp(Prop.Kind.Bottle, new Vector2(560f, -15f));
-        SpawnProp(Prop.Kind.Chair, new Vector2(700f, -90f));
-        SpawnProp(Prop.Kind.Bottle, new Vector2(840f, -50f));
-        SpawnProp(Prop.Kind.Chair, new Vector2(1010f, -60f));
+        foreach (float x in new[] { 380f, 470f, 560f, 650f, 740f, 830f })
+            SpawnProp(Prop.Kind.Stool, new Vector2(x, CounterEdge - 5f));
+        foreach (float x in new[] { 425f, 612f, 795f })
+            SpawnProp(Prop.Kind.Bottle, new Vector2(x, CounterEdge), CounterTop);
+
+        var tables = new (float x, float depth, int bottles)[] { (170f, -45f, 1), (460f, -82f, 2), (700f, -40f, 1), (1000f, -78f, 2) };
+        foreach (var (x, depth, bottles) in tables)
+        {
+            SpawnProp(Prop.Kind.Table, new Vector2(x, depth));
+            SpawnProp(Prop.Kind.Chair, new Vector2(x - 28f, depth));
+            SpawnProp(Prop.Kind.Chair, new Vector2(x + 28f, depth), faceLeft: true);
+            for (int i = 0; i < bottles; i++)
+                SpawnProp(Prop.Kind.Bottle, new Vector2(x - 4f + i * 9f, depth), TableTop);
+        }
     }
 
     void Restart()
@@ -244,6 +257,8 @@ public class Game : MonoBehaviour
             GUI.color = Color.white;
         }
         Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}");
+        if (Hero.held != null)
+            Text(view.x + 8 * scale, view.y + 224 * scale, scale, "J - SWING      L - THROW");
         if (Hero.state == State.Dead)
             Text(view.x + 120 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
     }

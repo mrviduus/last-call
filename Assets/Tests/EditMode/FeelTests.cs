@@ -300,4 +300,47 @@ public class FeelTests
         Assert.IsNull(p.held);
         Assert.IsTrue(chair.Free);
     }
+
+    [Test]
+    public void PunchTipsTheTableAndTheBottleOnItSmashes()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(70f, -70f));
+        var bottle = Game.SpawnProp(Prop.Kind.Bottle, new Vector2(72f, -70f), 26f);
+        Assert.IsNull(p.PropInReach(), "tables can't be picked up; the bottle is out of pickup range");
+
+        p.Attack(Move.Punch);
+        Run(Feel.PunchStartup);
+        Assert.IsTrue(table.flipped);
+        Assert.IsFalse(bottle.resting, "knocked off the table");
+
+        Run(60);
+        Assert.IsFalse(Game.Props.Contains(bottle), "smashed on the floor");
+    }
+
+    [Test]
+    public void ThrownChairSmashesWhenItLands()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f));
+        p.PickUp(chair);
+        p.Attack(Move.ThrowProp);
+        Run(Feel.PropThrowStartup + 60);
+        Assert.AreEqual(0, Game.Props.Count);
+        Assert.IsNull(p.held);
+    }
+
+    [Test]
+    public void TippedTableHitAgainSlidesIntoAnEnemy()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(70f, -70f));
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(120f, -70f), 10);
+        e.facing = -1;
+        table.flipped = true;
+
+        p.Attack(Move.Kick);
+        Run(Feel.KickStartup + 30);
+        Assert.AreEqual(State.Launched, e.state);
+    }
 }

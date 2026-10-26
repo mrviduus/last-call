@@ -15,7 +15,7 @@ public class SmokeTest
 
         Assert.IsTrue(Game.Hero.Alive);
         Assert.IsFalse(Game.Fighters.Exists(f => f.team != 0), "no enemies in this step");
-        Assert.AreEqual(6, Game.Props.Count, "chairs and bottles are in place");
+        Assert.AreEqual(27, Game.Props.Count, "stools, tables, chairs and bottles are in place");
 
         Camera.main.Render(); // batchmode has no end-of-frame, so draw the pixel screen by hand
         var tex = new Texture2D(Game.ScreenW, Game.ScreenH);
