@@ -13,13 +13,15 @@ public class Game : MonoBehaviour
     public static readonly List<Prop> Props = new List<Prop>();
     public static readonly List<Lamp> Lamps = new List<Lamp>();
     public static Fighter Hero;
+    public static Fighter LastHit; // the enemy the hero hit last: its health bar is in the HUD
     public static int Frame;    // every fixed tick
     public static int SimFrame; // ticks that actually simulated (hitstop excluded)
     public static bool RestartRequested;
     public static bool Brawl; // the hero has thrown the first punch: patrons get up, waves come in
     public static bool ShowHelp; // H held
     public static RenderTexture PixelScreen;
-    static int freezeFrames, shakeFrames, flashFrames;
+    static int freezeFrames, shakeFrames, flashFrames, slowMoFrames;
+    public static bool Frozen => freezeFrames > 0;
 
     Camera cam;
     float camX = ScreenW / 2f;
@@ -40,8 +42,9 @@ public class Game : MonoBehaviour
         Fighters.Clear();
         Props.Clear();
         Lamps.Clear();
-        Hero = null;
-        Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = 0;
+        Hero = LastHit = null;
+        Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = slowMoFrames = 0;
+        Time.timeScale = 1f;
         RestartRequested = false;
         Brawl = false;
     }
@@ -53,6 +56,15 @@ public class Game : MonoBehaviour
     }
 
     public static void Flash(int frames) => flashFrames = Mathf.Max(flashFrames, frames);
+
+    // the whole game in slow motion for a moment (counted in rendered frames)
+    public static void SlowMo(int frames) => slowMoFrames = frames;
+
+    void Update()
+    {
+        Time.timeScale = slowMoFrames > 0 ? Feel.SlowMoScale : 1f;
+        if (slowMoFrames > 0) slowMoFrames--;
+    }
 
     // one 60 Hz tick of the whole fight; hitstop skips it
     public static void Simulate()
@@ -185,8 +197,8 @@ public class Game : MonoBehaviour
         foreach (float x in new[] { 380f, 470f, 560f, 650f, 740f, 830f })
             stools.Add(SpawnProp(Prop.Kind.Stool, new Vector2(x, CounterEdge - 5f)));
         // a couple chatting at the counter, up on two neighbouring stools
-        Seat(Art.GuyDenim, stools[3], 1, 4, StoolSeat);
-        Seat(Art.GruntB, stools[4], -1, 3, StoolSeat);
+        Seat(Art.GuyDenim, stools[3], 1, Feel.GuyHealth, StoolSeat);
+        Seat(Art.GruntB, stools[4], -1, Feel.GirlHealth, StoolSeat);
         foreach (float x in new[] { 425f, 612f, 795f })
             SpawnProp(Prop.Kind.Bottle, new Vector2(x, CounterEdge), CounterTop);
 
@@ -213,8 +225,8 @@ public class Game : MonoBehaviour
             var right = SpawnProp(Prop.Kind.Chair, new Vector2(x + 28f, depth), faceLeft: true);
             for (int i = 0; i < bottles; i++)
                 SpawnProp(Prop.Kind.Bottle, new Vector2(x - 4f + i * 9f, depth), TableTop);
-            Seat(t % 2 == 0 ? Art.Guy : Art.GuyDenim, left, 1, 4);
-            Seat(t % 2 == 0 ? Art.GruntA : Art.GruntB, right, -1, 3);
+            Seat(t % 2 == 0 ? Art.Guy : Art.GuyDenim, left, 1, Feel.GuyHealth);
+            Seat(t % 2 == 0 ? Art.GruntA : Art.GruntB, right, -1, Feel.GirlHealth);
         }
     }
 
@@ -234,7 +246,7 @@ public class Game : MonoBehaviour
         foreach (var l in Lamps) if (l != null) Destroy(l.gameObject);
         Reset();
         wave = toSpawn = 0;
-        Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), 10); // at the counter
+        Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), Feel.HeroHealth); // at the counter
         Hero.gameObject.AddComponent<Player>();
         camX = CameraX(Hero.ground.x);
         SpawnBarProps();
@@ -259,9 +271,9 @@ public class Game : MonoBehaviour
 
         // guys and girls take turns; every third one is a whip fighter
         bool lasher = toSpawn % 3 == 0, guy = !lasher && toSpawn % 2 == 0;
-        var e = lasher ? Spawn(1, Art.Lasher, pos, 4)
-            : guy ? Spawn(1, Random.value < 0.5f ? Art.Guy : Art.GuyDenim, pos, 4)
-            : Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, 3);
+        var e = lasher ? Spawn(1, Art.Lasher, pos, Feel.GuyHealth)
+            : guy ? Spawn(1, Random.value < 0.5f ? Art.Guy : Art.GuyDenim, pos, Feel.GuyHealth)
+            : Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, Feel.GirlHealth);
         e.whip = lasher;
         e.gameObject.AddComponent<Enemy>().Setup();
         if (guy) e.walkX = Feel.EnemyWalkX * 0.85f; // heavier, a bit slower
@@ -333,7 +345,13 @@ public class Game : MonoBehaviour
             GUI.DrawTexture(new Rect(view.x, view.y, view.width, 20 * scale), Texture2D.whiteTexture);
             GUI.color = Color.white;
         }
-        Text(view.x + 8 * scale, view.y + 6 * scale, scale, $"VASYL  HP {Mathf.Max(Hero.health, 0)}");
+        Text(view.x + 8 * scale, view.y + 6 * scale, scale, "VASYL");
+        Bar(view.x + 44 * scale, view.y + 8 * scale, 100 * scale, 6 * scale, Hero);
+        if (LastHit != null) // the enemy you're fighting, Streets of Rage style
+        {
+            Text(view.x + 200 * scale, view.y + 6 * scale, scale, LastHit.look.ToUpper());
+            Bar(view.x + 270 * scale, view.y + 8 * scale, 100 * scale * LastHit.maxHealth / Feel.HeroHealth, 6 * scale, LastHit);
+        }
         if (ShowHelp || Frame < 8 * 60) // controls for the first seconds, then while H is held
         {
             if (Event.current.type == EventType.Repaint)
@@ -353,6 +371,20 @@ public class Game : MonoBehaviour
     }
 
     GUIStyle hud;
+
+    // health bar: black frame, dark red back, yellow fill
+    static void Bar(float x, float y, float w, float h, Fighter f)
+    {
+        if (Event.current.type != EventType.Repaint) return;
+        float full = Mathf.Clamp01((float)f.health / f.maxHealth);
+        GUI.color = Color.black;
+        GUI.DrawTexture(new Rect(x - 1, y - 1, w + 2, h + 2), Texture2D.whiteTexture);
+        GUI.color = new Color(0.35f, 0.08f, 0.08f);
+        GUI.DrawTexture(new Rect(x, y, w, h), Texture2D.whiteTexture);
+        GUI.color = new Color(1f, 0.82f, 0.2f);
+        GUI.DrawTexture(new Rect(x, y, w * full, h), Texture2D.whiteTexture);
+        GUI.color = Color.white;
+    }
 
     void Text(float x, float y, int scale, string s)
     {

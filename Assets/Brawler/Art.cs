@@ -241,6 +241,26 @@ public static class Art
 
     public static Sprite Shadow => shadow != null ? shadow : shadow = FromResource("shadow");
 
+    // hit spark: a yellow star with a white core, growing, then just its tips
+    static Sprite[] spark, dust;
+    public static Sprite[] Spark => spark ??= new[] { Star(3, false), Star(6, false), Star(8, true) };
+    static Sprite Star(int r, bool tipsOnly) => Paint(2 * r + 1, 2 * r + 1, (x, y) =>
+    {
+        int dx = Mathf.Abs(x - r), dy = Mathf.Abs(y - r);
+        bool ray = dx == 0 || dy == 0 || dx <= 1 && dy <= r / 2 || dy <= 1 && dx <= r / 2 || dx == dy && dx <= r * 2 / 3;
+        if (!ray || tipsOnly && Mathf.Max(dx, dy) < r / 2) return Clear;
+        return dx + dy <= r / 3 ? C(0xffffff) : C(0xffd84a);
+    }, Center);
+
+    // dust: a pale puff sitting on the floor, swelling and thinning out
+    public static Sprite[] Dust => dust ??= new[] { Puff(2, 200), Puff(3, 150), Puff(4, 90) };
+    static Sprite Puff(int r, byte a) => Paint(4 * r + 1, 2 * r + 1, (x, y) =>
+        (x - 2 * r) * (x - 2 * r) / 4 + (y - r) * (y - r) <= r * r ? C(0xd8c4a4, a) : Clear, new Vector2(0.5f, 0.2f));
+
+    // flat-colour sprite material (Resources/Silhouette.shader): white hit flash, afterimages
+    static Material silhouette;
+    public static Material Silhouette => silhouette != null ? silhouette : silhouette = new Material(Resources.Load<Shader>("Silhouette"));
+
     // pivot at the handle end; flip by negative x scale
     public static Sprite Whip => whip != null ? whip : whip = Paint(44, 3, (x, y) =>
         x >= 40 ? C(0xe0c080) : y == 1 ? C(0x6a3a1c) : Clear, new Vector2(0f, 0.5f));

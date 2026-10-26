@@ -35,7 +35,28 @@ public static class Feel
     public const float HeightBand = 36f;          // guess
     public const float BodyGap = 24f;             // guess, closest two bodies can stand on one lane
 
-    public const int Hitstop = 4;                 // guess
+    public const int HeroHealth = 100;
+    public const int GuyHealth = 40;              // a grunt dies to about one full combo
+    public const int GirlHealth = 30;
+    public const int PunchDamage = 7;             // the hero's and the enemies' jab
+    public const int SmashDamage = 14;            // combo finisher
+    public const int KickDamage = 12;
+    public const int JumpKickDamage = 14;         // also the kick from a lamp
+    public const int FlyingKickDamage = 24;
+    public const int BicycleKickDamage = 6;       // per kick, about five land
+    public const int PoundDamage = 14;
+    public const int ElbowDropDamage = 20;
+    public const int KneeDamage = 8;
+    public const int ThrowDamage = 18;
+    public const int WhipDamage = 8;
+    public const int BodyHitDamage = 8;           // hit by a body flying past
+    public const int LightPropDamage = 12;        // bottle, ball, cue
+    public const int HeavyPropDamage = 18;        // chair, stool, lamp
+    public const int ComboScaleFrom = 4;          // from this hit of a combo on, 10% less damage each (Streets of Rage 4)
+    public const float ComboScaleMin = 0.5f;
+    public const int JuggleCap = 8;               // hits in one combo before the victim falls whatever hit them
+
+    public const int Hitstop = 6;                 // guess
     public const int SmashHitstop = 10;           // guess
     public const int SmashShake = 8;              // guess
     public const int FinisherHitstop = 20;        // guess, the last hit on an enemy
@@ -43,6 +64,15 @@ public static class Feel
     public const int FinisherFlash = 6;           // guess, frames of white screen flash
     public const float FinisherLaunch = 1.8f;     // guess, launch speed multiplier
     public const int Hitstun = 16;                // guess
+    public const float HitJolt = 2f;              // px the victim shakes left-right during hitstop
+    public const float WindUpLean = 2f;           // px leaning back while winding up
+    public const float JabLunge = 3f;             // px forward on a jab's contact
+    public const float HeavyLunge = 6f;           // ...on kicks, smashes, swings
+    public const int SquashFrames = 5;            // squashed on landing, stretched on take-off
+    public const int GhostGap = 3;                // frames between afterimages of a flying or bicycle kick
+    public const int GhostFrames = 9;             // how long one afterimage fades
+    public const int LastKillSlowMo = 40;         // rendered frames of slow motion on the last enemy's finisher
+    public const float SlowMoScale = 0.3f;
     public const float JabPush = 2f;            // guess
     public const float LaunchX = 6f;              // guess
     public const float LaunchUp = 5f;             // guess
@@ -125,6 +155,7 @@ public static class Feel
 
     public const float EnemyWalkX = 1.1f;         // guess
     public const int EnemyAttackCooldown = 70;    // guess
+    public const int EnemyPunchStartup = 10;      // guess, a wind-up you can see (and punch them out of)
     public const int MaxAttackers = 2;            // enemies swinging at once; the rest wait their turn
     public const float RingX = 70f;               // guess, how far off the hero (x) enemies wait their turn
     public const float RingDepth = 22f;           // guess, ...and off the hero's lane (depth), out of reach

@@ -24,7 +24,7 @@ public class Prop : MonoBehaviour
     public bool Heavy => kind == Kind.Table || kind == Kind.PoolTable;
     public bool Pickable => Free && !Heavy && (seatedBy == null || seatedBy.state != State.Sit);
     public float Reach => kind switch { Kind.Cue => Feel.CueReach, Kind.Bottle or Kind.Ball => Feel.BottleReach, _ => Feel.ChairReach };
-    public int Damage => kind is Kind.Bottle or Kind.Ball or Kind.Cue ? 2 : 3;
+    public int Damage => kind is Kind.Bottle or Kind.Ball or Kind.Cue ? Feel.LightPropDamage : Feel.HeavyPropDamage;
 
     // furniture footprint on the floor: blocks walking (and thrown things), can be jumped over if low enough
     public bool Blocks => kind == Kind.PoolTable || kind == Kind.Table && vel == Vector2.zero;

@@ -110,7 +110,7 @@ public class Player : MonoBehaviour
         }
         else if (attackBuffer > 0 && f.CanAct)
         {
-            combo = Game.SimFrame - lastPunchFrame <= Feel.ComboWindow ? combo + 1 : 1;
+            combo = Game.SimFrame - lastPunchFrame <= Feel.ComboWindow && f.lastStrikeHit ? combo + 1 : 1; // whiffs don't count
             lastPunchFrame = Game.SimFrame;
             bool smash = combo >= 3;
             if (smash) combo = 0;

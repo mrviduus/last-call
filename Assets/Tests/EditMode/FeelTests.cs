@@ -22,7 +22,7 @@ public class FeelTests
     [Test]
     public void JumpLandsAfterArc()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         p.Jump();
         int frames = 0;
         while (p.state == State.Jump && frames < 120) { Game.Simulate(); frames++; }
@@ -35,8 +35,8 @@ public class FeelTests
     [Test]
     public void JabHurtsSmashLaunches()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 100);
 
         p.Attack(Move.Punch);
         Run(Feel.PunchStartup);
@@ -54,8 +54,8 @@ public class FeelTests
     [Test]
     public void NoHitOutsideDepthBand()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f + Feel.DepthBand + 1f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f + Feel.DepthBand + 1f), 100);
         Assert.IsFalse(p.InReach(e, Feel.PunchReach));
 
         e.ground.y = -70f;
@@ -65,8 +65,8 @@ public class FeelTests
     [Test]
     public void HitstopFreezesEveryone()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(200f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(200f, -70f), 100);
         p.Jump();
         e.Jump();
         Game.Simulate();
@@ -85,8 +85,8 @@ public class FeelTests
     [Test]
     public void HeroWinsASameFramePunch()
     {
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10); // first in the list on purpose
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 100); // first in the list on purpose
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         Game.Hero = p;
         e.facing = -1;
         p.Attack(Move.Punch);
@@ -94,12 +94,12 @@ public class FeelTests
 
         Run(Feel.PunchStartup);
         Assert.AreEqual(State.Hurt, e.state);
-        Assert.AreEqual(10, p.health, "no trade: being hit cancels the enemy's punch");
+        Assert.AreEqual(100, p.health, "no trade: being hit cancels the enemy's punch");
     }
 
     static Fighter Lasher(float x)
     {
-        var w = Game.Spawn(1, Art.Lasher, new Vector2(x, -70f), 10);
+        var w = Game.Spawn(1, Art.Lasher, new Vector2(x, -70f), 100);
         w.whip = true;
         w.facing = -1;
         return w;
@@ -108,7 +108,7 @@ public class FeelTests
     [Test]
     public void WhipHitsFromBeyondPunchRange()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var w = Lasher(40f + 45f);
         Assert.Greater(45f, Feel.PunchReach);
 
@@ -120,7 +120,7 @@ public class FeelTests
     [Test]
     public void PunchDuringWhipWindupLaunches()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var w = Lasher(55f);
         w.Attack(Move.Whip);
         Run(2);
@@ -133,22 +133,22 @@ public class FeelTests
     [Test]
     public void KickReachesFurtherThanPunch()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         float gap = (Feel.PunchReach + Feel.KickReach) / 2f; // too far for a punch, close enough for a kick
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + gap, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + gap, -70f), 100);
         Assert.Greater(gap, Feel.PunchReach);
 
         p.Attack(Move.Kick);
         Run(Feel.KickStartup);
         Assert.AreEqual(State.Hurt, e.state);
-        Assert.AreEqual(8, e.health);
+        Assert.AreEqual(100 - Feel.KickDamage, e.health);
     }
 
     [Test]
     public void JumpKickLaunches()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(60f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(60f, -70f), 100);
         p.Jump();
         Run(3);
         p.JumpKick();
@@ -159,15 +159,15 @@ public class FeelTests
     [Test]
     public void GrabHeadbuttsThenThrowsBehind()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(52f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(52f, -70f), 100);
         p.Grab(e);
         Assert.AreEqual(State.Held, e.state);
 
         p.Attack(Move.Knee);
         Run(Feel.KneeStartup + 30);
         Assert.AreEqual(State.Held, e.state, "a headbutt keeps the hold");
-        Assert.AreEqual(9, e.health);
+        Assert.AreEqual(100 - Feel.KneeDamage, e.health);
 
         p.Attack(Move.Throw);
         Run(Feel.ThrowStartup);
@@ -178,7 +178,7 @@ public class FeelTests
     [Test]
     public void RunIsFasterThanWalkAndBicycleKickHitsSeveralTimes()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         p.moveInput = Vector2.right;
         p.StartRun(1);
         Run(10);
@@ -200,8 +200,8 @@ public class FeelTests
     [Test]
     public void PoundBuriesThenEnemyPopsOut()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 100);
         p.Attack(Move.Pound);
         Run(Feel.PoundStartup);
         Assert.AreEqual(State.Buried, e.state);
@@ -213,8 +213,8 @@ public class FeelTests
     [Test]
     public void ElbowDropHitsEnemyLyingDown()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 100);
         e.TakeHit(1, 1, true);
         while (e.state != State.Down) Game.Simulate();
         e.ground.x = 55f; // the launch carried them away; put them back in front, no longer sliding
@@ -223,14 +223,14 @@ public class FeelTests
 
         p.Attack(Move.ElbowDrop);
         Run(Feel.ElbowDropStartup);
-        Assert.AreEqual(6, e.health, "9 left after the knockdown, the elbow does 3");
+        Assert.AreEqual(99 - Feel.ElbowDropDamage, e.health, "99 left after the knockdown");
         Assert.AreEqual(State.Down, e.state);
     }
 
     [Test]
     public void LastHitIsAFinisherThatSendsThemFlying()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var e = Game.Spawn(1, Art.GruntA, new Vector2(65f, -70f), 1);
         p.Attack(Move.Punch);
         Run(Feel.PunchStartup);
@@ -242,9 +242,9 @@ public class FeelTests
     [Test]
     public void FlyingKickCrossesTheScreenAndLaunchesEveryoneInThePath()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var near = Game.Spawn(1, Art.GruntA, new Vector2(70f, -70f), 10);
-        var far = Game.Spawn(1, Art.GruntA, new Vector2(170f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var near = Game.Spawn(1, Art.GruntA, new Vector2(70f, -70f), 100);
+        var far = Game.Spawn(1, Art.GruntA, new Vector2(170f, -70f), 100);
         p.Attack(Move.FlyingKick);
         Run(Feel.FlyingKickStartup + Feel.FlyingKickActive + Feel.FlyingKickRecovery + 2 * Feel.SmashHitstop);
 
@@ -256,7 +256,7 @@ public class FeelTests
     [Test]
     public void ChairSwingLaunchesAndBreaksAfterThreeHits()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(45f, -70f));
         Assert.AreSame(chair, p.PropInReach());
         p.PickUp(chair);
@@ -264,11 +264,11 @@ public class FeelTests
 
         for (int i = 0; i < Feel.ChairHits; i++)
         {
-            var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 30f, -70f), 10);
+            var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 30f, -70f), 100);
             p.Attack(Move.Swing);
             Run(Feel.SwingStartup);
             Assert.AreEqual(State.Launched, e.state);
-            Assert.AreEqual(7, e.health);
+            Assert.AreEqual(100 - Feel.HeavyPropDamage, e.health);
             Run(Feel.SwingActive + Feel.SwingRecovery + Feel.SmashHitstop);
         }
         Assert.IsNull(p.held, "the chair broke");
@@ -278,8 +278,8 @@ public class FeelTests
     [Test]
     public void ThrownBottleHitsAnEnemyAcrossTheRoom()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(140f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(140f, -70f), 100);
         var bottle = Game.SpawnProp(Prop.Kind.Bottle, new Vector2(40f, -70f));
         p.PickUp(bottle);
         p.Attack(Move.ThrowProp);
@@ -293,7 +293,7 @@ public class FeelTests
     [Test]
     public void GettingHitDropsTheProp()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f));
         p.PickUp(chair);
         p.TakeHit(1, 1, false);
@@ -304,7 +304,7 @@ public class FeelTests
     [Test]
     public void PunchTipsTheTableAndTheBottleOnItSmashes()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(70f, -70f));
         var bottle = Game.SpawnProp(Prop.Kind.Bottle, new Vector2(72f, -70f), 26f);
         Assert.IsNull(p.PropInReach(), "tables can't be picked up; the bottle is out of pickup range");
@@ -321,7 +321,7 @@ public class FeelTests
     [Test]
     public void ThrownChairSmashesWhenItLands()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f));
         p.PickUp(chair);
         p.Attack(Move.ThrowProp);
@@ -333,9 +333,9 @@ public class FeelTests
     [Test]
     public void TippedTableHitAgainSlidesIntoAnEnemy()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(70f, -70f));
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(120f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(120f, -70f), 100);
         e.facing = -1;
         table.flipped = true;
 
@@ -347,7 +347,7 @@ public class FeelTests
     [Test]
     public void TablesBlockWalkingButCanBeJumpedOver()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(100f, -70f));
         p.moveInput = Vector2.right;
         Run(60);
@@ -361,7 +361,7 @@ public class FeelTests
     [Test]
     public void TippedTableBreaksOnTheThirdHit()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(65f, -70f));
         table.flipped = true;
         for (int i = 0; i < Feel.TableHits; i++)
@@ -377,7 +377,7 @@ public class FeelTests
     [Test]
     public void NoRunningWhileCarrying()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         p.PickUp(Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f)));
         p.StartRun(1);
         Assert.AreNotEqual(State.Run, p.state);
@@ -386,7 +386,7 @@ public class FeelTests
     [Test]
     public void ThrownChairIntoATableTipsItAndBreaks()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(40f, -70f));
         var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(110f, -70f));
         p.PickUp(chair);
@@ -399,19 +399,19 @@ public class FeelTests
     [Test]
     public void TippingATableDoesNotHurtSomeoneStandingNextToIt()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(70f, -70f));
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(80f, -62f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(80f, -62f), 100);
         p.Attack(Move.Punch);
         Run(Feel.PunchStartup + 10);
         Assert.IsTrue(table.flipped);
-        Assert.AreEqual(10, e.health);
+        Assert.AreEqual(100, e.health);
     }
 
     [Test]
     public void ElbowDropThatKnocksOutIsAFinisher()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 4);
         e.TakeHit(1, 1, true);
         while (e.state != State.Down) Game.Simulate();
@@ -428,7 +428,7 @@ public class FeelTests
     [Test]
     public void PatronsSitUntilTheFightStartsThenGetUp()
     {
-        Game.Hero = Game.Spawn(0, Art.Hero, new Vector2(300f, -70f), 10);
+        Game.Hero = Game.Spawn(0, Art.Hero, new Vector2(300f, -70f), 100);
         var chair = Game.SpawnProp(Prop.Kind.Chair, new Vector2(100f, -70f));
         var patron = Game.Seat(Art.GruntA, chair, 1, 3);
         Assert.IsNull(Game.Hero.PropInReach(), "nothing nearby");
@@ -464,7 +464,7 @@ public class FeelTests
     [Test]
     public void PoolTableIsHeavySolidAndShedsItsBalls()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var pool = Game.SpawnProp(Prop.Kind.PoolTable, new Vector2(120f, -70f));
         var ball = Game.SpawnProp(Prop.Kind.Ball, new Vector2(70f, -79f), 28f);
         Assert.IsFalse(pool.Pickable);
@@ -483,20 +483,20 @@ public class FeelTests
     [Test]
     public void CueThrustReachesFurtherThanAnything()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var cue = Game.SpawnProp(Prop.Kind.Cue, new Vector2(40f, -70f));
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + Feel.CueReach - 4f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(40f + Feel.CueReach - 4f, -70f), 100);
         Assert.Greater(Feel.CueReach - 4f, Feel.KickReach);
         p.PickUp(cue);
         p.Attack(Move.Swing);
         Run(Feel.SwingStartup);
-        Assert.AreEqual(8, e.health);
+        Assert.AreEqual(100 - Feel.LightPropDamage, e.health);
     }
 
     [Test]
     public void ThrownBallBouncesInsteadOfBreaking()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var ball = Game.SpawnProp(Prop.Kind.Ball, new Vector2(40f, -70f));
         p.PickUp(ball);
         p.Attack(Move.ThrowProp);
@@ -509,7 +509,7 @@ public class FeelTests
     static Fighter HeroUnderALamp(out Lamp lamp)
     {
         lamp = Lamp.Spawn(100f, -70f, Feel.LampBottom);
-        var p = Game.Spawn(0, Art.Hero, new Vector2(100f, -82f), 10); // in front of where its pool table would be
+        var p = Game.Spawn(0, Art.Hero, new Vector2(100f, -82f), 100); // in front of where its pool table would be
         p.Jump();
         int frames = 0;
         while (p.state == State.Jump && frames++ < 60) Game.Simulate();
@@ -539,7 +539,7 @@ public class FeelTests
     public void KickFromTheLampLaunches()
     {
         var p = HeroUnderALamp(out _);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 30f, -82f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(p.ground.x + 30f, -82f), 100);
         p.HangKick();
         Run(Feel.HangKickStartup + 1);
         Assert.AreEqual(State.Launched, e.state);
@@ -560,7 +560,7 @@ public class FeelTests
         Assert.Greater(swing, 0f);
 
         var lamp2 = Lamp.Spawn(300f, -70f, Feel.LampBottom);
-        var q = Game.Spawn(0, Art.Hero, new Vector2(300f, -82f), 10);
+        var q = Game.Spawn(0, Art.Hero, new Vector2(300f, -82f), 100);
         q.Hang(lamp2);
         q.RipLamp();
         Assert.IsFalse(Game.Lamps.Contains(lamp2), "torn down");
@@ -571,7 +571,7 @@ public class FeelTests
     [Test]
     public void ElbowDropIgnoresAKnockedOutBody()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 1);
         e.TakeHit(1, 1, true);
         while (e.state != State.Down) Game.Simulate();
@@ -583,8 +583,8 @@ public class FeelTests
     [Test]
     public void ReleasedEnemyCannotBeGrabbedOrHitAtOnce()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(52f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(52f, -70f), 100);
         p.Grab(e);
         Run(Feel.GrabFrames + 1);
         Assert.AreEqual(State.Hurt, e.state, "the hold ran out");
@@ -596,21 +596,21 @@ public class FeelTests
     [Test]
     public void HeroCannotBeHitAgainRightAway()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         p.TakeHit(1, 1, false);
         Run(Feel.Hitstun);
         p.TakeHit(1, 1, false);
-        Assert.AreEqual(9, p.health, "a crowd can't stunlock the hero");
+        Assert.AreEqual(99, p.health, "a crowd can't stunlock the hero");
         Run(Feel.HeroHurtInvuln);
         p.TakeHit(1, 1, false);
-        Assert.AreEqual(8, p.health);
+        Assert.AreEqual(98, p.health);
     }
 
     [Test]
     public void HittingABuriedEnemyKnocksThemOutFlying()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 100);
         p.Attack(Move.Pound);
         Run(Feel.PoundStartup);
         Assert.AreEqual(State.Buried, e.state);
@@ -622,9 +622,9 @@ public class FeelTests
     [Test]
     public void EnemyBacksOffFacingTheHero()
     {
-        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
         Game.Hero = p;
-        var e = Game.Spawn(1, Art.GruntA, new Vector2(50f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(50f, -70f), 100);
         e.gameObject.AddComponent<Enemy>().Setup();
         Run(10);
         Assert.Greater(e.ground.x, 50f, "too close: steps back");
@@ -654,7 +654,7 @@ public class FeelTests
         var p = Game.Spawn(0, Art.Hero, new Vector2(400f, -50f), 1000);
         Game.Hero = p;
         foreach (float x in new[] { 300f, 500f, 320f, 480f, 340f })
-            Game.Spawn(1, Art.GruntA, new Vector2(x, -50f), 10).gameObject.AddComponent<Enemy>().Setup();
+            Game.Spawn(1, Art.GruntA, new Vector2(x, -50f), 100).gameObject.AddComponent<Enemy>().Setup();
         int most = 0;
         for (int i = 0; i < 600; i++)
         {
@@ -665,5 +665,35 @@ public class FeelTests
             most = Mathf.Max(most, inFace);
         }
         Assert.That(most, Is.InRange(1, Feel.MaxAttackers), "only the ones having their turn come up to the hero");
+    }
+
+    [Test]
+    public void LongCombosDoLessAndEndInAKnockdown()
+    {
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 1000);
+        for (int i = 0; i < Feel.ComboScaleFrom - 1; i++) e.TakeHit(10, 1, false);
+        Assert.AreEqual(1000 - 10 * (Feel.ComboScaleFrom - 1), e.health, "full damage at first");
+        int before = e.health;
+        e.TakeHit(10, 1, false);
+        Assert.AreEqual(before - 9, e.health, "then 10% less");
+
+        while (e.comboHits < Feel.JuggleCap - 1) e.TakeHit(10, 1, false);
+        Assert.AreEqual(State.Hurt, e.state);
+        e.TakeHit(10, 1, false);
+        Assert.AreEqual(State.Launched, e.state, "the combo is over: they fall");
+    }
+
+    [Test]
+    public void PunchComboCountsOnlyHits()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+        p.Attack(Move.Punch);
+        Run(Feel.PunchStartup);
+        Assert.IsFalse(p.lastStrikeHit, "a whiff");
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 100);
+        Run(20);
+        p.Attack(Move.Punch);
+        Run(Feel.PunchStartup);
+        Assert.IsTrue(p.lastStrikeHit);
     }
 }
