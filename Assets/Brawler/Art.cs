@@ -57,10 +57,11 @@ public static class Art
     }
 
     // only idle, walk, punch and hurt; the last hurt frame lies on the ground
+    // the punk's sheets face left (he was drawn as an enemy); mirrored so every character faces right
     static Frames Punk(bool asVasyl)
     {
-        var pivot = FeetPivot(Load("Punk/idle"), FrameW);
-        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, asVasyl);
+        var pivot = FeetPivot(Mirror(Load("Punk/idle")), FrameW);
+        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, asVasyl, mirror: true);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
         return new Frames
         {
@@ -87,9 +88,10 @@ public static class Art
 
     static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);
 
-    static Sprite[] Sheet(string path, Vector2 pivot, bool asVasyl = false)
+    static Sprite[] Sheet(string path, Vector2 pivot, bool asVasyl = false, bool mirror = false)
     {
         var tex = asVasyl ? RecolorAsVasyl(Load(path)) : Load(path);
+        if (mirror) tex = Mirror(tex);
         var frames = new Sprite[tex.width / FrameW];
         for (int i = 0; i < frames.Length; i++)
             frames[i] = Sprite.Create(tex, new Rect(i * FrameW, 0, FrameW, tex.height), pivot, 1f, 0, SpriteMeshType.FullRect);
@@ -126,6 +128,23 @@ public static class Art
         }
         var tex = new Texture2D(src.width, src.height) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         tex.SetPixels32(px);
+        tex.Apply();
+        return tex;
+    }
+
+    // flips every 96 px frame left-right in place
+    static Texture2D Mirror(Texture2D src)
+    {
+        var px = src.GetPixels32();
+        var outPx = new Color32[px.Length];
+        for (int y = 0; y < src.height; y++)
+            for (int x = 0; x < src.width; x++)
+            {
+                int frame = x / FrameW * FrameW;
+                outPx[y * src.width + x] = px[y * src.width + frame + FrameW - 1 - (x - frame)];
+            }
+        var tex = new Texture2D(src.width, src.height) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        tex.SetPixels32(outPx);
         tex.Apply();
         return tex;
     }
