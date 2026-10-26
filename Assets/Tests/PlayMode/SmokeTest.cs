@@ -14,10 +14,10 @@ public class SmokeTest
         if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
         yield return new WaitForFixedUpdate();
         Assert.AreEqual(36, Game.Props.Count, "stools, tables, chairs, bottles, pool tables with balls and cues");
-        Assert.AreEqual(6, Game.Fighters.FindAll(f => f.state == State.Sit).Count, "a couple at each of the 3 round tables");
+        Assert.AreEqual(8, Game.Fighters.FindAll(f => f.state == State.Sit).Count, "a couple at each round table and one at the counter");
 
         for (int i = 0; i < 120; i++) yield return new WaitForFixedUpdate();
-        Assert.AreEqual(6, Game.Fighters.FindAll(f => f.state == State.Sit).Count, "nobody gets up before the fight starts");
+        Assert.AreEqual(8, Game.Fighters.FindAll(f => f.state == State.Sit).Count, "nobody gets up before the fight starts");
 
         Game.Brawl = true; // as if the hero threw the first punch
         for (int i = 0; i < 1500; i++) yield return new WaitForFixedUpdate();

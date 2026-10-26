@@ -41,7 +41,7 @@ PALETTE = [
     # paper, chalk, cream
     0xc8b48a, 0xead8b0, 0xfff4dc,
     # dark and metal
-    0x0c0806, 0x16100c, 0x241a12, 0x4a4a50, 0x8a8a90, 0xc8c8cc,
+    0x0c0806, 0x16100c, 0x241a12, 0x4a4a50, 0x8a8a90, 0xc8c8cc, 0xffffff,
     # glass
     0x4a2a10, 0x8a5a20, 0x2a5a2a, 0x6aa05a,
 ]
@@ -539,25 +539,28 @@ def pool_table():
 
 
 def cue():
-    """Pool cue 60x3: chalked tip, light shaft, brass joint, dark butt."""
-    cv = Canvas(60, 3)
-    cv.rect(0, 1, 58, 2, 0xf0c890)
-    cv.rect(58, 1, 60, 2, 0x3a3f66)
-    cv.rect(0, 0, 22, 3, 0x2a160c)
-    cv.rect(0, 0, 22, 1, 0x5a3218)
-    cv.rect(22, 0, 24, 3, 0xe0b040)
-    cv.rect(24, 1, 58, 2, 0xd8a060)
+    """Pool cue 64x4 with a dark outline: chalked tip, light maple shaft, brass joint, dark butt."""
+    cv = Canvas(64, 4)
+    cv.rect(1, 1, 61, 3, 0xf0c890)
+    cv.rect(1, 2, 61, 3, 0xd8a060)
+    cv.rect(61, 1, 63, 3, 0x3a3f66)
+    cv.rect(1, 1, 24, 3, 0x3e2212)
+    cv.rect(1, 1, 24, 2, 0x5a3218)
+    cv.rect(24, 1, 26, 3, 0xe0b040)
+    outlined(cv)
     cv.save("cue", spread=0)
 
 
 def ball():
-    """Pool ball 6x6, white with shading; the game tints it per ball."""
-    cv = Canvas(6, 6)
-    for y in range(6):
-        for x in range(6):
-            dx, dy = x - 2.5, y - 2.5
-            if dx * dx + dy * dy <= 7:
-                cv.set(x, y, 0xfff4dc if dx + dy < -1.5 else 0xc8c8cc if dx + dy < 1.5 else 0x8a8a90)
+    """Pool ball 8x8 with a dark outline: white with shading and a shine; the game tints it per ball."""
+    cv = Canvas(8, 8)
+    for y in range(8):
+        for x in range(8):
+            dx, dy = x - 3.5, y - 3.5
+            if dx * dx + dy * dy <= 9:
+                cv.set(x, y, 0xfff4dc if dx + dy < -2 else 0xc8c8cc if dx + dy < 2 else 0x8a8a90)
+    cv.set(2, 2, 0xffffff)
+    outlined(cv)
     cv.save("ball", spread=0)
 
 

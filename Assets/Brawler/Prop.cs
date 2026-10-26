@@ -93,6 +93,7 @@ public class Prop : MonoBehaviour
         if (kind == Kind.Table && !flipped)
         {
             flipped = true;
+            Sfx.Play("wood", 0.6f);
             vel = new Vector2(dir * 2f, 0f);
             thrower = by;
             KnockOffWhatStandsOnMe(dir);
@@ -133,6 +134,7 @@ public class Prop : MonoBehaviour
     {
         if (holder != null) holder.held = null;
         Game.Props.Remove(this);
+        Sfx.Play(kind == Kind.Bottle ? "glass" : "wood");
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
         var color = kind switch
         {
@@ -172,6 +174,7 @@ public class Prop : MonoBehaviour
             heightVel = 0f;
             if (kind == Kind.Ball)
             {
+                Sfx.Play("ball", Mathf.Clamp01(-impact / 4f));
                 if (impact < -1.5f) heightVel = -impact * 0.45f; // bounces, smaller each time
                 else thrower = null;                             // then rolls
                 vel *= 0.7f;
@@ -196,6 +199,7 @@ public class Prop : MonoBehaviour
                 && height - f.height < Feel.HeightBand + 20f)
             {
                 f.TakeHit(Damage, vel.x > 0f ? 1 : -1, true);
+                Sfx.Play("hit_heavy");
                 Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
                 if (kind == Kind.Table) vel *= 0.5f;
                 else if (kind == Kind.Ball) BounceBack();

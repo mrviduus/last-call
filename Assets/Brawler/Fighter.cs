@@ -108,6 +108,7 @@ public class Fighter : MonoBehaviour
         if (m != Move.BicycleKick && m != Move.FlyingKick) vel = Vector2.zero; // running kicks keep the momentum
         if (m == Move.ElbowDrop) heightVel = Feel.ElbowDropHop;
         Enter(State.Attack);
+        Sfx.Play("whoosh", team == 0 ? 0.5f : 0.3f);
     }
 
     public bool IsDownedEnemyInReach(float reach)
@@ -129,11 +130,13 @@ public class Fighter : MonoBehaviour
         Enter(State.Run);
     }
 
-    // a patron sitting at a table, facing it, until the bar fight starts
-    public void Sit(int faceDir)
+    // a patron sitting at a table (or up on a bar stool: seatHeight), facing it, until the bar fight starts
+    public void Sit(int faceDir, float seatHeight = 0f)
     {
         facing = faceDir;
         vel = Vector2.zero;
+        height = seatHeight;
+        heightVel = 0f;
         Enter(State.Sit);
     }
 
@@ -309,7 +312,7 @@ public class Fighter : MonoBehaviour
                 break;
             case State.Launched:
                 HitBodiesInPath();
-                if (landed && bounced) Enter(State.Down);
+                if (landed && bounced) { Enter(State.Down); Sfx.Play("thud", 0.8f); }
                 else if (landed) { bounced = true; heightVel = Feel.BounceUp; vel.x *= 0.5f; }
                 break;
             case State.Down:
@@ -334,6 +337,7 @@ public class Fighter : MonoBehaviour
     // returns true on the frame the body touches the ground
     bool ApplyPhysics()
     {
+        if (state == State.Sit) return false; // seated: held up by the chair or stool
         bool grounded = height <= 0f && heightVel <= 0f;
         if (grounded && !CanAct) vel.x = Mathf.MoveTowards(vel.x, 0f, Feel.Friction);
         ground += vel;
@@ -386,6 +390,7 @@ public class Fighter : MonoBehaviour
             }
         }
         if (solidHit && move == Move.Swing) held?.UseUp(); // wears out on people and tables, not on loose bottles
+        if (hit) Sfx.Play(finished || Launches ? "hit_heavy" : "hit");
         if (!hit || finished) return; // a finisher already set its own freeze
         bool big = Launches || move == Move.Pound;
         Game.Freeze(big ? Feel.SmashHitstop : Feel.Hitstop, big ? Feel.SmashShake : 0);
@@ -422,6 +427,7 @@ public class Fighter : MonoBehaviour
             Game.Flash(Feel.FinisherFlash);
         }
         else if (hit) Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
+        if (hit) Sfx.Play("hit_heavy");
     }
 
     // knee: damage without letting go (the last point knocks them flying); throw: over the shoulder
@@ -432,6 +438,7 @@ public class Fighter : MonoBehaviour
         if (move == Move.Knee && g.health > 1)
         {
             g.health--;
+            Sfx.Play("hit");
             g.flashFrames = 8;
             Game.Freeze(Feel.Hitstop, 0);
             return;
@@ -440,6 +447,7 @@ public class Fighter : MonoBehaviour
         g.Enter(State.Hurt); // makes them hittable again
         bool thrown = move == Move.Throw;
         g.TakeHit(thrown ? 2 : 1, thrown ? -facing : facing, true);
+        Sfx.Play("hit_heavy");
         Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
     }
 

@@ -171,13 +171,18 @@ public class Game : MonoBehaviour
     const float FeltTop = 28f;    // height of the pool table's felt (pool_table.png)
     const float CounterTop = 47f; // height of the counter top above its front edge (bar_counter.png)
     const float CounterEdge = 9f; // depth of the counter's front edge
+    const float StoolSeat = 10f;  // a bar stool's seat is this much higher than a chair's (stool.png vs chair.png)
 
     // furniture the way a bar would have it: stools along the counter with drinks on it,
     // and tables on the floor, each with chairs turned towards it and bottles on top
     static void SpawnBarProps()
     {
+        var stools = new List<Prop>();
         foreach (float x in new[] { 380f, 470f, 560f, 650f, 740f, 830f })
-            SpawnProp(Prop.Kind.Stool, new Vector2(x, CounterEdge - 5f));
+            stools.Add(SpawnProp(Prop.Kind.Stool, new Vector2(x, CounterEdge - 5f)));
+        // a couple chatting at the counter, up on two neighbouring stools
+        Seat(Art.GuyDenim, stools[3], 1, 4, StoolSeat);
+        Seat(Art.GruntB, stools[4], -1, 3, StoolSeat);
         foreach (float x in new[] { 425f, 612f, 795f })
             SpawnProp(Prop.Kind.Bottle, new Vector2(x, CounterEdge), CounterTop);
 
@@ -215,16 +220,16 @@ public class Game : MonoBehaviour
         var sr = new GameObject("PoolLamp").AddComponent<SpriteRenderer>();
         sr.sprite = Art.PoolLamp;
         sr.sortingOrder = -Mathf.RoundToInt(depth) * 2 + 2;
-        sr.transform.position = new Vector3(x, depth + FeltTop + 40f, 0f);
+        sr.transform.position = new Vector3(x, depth + FeltTop + 26f, 0f);
         lamps.Add(sr.gameObject);
     }
 
     static readonly List<GameObject> lamps = new List<GameObject>();
 
-    public static Fighter Seat(string look, Prop chair, int faceDir, int hp)
+    public static Fighter Seat(string look, Prop chair, int faceDir, int hp, float seatHeight = 0f)
     {
         var f = Spawn(1, look, chair.ground, hp);
-        f.Sit(faceDir);
+        f.Sit(faceDir, seatHeight);
         chair.seatedBy = f;
         f.gameObject.AddComponent<Enemy>().Setup(wakeDelay: Random.Range(20, 140));
         return f;
