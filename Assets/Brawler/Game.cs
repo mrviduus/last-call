@@ -301,7 +301,8 @@ public class Game : MonoBehaviour
             layer.position = new Vector3(Mathf.Round(baseX + (x - ScreenW / 2f) * (1f - speed)), layer.position.y, 0f);
         foreach (var pillar in occluders)
         {
-            bool behind = Fighters.Exists(f => Mathf.Abs(f.ground.x - pillar.transform.position.x) < 24f);
+            bool behind = false;
+            foreach (var f in Fighters) behind |= Mathf.Abs(f.ground.x - pillar.transform.position.x) < 24f;
             pillar.color = new Color(1f, 1f, 1f, behind ? 0.35f : 1f);
         }
     }
@@ -355,8 +356,8 @@ public class Game : MonoBehaviour
     void Text(float x, float y, int scale, string s)
     {
         hud.normal.textColor = Color.black;
-        GUI.Label(new Rect(x + scale, y + scale, 600, 40 * scale), s, hud);
+        GUI.Label(new Rect(x + scale, y + scale, ScreenW * scale, 40 * scale), s, hud);
         hud.normal.textColor = Color.white;
-        GUI.Label(new Rect(x, y, 600, 40 * scale), s, hud);
+        GUI.Label(new Rect(x, y, ScreenW * scale, 40 * scale), s, hud);
     }
 }

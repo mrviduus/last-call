@@ -15,6 +15,7 @@ public class Enemy : MonoBehaviour
         f = GetComponent<Fighter>();
         f.Think = Think;
         f.walkX = Feel.EnemyWalkX;
+        f.faceMove = false; // backs off facing the hero
         f.walkDepth = Feel.EnemyWalkX * 0.7f;
         cooldown = Random.Range(30, 90);
         this.wakeDelay = wakeDelay;
@@ -62,7 +63,7 @@ public class Enemy : MonoBehaviour
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
             Mathf.Abs(to.y) > 2f ? Mathf.Sign(to.y) : 0f);
-        if (f.moveInput.x == 0f) f.facing = side;
+        f.facing = side;
         if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table); // step around it instead of pushing into it
 
         if (cooldown == 0 && f.InReach(p, reach))

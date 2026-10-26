@@ -604,4 +604,29 @@ public class FeelTests
         p.TakeHit(1, 1, false);
         Assert.AreEqual(8, p.health);
     }
+
+    [Test]
+    public void HittingABuriedEnemyKnocksThemOutFlying()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(55f, -70f), 10);
+        p.Attack(Move.Pound);
+        Run(Feel.PoundStartup);
+        Assert.AreEqual(State.Buried, e.state);
+
+        e.Bury(2, 1); // a second stomp doesn't keep them in the ground
+        Assert.AreEqual(State.Launched, e.state);
+    }
+
+    [Test]
+    public void EnemyBacksOffFacingTheHero()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 10);
+        Game.Hero = p;
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(50f, -70f), 10);
+        e.gameObject.AddComponent<Enemy>().Setup();
+        Run(10);
+        Assert.Greater(e.ground.x, 50f, "too close: steps back");
+        Assert.AreEqual(-1, e.facing, "still facing the hero");
+    }
 }

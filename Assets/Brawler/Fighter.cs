@@ -21,6 +21,7 @@ public class Fighter : MonoBehaviour
     public int health, facing = 1;
     public Move move;
     public bool whip; // enemy type: long reach, slow telegraphed wind-up
+    public bool faceMove = true; // walking turns us; enemies turn to the hero themselves
     public Fighter grabbed;
     public Prop held; // chair or bottle in hand
     public Lamp hangingOn;
@@ -255,7 +256,7 @@ public class Fighter : MonoBehaviour
         health -= damage;
         flashFrames = 8;
         facing = -dir;
-        if (launch || countered || !Alive || height > 0f)
+        if (launch || countered || !Alive || height > 0f || state == State.Buried)
         {
             Enter(State.Launched);
             bounced = false;
@@ -274,7 +275,7 @@ public class Fighter : MonoBehaviour
     public void Bury(int damage, int dir)
     {
         if (!CanBeHit) return;
-        if (health <= damage) { TakeHit(damage, dir, true); return; }
+        if (health <= damage || state == State.Buried) { TakeHit(damage, dir, true); return; } // once per bury
         Release();
         health -= damage;
         flashFrames = 8;
@@ -309,7 +310,7 @@ public class Fighter : MonoBehaviour
             case State.Walk:
                 float carry = held != null ? Feel.CarrySpeed : 1f; // props are heavy
                 vel = new Vector2(moveInput.x * walkX, moveInput.y * walkDepth) * carry;
-                if (moveInput.x != 0f) facing = moveInput.x > 0f ? 1 : -1;
+                if (faceMove && moveInput.x != 0f) facing = moveInput.x > 0f ? 1 : -1;
                 state = vel == Vector2.zero ? State.Idle : State.Walk;
                 break;
             case State.Run:
@@ -387,10 +388,15 @@ public class Fighter : MonoBehaviour
         }
     }
 
-    Lamp LampToGrab() => Game.Lamps.Find(l => l.hanger == null
-        && Mathf.Abs(l.SwingX - ground.x) < Feel.LampGrabX
-        && Mathf.Abs(l.depth - ground.y) < Feel.LampGrabDepth
-        && height >= l.bottom - Feel.HangReach - 6f);
+    Lamp LampToGrab()
+    {
+        foreach (var l in Game.Lamps)
+            if (l.hanger == null && Mathf.Abs(l.SwingX - ground.x) < Feel.LampGrabX
+                && Mathf.Abs(l.depth - ground.y) < Feel.LampGrabDepth
+                && height >= l.bottom - Feel.HangReach - 6f)
+                return l;
+        return null;
+    }
 
     void HoldVictim() => grabbed.ground = new Vector2(ground.x + facing * Feel.BodyGap, ground.y);
 

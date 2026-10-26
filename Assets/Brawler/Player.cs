@@ -72,7 +72,7 @@ public class Player : MonoBehaviour
             f.Attack(Move.ThrowProp); // ...or throw it
             kickBuffer = 0;
         }
-        else if (f.state == State.Jump && attackBuffer > 0)
+        else if (f.state == State.Jump && attackBuffer > 0 && f.held == null)
         {
             f.JumpKick();
             attackBuffer = 0;
