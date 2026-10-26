@@ -647,4 +647,23 @@ public class FeelTests
         }
         Assert.That(most, Is.InRange(1, Feel.MaxAttackers));
     }
+
+    [Test]
+    public void WaitingEnemiesStayOffTheHerosLane()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(400f, -50f), 1000);
+        Game.Hero = p;
+        foreach (float x in new[] { 300f, 500f, 320f, 480f, 340f })
+            Game.Spawn(1, Art.GruntA, new Vector2(x, -50f), 10).gameObject.AddComponent<Enemy>().Setup();
+        int most = 0;
+        for (int i = 0; i < 600; i++)
+        {
+            Game.Simulate();
+            if (i < 200) continue; // walking in
+            int inFace = Game.Fighters.FindAll(f => f.team == 1 && Mathf.Abs(f.ground.x - p.ground.x) < Feel.PunchReach + 4f
+                && Mathf.Abs(f.ground.y - p.ground.y) < Feel.DepthBand).Count;
+            most = Mathf.Max(most, inFace);
+        }
+        Assert.That(most, Is.InRange(1, Feel.MaxAttackers), "only the ones having their turn come up to the hero");
+    }
 }

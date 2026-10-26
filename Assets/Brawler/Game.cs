@@ -68,7 +68,7 @@ public class Game : MonoBehaviour
         Separate();
         BlockByTables();
         if (Hero != null) Hero.ResolveStrike(); // the hero wins ties
-        for (int i = 0; i < Fighters.Count; i++) Fighters[i].ResolveStrike();
+        for (int i = 0; i < Fighters.Count; i++) if (Fighters[i] != Hero) Fighters[i].ResolveStrike();
     }
 
     // standing bodies on the same lane push apart, so nobody stands inside anyone else

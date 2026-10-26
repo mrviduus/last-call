@@ -126,6 +126,9 @@ public static class Feel
     public const float EnemyWalkX = 1.1f;         // guess
     public const int EnemyAttackCooldown = 70;    // guess
     public const int MaxAttackers = 2;            // enemies swinging at once; the rest wait their turn
+    public const float RingX = 70f;               // guess, how far off the hero (x) enemies wait their turn
+    public const float RingDepth = 22f;           // guess, ...and off the hero's lane (depth), out of reach
+    public const int EngageGiveUp = 180;          // guess, frames to reach the hero on our turn before passing it on
     public const int CorpseFrames = 60;
     public const int SpawnGap = 40;               // guess, frames between enemies walking in
 }

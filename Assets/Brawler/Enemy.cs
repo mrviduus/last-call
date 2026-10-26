@@ -1,12 +1,16 @@
 using UnityEngine;
 
-// Walks into the hero's lane, stops at punching distance, punches on a cooldown.
+// Waits its turn on a ring around the hero, off the hero's lane; when one of the MaxAttackers turns is free,
+// walks into the lane, strikes once, then backs off to the ring again.
 // Patrons sit at their table until the hero starts the fight.
 [RequireComponent(typeof(Fighter))]
 public class Enemy : MonoBehaviour
 {
     Fighter f;
-    int cooldown, wakeDelay;
+    int cooldown, wakeDelay, giveUp;
+    bool engaging;     // our turn: allowed into the hero's lane to strike
+    float laneOffset;  // where we wait: this far in front of or behind the hero's lane
+    float pace;        // phase of the slow drift while waiting, so the ring never stands still
 
     // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
     // wakeDelay: frames a seated patron waits after the fight starts before getting up
@@ -19,6 +23,8 @@ public class Enemy : MonoBehaviour
         f.walkDepth = Feel.EnemyWalkX * 0.7f;
         cooldown = Random.Range(30, 90);
         this.wakeDelay = wakeDelay;
+        laneOffset = (Random.value < 0.5f ? -1f : 1f) * Random.Range(Feel.RingDepth * 0.6f, Feel.RingDepth);
+        pace = Random.Range(0f, 100f);
     }
 
     // a standing table right in the way of where we're walking
@@ -43,11 +49,12 @@ public class Enemy : MonoBehaviour
         return behind ? 1f : -1f;
     }
 
-    // teammates already swinging at the hero
-    int Attackers()
+    // teammates having their turn: walking in to strike, or striking
+    int Engaged()
     {
         int n = 0;
-        foreach (var o in Game.Fighters) if (o.team == f.team && o.state == State.Attack) n++;
+        foreach (var o in Game.Fighters)
+            if (o != f && o.team == f.team && (o.state == State.Attack || o.GetComponent<Enemy>() is Enemy e && e.engaging)) n++;
         return n;
     }
 
@@ -61,21 +68,29 @@ public class Enemy : MonoBehaviour
             return;
         }
         if (cooldown > 0) cooldown--;
-        if (p == null || !p.Alive || !f.CanAct) return;
+        if (p == null || !p.Alive || !f.CanAct) { engaging = false; return; } // hurt or striking: the turn is over
+        if (!engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
+        if (engaging && --giveUp <= 0) { engaging = false; cooldown = 30; } // couldn't get there: let someone else try
 
         Vector2 to = p.ground - f.ground;
         int side = to.x > 0f ? 1 : to.x < 0f ? -1 : f.facing; // hero exactly on top: keep facing
-        // whip fighters hang back at whip range instead of walking in
+        // our turn: into the hero's lane at striking distance (whips stay at whip range);
+        // otherwise wait on the ring, off the lane, drifting a little
         float reach = f.whip ? Feel.WhipReach : Feel.PunchReach;
-        float wantX = to.x - side * reach * (f.whip ? 0.8f : 0.7f);
+        float wantX = engaging ? to.x - side * reach * (f.whip ? 0.8f : 0.7f)
+            : to.x - side * (Feel.RingX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
+        float laneY = p.ground.y + laneOffset;
+        if (laneY > Game.MaxDepth || laneY < Game.MinDepth) laneY = p.ground.y - laneOffset; // the floor ends there: other side
+        float wantY = engaging ? to.y : laneY - f.ground.y;
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
-            Mathf.Abs(to.y) > 2f ? Mathf.Sign(to.y) : 0f);
+            Mathf.Abs(wantY) > 2f ? Mathf.Sign(wantY) : 0f);
         f.facing = side;
         if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table); // step around it instead of pushing into it
 
-        if (cooldown == 0 && f.InReach(p, reach) && Attackers() < Feel.MaxAttackers)
+        if (engaging && cooldown == 0 && f.InReach(p, reach))
         {
+            engaging = false; // striking holds the turn until the blow is over
             f.Attack(f.whip ? Move.Whip : Move.Punch);
             cooldown = (f.whip ? Feel.WhipCooldown : Feel.EnemyAttackCooldown) + Random.Range(0, 30);
         }
