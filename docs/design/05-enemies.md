@@ -14,7 +14,17 @@ The crowd surrounds Brick and takes turns, so it's never a queue and never a mob
 - **Telegraph:** every enemy blow flashes yellow while winding up. Hit them during the wind-up and their blow is cancelled.
 - **On fire:** a burning enemy forgets the fight and runs about flailing (see [Fire](06-environment.md#fire-molotov)).
 - **Friendly fire:** an enemy's blow lands on whoever is in front, mates included.
-- **Grudges:** an enemy hit by a mate turns on them 60% of the time. A red mark blinks over its head, and it goes straight for that mate for up to 5 s, or until one of them is knocked down. Two enemies can end up trading blows while Brick watches. THE CLOSER never holds a grudge.
+- **Grudges:** an enemy hurt by a mate turns on them 60% of the time. A red mark blinks over its head, and it goes straight for that mate for up to 5 s, waiting for them to get up if they're down. Two enemies can end up trading blows while Brick watches. THE CLOSER never holds a grudge.
+
+Ways to start a fight between them:
+
+| How | What happens |
+|---|---|
+| **Bowling** | Knock or throw an enemy into others. Whoever gets hit blames the one who flew into them |
+| **Dodging** | Step out of the way while an enemy winds up (it flashes yellow). The blow carries on up to 30 px further and lands on a mate behind Brick, and the enemy stumbles forward |
+| **OLD TOM** | About every 8 s the drunk picks a fight with a mate nearby, for no reason |
+| **Fire** | A burning enemy sets alight anyone he touches, and they blame him once the flames are out |
+
 
 ## Roster
 
@@ -23,7 +33,7 @@ The crowd surrounds Brick and takes turns, so it's never a queue and never a mob
 | MOHAWK, BIKER | 40 | Jab, 5 | A bit slower than the girls |
 | RUBY, SKYE | 30 | Jab, 5 | The basic enemy |
 | WHIP | 40 | Whip, 8, long reach (80 px) | Long wind-up: punch her during it and she goes flying |
-| OLD TOM | 50 | Jab, 5 | Sways as he walks, so he wanders into his mates' way and they into his: the infighting starter |
+| OLD TOM | 50 | Jab, 5 | Sways as he walks; picks fights with his own mates about every 8 s |
 | BOTTLES | 30 | Thrown bottle, 12 | Never comes close. Keeps about 110 px away on Brick's lane and throws a bottle every 2–2.7 s. Broken bottles leave beer puddles |
 | THE CLOSER (boss) | 200 | Jab, 10; grab and throw, 18 | Twice as heavy: flies half as far. **Armoured:** punches and kicks hurt but don't stagger him, so knock him flying instead. On about a third of his turns he grabs Brick, holds him half a second, then throws him. Brick's special breaks the hold |
 

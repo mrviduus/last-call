@@ -664,6 +664,15 @@ public class Fighter : MonoBehaviour
         {
             burning--;
             if (++burnClock % Feel.BurnTick == 0 && Alive) Burn();
+            if (burnClock % 10 == 0) // flailing about, we set alight whoever we touch, and they won't thank us for it
+                foreach (var o in Game.Fighters)
+                    if (o != this && o.burning == 0 && o.Alive && o.state != State.Sit
+                        && Mathf.Abs(o.ground.x - ground.x) < Feel.BodyGap + 4f && Mathf.Abs(o.ground.y - ground.y) < Feel.DepthBand
+                        && Mathf.Abs(o.height - height) < Feel.HeightBand)
+                    {
+                        o.Ignite();
+                        if (o.team == team) o.GetComponent<Enemy>()?.HitByMate(this);
+                    }
         }
 
         // a spilled drink: running, landing or being knocked across it takes your feet; walking carefully is safe,
@@ -740,6 +749,19 @@ public class Fighter : MonoBehaviour
                 hit = solidHit = true;
                 landed++;
             }
+        if (team != 0 && !hit && move is Move.Punch or Move.Whip) // swung at air, the hero stepped aside: it carries on into a mate behind
+        {
+            foreach (var t in Game.Fighters)
+                if (t != this && t.team == team && t.state != State.Held && InReach(t, Reach + Feel.WhiffCarry, heightBand))
+                {
+                    t.TakeHit(Damage, facing, Launches, Push);
+                    t.GetComponent<Enemy>()?.HitByMate(this);
+                    hit = solidHit = true;
+                    landed++;
+                    break;
+                }
+            vel = new Vector2(facing * 2f, 0f); // overcommitted: stumbles on after the miss
+        }
         if (move is Move.FlyingKick or Move.BicycleKick) // flying low over bodies on the floor still kicks them, once each
             foreach (var t in Game.Fighters)
             {
@@ -895,7 +917,10 @@ public class Fighter : MonoBehaviour
                 && Mathf.Abs(o.ground.x - ground.x) < Width
                 && Mathf.Abs(o.ground.y - ground.y) < Feel.DepthBand
                 && Mathf.Abs(o.height - height) < Feel.HeightBand)
+            {
                 o.TakeHit(Feel.BodyHitDamage, dir, true);
+                o.GetComponent<Enemy>()?.HitByMate(this); // bowled over by a mate: blames him
+            }
     }
 
     void Enter(State s)

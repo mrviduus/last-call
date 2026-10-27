@@ -211,6 +211,9 @@ public static class Feel
     public const float BossGrabChance = 0.35f;    // guess, of his turns he grabs instead of punching
     public const float GrudgeChance = 0.6f;       // guess, an enemy hit by a mate turns on them
     public const int GrudgeFrames = 5 * 60;       // guess, how long the grudge lasts before they remember Brick
+    public const float WhiffCarry = 30f;          // guess, an enemy blow that misses the hero carries on this much further into a mate behind him
+    public const float DrunkPickFight = 1f / 480f; // per frame OLD TOM picks a fight with a mate: about every 8 s
+    public const float DrunkPickRange = 160f;     // ...with one this close
 
     // spilled drinks
     public const int PuddleFrames = 60 * 20;      // dries up after this long

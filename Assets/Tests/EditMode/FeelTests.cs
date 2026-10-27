@@ -1088,4 +1088,58 @@ public class FeelTests
         Run(300);
         Assert.Less(a.health, hp, "she went after him, not the hero");
     }
+
+    [Test]
+    public void ADodgedBlowCarriesOnIntoAMateBehind()
+    {
+        var a = Game.Spawn(1, Art.Guy, new Vector2(300f, -50f), 100);
+        var b = Game.Spawn(1, Art.GruntA, new Vector2(360f, -50f), 100); // 60 px: past a jab's reach, the hero just stepped out of it
+        a.facing = 1;
+        a.Attack(Move.Punch);
+        Run(20);
+        Assert.Less(b.health, 100);
+    }
+
+    [Test]
+    public void BowlingAMateOverOrSettingHimAlightStartsAGrudge()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(800f, -50f), 1000);
+        Game.Hero = p;
+        bool blamed = false;
+        for (int i = 0; i < 5 && !blamed; i++) // 60% each time
+        {
+            float x = 100f + i * 150f;
+            var flier = Game.Spawn(1, Art.Guy, new Vector2(x, -90f), 100);
+            var standing = Game.Spawn(1, Art.GruntA, new Vector2(x + 40f, -90f), 100);
+            var brain = standing.gameObject.AddComponent<Enemy>();
+            brain.Setup();
+            flier.TakeHit(1, 1, true); // sent flying into her
+            Run(30);
+            Assert.Less(standing.health, 100, "bowled over");
+            blamed = brain.HasGrudge;
+        }
+        Assert.IsTrue(blamed, "blames the mate who flew into her");
+
+        var burner = Game.Spawn(1, Art.Guy, new Vector2(500f, -50f), 100);
+        var next = Game.Spawn(1, Art.GruntB, new Vector2(520f, -50f), 100);
+        burner.Ignite();
+        Run(12);
+        Assert.Greater(next.burning, 0, "fire spreads to whoever a burning body touches");
+    }
+
+    [Test]
+    public void OldTomPicksFightsWithHisMates()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(900f, -50f), 100000);
+        Game.Hero = p;
+        var tom = Game.Spawn(1, Art.Drunk, new Vector2(300f, -50f), 1000);
+        tom.drunk = true;
+        var brain = tom.gameObject.AddComponent<Enemy>();
+        brain.Setup();
+        Game.Spawn(1, Art.Guy, new Vector2(380f, -60f), 1000);
+        Random.InitState(5);
+        int frames = 0;
+        while (!brain.HasGrudge && frames++ < 60 * 60) Game.Simulate();
+        Assert.IsTrue(brain.HasGrudge, "within a minute he takes offence at someone");
+    }
 }

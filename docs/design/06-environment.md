@@ -66,6 +66,7 @@ Every bottle **Brick throws** is a Molotov:
 - **Lighting it:** the rag catches as he winds up, and the bottle burns as it tumbles through the air.
 - **The fire:** where it breaks, the floor burns for 4 seconds, then dies down.
 - **Catching fire:** anyone standing in the flames catches fire, and so does anyone hit by the bottle itself. Brick does too, if he walks into his own fire.
+- **Spreading:** a burning body sets alight anyone it touches, Brick included.
 - **Burning:** 3 damage every third of a second. It keeps going 2 seconds after leaving the flames.
 - **Panic:** burning enemies run around flailing and don't attack.
 - **Death:** anyone burnt to death drops where they stand, charred black.

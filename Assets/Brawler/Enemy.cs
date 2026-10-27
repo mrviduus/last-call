@@ -18,6 +18,7 @@ public class Enemy : MonoBehaviour
     Fighter grudge;      // a mate who hit us: settling that comes first
     int grudgeFrames;
     SpriteRenderer anger; // a red flash over the head while holding a grudge
+    public bool HasGrudge => grudge != null;
 
     // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
     // wakeDelay: frames a seated patron waits after the fight starts before getting up
@@ -128,7 +129,8 @@ public class Enemy : MonoBehaviour
             f.moveInput = new Vector2(Mathf.Sign(Mathf.Sin(t / 15f)), Mathf.Sin(t / 9f));
             return;
         }
-        if (grudge != null && (--grudgeFrames <= 0 || !grudge.Alive || !grudge.Solid)) grudge = null; // settled, or they're down
+        if (grudge != null && (--grudgeFrames <= 0 || !grudge.Alive)) grudge = null; // settled (waits for them to get up)
+        if (f.drunk && grudge == null && Random.value < Feel.DrunkPickFight) PickFight(); // a drunk takes offence at nothing
         if (chucker && grudge == null) { Chuck(p); return; }
         if (grudge == null && !engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
         if (engaging && --giveUp <= 0) { engaging = false; cooldown = 30; } // couldn't get there: let someone else try
@@ -172,6 +174,22 @@ public class Enemy : MonoBehaviour
     public void HitByMate(Fighter mate)
     {
         if (f.armored || mate == f || Random.value > Feel.GrudgeChance) return;
+        StartGrudge(mate);
+    }
+
+    // OLD TOM decides a mate nearby looked at him funny
+    void PickFight()
+    {
+        foreach (var o in Game.Fighters)
+            if (o != f && o.team == f.team && o.Alive && o.Solid && Mathf.Abs(o.ground.x - f.ground.x) < Feel.DrunkPickRange)
+            {
+                StartGrudge(o);
+                return;
+            }
+    }
+
+    void StartGrudge(Fighter mate)
+    {
         grudge = mate;
         grudgeFrames = Feel.GrudgeFrames;
         engaging = false;

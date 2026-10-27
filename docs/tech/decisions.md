@@ -4,6 +4,7 @@
 
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
+| 2026-10-27 | Four ways to start infighting: bowling, dodged blows, OLD TOM, spreading fire | Friendly fire alone almost never happened, because the ring keeps enemies apart | Raising the grudge chance (doesn't help if nobody gets hit) |
 | 2026-10-27 | Enemy blows hit mates in the way; a hit mate may hold a grudge | Funny chaos, and crowd control for the player | Enemies passing through each other's blows |
 | 2026-10-27 | The elbow drop homes onto its target; flying and bicycle kicks hit bodies on the floor | Once a big move starts, it should land, not whiff | A fixed-spot elbow drop; kicks passing over lying bodies |
 | 2026-10-27 | Only bottles Brick throws are Molotovs; enemy bottles stay beer | A power for the player, not a hazard spammed at him | Every bottle burns |
