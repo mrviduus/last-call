@@ -1142,4 +1142,18 @@ public class FeelTests
         while (!brain.HasGrudge && frames++ < 60 * 60) Game.Simulate();
         Assert.IsTrue(brain.HasGrudge, "within a minute he takes offence at someone");
     }
+
+    [Test]
+    public void FireSpreadsOneStepAndNeverToBrick()
+    {
+        var a = Game.Spawn(1, Art.Guy, new Vector2(300f, -50f), 1000);
+        var b = Game.Spawn(1, Art.GruntA, new Vector2(320f, -50f), 1000);
+        var c = Game.Spawn(1, Art.GruntB, new Vector2(340f, -50f), 1000);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(280f, -50f), 1000);
+        a.Ignite();
+        Run(25);
+        Assert.Greater(b.burning, 0, "caught from a");
+        Assert.AreEqual(0, c.burning, "b caught it from a body: doesn't pass it on");
+        Assert.AreEqual(0, p.burning, "Brick doesn't catch it from bodies");
+    }
 }

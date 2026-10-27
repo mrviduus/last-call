@@ -177,15 +177,15 @@ public class Enemy : MonoBehaviour
         StartGrudge(mate);
     }
 
-    // OLD TOM decides a mate nearby looked at him funny
+    // OLD TOM decides the nearest mate looked at him funny
     void PickFight()
     {
+        Fighter nearest = null;
         foreach (var o in Game.Fighters)
-            if (o != f && o.team == f.team && o.Alive && o.Solid && Mathf.Abs(o.ground.x - f.ground.x) < Feel.DrunkPickRange)
-            {
-                StartGrudge(o);
-                return;
-            }
+            if (o != f && o.team == f.team && o.Alive && o.Solid && Mathf.Abs(o.ground.x - f.ground.x) < Feel.DrunkPickRange
+                && (nearest == null || Vector2.Distance(o.ground, f.ground) < Vector2.Distance(nearest.ground, f.ground)))
+                nearest = o;
+        if (nearest != null) StartGrudge(nearest);
     }
 
     void StartGrudge(Fighter mate)

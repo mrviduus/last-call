@@ -46,6 +46,8 @@ public class Fighter : MonoBehaviour
     int slipCooldown;  // frames before a puddle can take our feet again
     int stun;          // hurt lasts at least this long (doubled over after a low blow)
     public int burning; // frames left on fire
+    bool caughtFromAnother; // set alight by a burning body: doesn't pass it on (no chain reactions through a crowd)
+    int stumble;        // frames left lurching forward after a blow that hit only air
     int burnClock;      // frames since catching fire: a burn every BurnTick of them
     bool charred;       // burnt to death: drawn black
     Fighter elbowTarget; // the body an elbow drop is steering onto
@@ -381,10 +383,11 @@ public class Fighter : MonoBehaviour
     }
 
     // set alight (a molotov's flames, or one in the face); standing in the fire keeps it going
-    public void Ignite()
+    public void Ignite(bool fromAnother = false)
     {
         if (!Alive || state == State.Sit) return;
-        if (burning == 0) { Sfx.Play("fire", 0.6f); burnClock = 0; }
+        if (burning == 0) { Sfx.Play("fire", 0.6f); burnClock = 0; caughtFromAnother = fromAnother; }
+        else if (!fromAnother) caughtFromAnother = false; // the real flames again: can spread it now
         burning = Feel.BurnFrames;
     }
 
@@ -664,19 +667,22 @@ public class Fighter : MonoBehaviour
         {
             burning--;
             if (++burnClock % Feel.BurnTick == 0 && Alive) Burn();
-            if (burnClock % 10 == 0) // flailing about, we set alight whoever we touch, and they won't thank us for it
+            // flailing about, we set alight whoever we touch, and they won't thank us for it; only one step from the
+            // flames themselves, and never Brick (he burns only from the floor or his own bottles)
+            if (burnClock % 10 == 0 && !caughtFromAnother)
                 foreach (var o in Game.Fighters)
-                    if (o != this && o.burning == 0 && o.Alive && o.state != State.Sit
+                    if (o != this && o.team != 0 && o.burning == 0 && o.Alive && o.state != State.Sit
                         && Mathf.Abs(o.ground.x - ground.x) < Feel.BodyGap + 4f && Mathf.Abs(o.ground.y - ground.y) < Feel.DepthBand
                         && Mathf.Abs(o.height - height) < Feel.HeightBand)
                     {
-                        o.Ignite();
+                        o.Ignite(fromAnother: true);
                         if (o.team == team) o.GetComponent<Enemy>()?.HitByMate(this);
                     }
         }
 
         // a spilled drink: running, landing or being knocked across it takes your feet; walking carefully is safe,
         // except for the patrons, who are past walking carefully
+        if (stumble > 0) stumble--;
         if (slipCooldown > 0) slipCooldown--;
         else if (Puddle.Under(ground) && (state is State.Run or State.Hurt || landedFromJump
                  || team != 0 && state == State.Walk && Random.value < Feel.EnemySlipChance)) Slip();
@@ -761,6 +767,7 @@ public class Fighter : MonoBehaviour
                     break;
                 }
             vel = new Vector2(facing * 2f, 0f); // overcommitted: stumbles on after the miss
+            stumble = 14;
         }
         if (move is Move.FlyingKick or Move.BicycleKick) // flying low over bodies on the floor still kicks them, once each
             foreach (var t in Game.Fighters)
@@ -975,8 +982,9 @@ public class Fighter : MonoBehaviour
         float jolt = Game.Frozen && flashFrames > 0 ? (Game.Frame % 2 == 0 ? Feel.HitJolt : -Feel.HitJolt) : 0f;
         float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw or Move.HairSlam or Move.Special ? 0f
             : WindingUp ? -Feel.WindUpLean : striking ? (move is Move.Punch or Move.Knee ? Feel.JabLunge : Feel.HeavyLunge) : 0f;
+        if (stumble > 0) lunge = Feel.HeavyLunge; // lurching after the miss, pitched forward
         body.transform.localPosition = new Vector3(jolt + lunge * facing, h + Mathf.Round(lift), 0f);
-        body.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        body.transform.localRotation = Quaternion.Euler(0f, 0f, tilt - (stumble > 0 ? 12f * facing : 0f));
         // two stars circling the bowed head while doubled over
         for (int i = 0; i < dizzy.Length; i++)
         {

@@ -21,9 +21,9 @@ Ways to start a fight between them:
 | How | What happens |
 |---|---|
 | **Bowling** | Knock or throw an enemy into others. Whoever gets hit blames the one who flew into them |
-| **Dodging** | Step out of the way while an enemy winds up (it flashes yellow). The blow carries on up to 30 px further and lands on a mate behind Brick, and the enemy stumbles forward |
-| **OLD TOM** | About every 8 s the drunk picks a fight with a mate nearby, for no reason |
-| **Fire** | A burning enemy sets alight anyone he touches, and they blame him once the flames are out |
+| **Dodging** | Step out of the way while an enemy winds up (it flashes yellow). The blow carries on up to 30 px further and lands on a mate behind Brick, and the enemy lurches forward, pitched over |
+| **OLD TOM** | About every 8 s the drunk picks a fight with the nearest mate, for no reason |
+| **Fire** | A burning enemy sets alight the enemies he touches (one step, no chain reactions), and they blame him once the flames are out |
 
 
 ## Roster
