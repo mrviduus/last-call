@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Last Call**: original 16-bit beat-'em-up in Unity 6 (6000.6.7f1), plays like Battletoads & Double Dragon. One level: the OLD LAMP pub (3 screens, 384x240). Hero: Brick. All art/sound is original or CC0 (see CREDITS.txt): never copy sprites, sounds or characters from BT/MK/other games.
 
-Design (mechanics, lore, enemies, numbers) is in `docs/GDD.md`; update it in the same commit when a mechanic changes. Numbers there quote `Feel.cs`, which wins on conflict.
+Docs: `docs/design/` (lore, mechanics, enemies, level: for designers) and `docs/tech/` (architecture, tuning, pipeline, build). Update the relevant page in the same commit as a mechanic change; numbers there quote `Feel.cs`, which wins on conflict. Conventions in `docs/README.md`.
 
 ## Commands
 
