@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Things in the pub. Chairs, stools, bottles, cues and pool balls can be picked up, swung and thrown.
@@ -58,7 +59,10 @@ public class Prop : MonoBehaviour
 
     public void Tint(Color c) => sr.color = c; // pool balls come in colours
 
-    // a body part torn off and sent flying (thrower: a kicked head hurts whoever it hits)
+    const int MaxParts = 12;
+    static readonly Queue<Prop> parts = new Queue<Prop>();
+
+    // a body part torn off and sent flying (thrower: a kicked head hurts whoever it hits); past MaxParts the oldest goes
     public static Prop Fling(Kind kind, Sprite sprite, Vector2 ground, float height, Vector2 vel, float up, bool faceLeft, Fighter thrower = null)
     {
         var p = Game.SpawnProp(kind, ground, 0f, faceLeft);
@@ -67,6 +71,14 @@ public class Prop : MonoBehaviour
         p.vel = vel;
         p.heightVel = up;
         p.thrower = thrower;
+        parts.Enqueue(p);
+        while (parts.Count > MaxParts)
+        {
+            var old = parts.Dequeue();
+            if (old == null || old.holder != null) continue; // already broken, or a club in someone's hands
+            Game.Props.Remove(old);
+            if (Application.isPlaying) Destroy(old.gameObject); else DestroyImmediate(old.gameObject);
+        }
         return p;
     }
 

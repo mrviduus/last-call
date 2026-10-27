@@ -91,6 +91,7 @@ public class Drop : MonoBehaviour
         d.height = height;
         d.vx = vx;
         d.vh = vh;
+        if (Random.value < 0.4f) d.transform.localScale = new Vector3(2f, 2f, 1f); // some fat drops, readable on a big screen
         d.transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y + height), 0f);
     }
 
@@ -116,7 +117,7 @@ public class Drop : MonoBehaviour
         sr.color = Reds[1];
         sr.sortingOrder = -19000; // on the floor, under everyone and everything
         transform.position = new Vector3(Mathf.Round(ground.x), Mathf.Round(ground.y), 0f);
-        transform.localScale = new Vector3(vh < -4f ? 3f : vh < -2f ? 2f : 1f, 1f, 1f);
+        transform.localScale = new Vector3((vh < -4f ? 3f : vh < -2f ? 2f : 1f) * transform.localScale.x, transform.localScale.y, 1f);
         stains.Enqueue(gameObject);
         if (stains.Count > MaxStains) Destroy(stains.Dequeue());
         Destroy(this);
