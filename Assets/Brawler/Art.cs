@@ -31,6 +31,8 @@ public static class Art
             ["GirlGreen"] = (true, new[] { 0x2a8a3au, 0x4ac05au, 0x145a20u }, new[] { 0xd8d8d0u, 0xf8f8f0u, 0x8a8a84u }),
             ["PunkBoss"] = (false, new[] { 0x16161au, 0x34343cu, 0x08080au }, new[] { 0x6a1424u, 0x9a2a3au, 0x3a0812u }),
         };
+    public static bool IsGirl(string look) => Looks.TryGetValue(look, out var l) && l.girl;
+
     // what the HUD calls them
     public static string Name(string look) => look switch
     {

@@ -429,7 +429,7 @@ public class Game : MonoBehaviour
             }
             Text(view.x + 8 * scale, view.y + 174 * scale, scale, "WASD MOVE  J PUNCH  L KICK  K JUMP  J+K SPECIAL  H HELP");
             Text(view.x + 8 * scale, view.y + 190 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L BICYCLE KICK");
-            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "WALK INTO A DAZED ONE: J HEADBUTT  K THROW  L RIP ARM");
+            Text(view.x + 8 * scale, view.y + 206 * scale, scale, "DAZED ONE: J HEADBUTT  K THROW  L RIP ARM  S+J DIRTY MOVE");
             Text(view.x + 8 * scale, view.y + 222 * scale, scale, "S+L STOMP, THEN L: KICK THE HEAD OFF   J BY A PROP: PICK UP");
         }
         else if (Hero.held != null)

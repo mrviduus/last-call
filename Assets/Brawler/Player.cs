@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 // Double-tap left/right = run; while running J = flying kick, L = bicycle kick.
 // J next to a chair or bottle (nobody in reach) picks it up; then J = swing it, L = throw it.
 // Jump into a pool lamp to hang on: A/D swing, J/L kick, K let go, S+J rip it down.
+// In a hold, S+J: a guy gets a knee where it hurts (doubles over), a girl is slammed face-first by the hair.
 // J+K = special: spinning kick all round, costs health you win back by landing hits.
 // Gore: L in a hold rips an arm off (a club); L on someone buried kicks their head off; killing blows maim.
 [RequireComponent(typeof(Fighter))]
@@ -66,7 +67,12 @@ public class Player : MonoBehaviour
         }
         else if (f.state == State.Grab)
         {
-            if (attackBuffer > 0) { grabHits++; f.Attack(grabHits >= 3 ? Move.Throw : Move.Knee); attackBuffer = 0; }
+            if (attackBuffer > 0 && f.moveInput.y < 0f) // S+J: the dirty one
+            {
+                f.Attack(f.grabbed.Girl ? Move.HairSlam : Move.LowBlow);
+                attackBuffer = 0;
+            }
+            else if (attackBuffer > 0) { grabHits++; f.Attack(grabHits >= 3 ? Move.Throw : Move.Knee); attackBuffer = 0; }
             else if (jumpBuffer > 0) { f.Attack(Move.Throw); jumpBuffer = 0; }
             else if (kickBuffer > 0 && !f.grabbed.armless && f.held == null) { f.Attack(Move.Rip); kickBuffer = 0; } // tear an arm off
         }

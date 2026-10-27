@@ -169,6 +169,9 @@ public static class Feel
     public const int KneeRecovery = 10;           // guess
     public const int ThrowStartup = 10;           // guess
     public const int ThrowRecovery = 16;          // guess
+    public const int LowBlowDamage = 10;          // S+J in a hold on a guy: knee where it hurts
+    public const int LowBlowStun = 90;            // guess, frames he stays doubled over, open to anything
+    public const int HairSlamDamage = 22;         // S+J in a hold on a girl: by the hair, face-first into the floor
 
     public const int WhipStartup = 18;           // guess, telegraph window to dodge or counter
     public const int WhipActive = 4;              // guess

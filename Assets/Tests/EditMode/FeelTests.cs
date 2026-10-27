@@ -947,4 +947,38 @@ public class FeelTests
         while (e.state != State.Idle) Game.Simulate();
         Assert.IsTrue(e.CanBeHit, "no blinking invulnerability for enemies");
     }
+
+    [Test]
+    public void ALowBlowDoublesAGuyOver()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        var e = Game.Spawn(1, Art.Guy, new Vector2(324f, -50f), 40);
+        p.Grab(e);
+        p.Attack(Move.LowBlow);
+        Run(Feel.KneeStartup + 1);
+        Assert.AreEqual(40 - Feel.LowBlowDamage, e.health);
+        Run(Feel.LowBlowStun - 10);
+        Assert.AreEqual(State.Hurt, e.state, "still doubled over");
+        p.Attack(Move.Punch);
+        Run(10);
+        Assert.AreEqual(State.Hurt, e.state, "a jab doesn't end it");
+        Run(Feel.LowBlowStun);
+        Assert.AreEqual(State.Idle, e.state, "straightens up in the end");
+    }
+
+    [Test]
+    public void AHairSlamPutsAGirlDownInFront()
+    {
+        Assert.IsTrue(Art.IsGirl(Art.GruntA));
+        Assert.IsFalse(Art.IsGirl(Art.Guy));
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(324f, -50f), 100);
+        p.Grab(e);
+        p.Attack(Move.HairSlam);
+        int frames = 0;
+        while (e.state != State.Down && frames++ < 60) Game.Simulate();
+        Assert.AreEqual(State.Down, e.state);
+        Assert.AreEqual(100 - Feel.HairSlamDamage, e.health);
+        Assert.Less(Mathf.Abs(e.ground.x - p.ground.x), Feel.ElbowDropReach, "right in front: elbow-drop range");
+    }
 }

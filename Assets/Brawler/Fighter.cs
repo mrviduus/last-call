@@ -1,7 +1,7 @@
 using UnityEngine;
 
 public enum State { Idle, Walk, Run, Jump, Attack, Hurt, Launched, Down, GetUp, Dead, Grab, Held, Buried, Sit, Hang, Headless }
-public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick, Special, Rip }
+public enum Move { Punch, Smash, Kick, JumpKick, FlyingKick, BicycleKick, Pound, ElbowDrop, Knee, Throw, Whip, Swing, ThrowProp, HangKick, Special, Rip, LowBlow, HairSlam }
 
 // 2.5D belt-scroller body. Logic runs in Step() at a fixed 60 Hz, in pixels and frames.
 // Ground plane = (x, depth); height = jump height. Screen y = depth + height.
@@ -44,6 +44,8 @@ public class Fighter : MonoBehaviour
     bool splatted;     // hit the end wall on this flight already
     int wallBounce;    // frames left bouncing off the wall, open for one more hit
     int slipCooldown;  // frames before a puddle can take our feet again
+    int stun;          // hurt lasts at least this long (doubled over after a low blow)
+    public bool Girl => Art.IsGirl(look);
     SpriteRenderer body, shadow, whipLine;
     Material normalMat;
     int landSquash, jumpStretch; // frames left of squashing on landing / stretching on take-off
@@ -52,8 +54,8 @@ public class Fighter : MonoBehaviour
     int Startup => move switch
     {
         Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
-        Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee => Feel.KneeStartup,
-        Move.Throw => Feel.ThrowStartup, Move.Rip => Feel.RipStartup, Move.Whip => Feel.WhipStartup,
+        Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee or Move.LowBlow => Feel.KneeStartup,
+        Move.Throw or Move.HairSlam => Feel.ThrowStartup, Move.Rip => Feel.RipStartup, Move.Whip => Feel.WhipStartup,
         Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, Move.Special => Feel.SpecialStartup,
         _ => team == 0 ? Feel.PunchStartup : Feel.EnemyPunchStartup,
     };
@@ -66,8 +68,8 @@ public class Fighter : MonoBehaviour
     {
         Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery,
         Move.FlyingKick => Feel.FlyingKickRecovery, Move.BicycleKick => Feel.BicycleKickRecovery, Move.Pound => Feel.PoundRecovery,
-        Move.ElbowDrop => Feel.ElbowDropRecovery, Move.Knee => Feel.KneeRecovery,
-        Move.Throw or Move.Rip => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
+        Move.ElbowDrop => Feel.ElbowDropRecovery, Move.Knee or Move.LowBlow => Feel.KneeRecovery,
+        Move.Throw or Move.Rip or Move.HairSlam => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
         Move.Swing => Feel.SwingRecovery, Move.ThrowProp => Feel.PropThrowRecovery, Move.Special => Feel.SpecialRecovery,
         _ => Feel.PunchRecovery,
     };
@@ -128,7 +130,7 @@ public class Fighter : MonoBehaviour
     // ground attacks; knee and throw only while holding someone
     public void Attack(Move m)
     {
-        bool holding = state == State.Grab && (m == Move.Knee || m == Move.Throw || m == Move.Rip);
+        bool holding = state == State.Grab && m is Move.Knee or Move.Throw or Move.Rip or Move.LowBlow or Move.HairSlam;
         if (!CanAct && !holding) return;
         move = m;
         punchAlt = !punchAlt;
@@ -318,6 +320,7 @@ public class Fighter : MonoBehaviour
         }
         else
         {
+            stun = state == State.Hurt ? Mathf.Max(0, stun - stateFrames) : 0; // still doubled over: stays so
             Enter(State.Hurt);
             vel = new Vector2(dir * push / mass, 0f);
             if (team == 0) invulnFrames = Feel.HeroHurtInvuln;
@@ -545,7 +548,7 @@ public class Fighter : MonoBehaviour
                 if (stateFrames >= Feel.HeadlessFrames) { Enter(State.Down); Sfx.Play("thud", 0.8f); Fx.Dust(ground); bleed = Feel.BleedFrames; }
                 break;
             case State.Hurt:
-                if (stateFrames >= Feel.Hitstun) Enter(State.Idle);
+                if (stateFrames >= Mathf.Max(Feel.Hitstun, stun)) { stun = 0; Enter(State.Idle); }
                 break;
             case State.Launched:
                 HitBodiesInPath();
@@ -614,7 +617,7 @@ public class Fighter : MonoBehaviour
     {
         if (!strikePending) return;
         strikePending = false;
-        if (move is Move.Knee or Move.Throw or Move.Rip) StrikeHeld();
+        if (move is Move.Knee or Move.Throw or Move.Rip or Move.LowBlow or Move.HairSlam) StrikeHeld();
         else if (move == Move.ThrowProp) { held?.Throw(this); held = null; }
         else Strike();
     }
@@ -731,6 +734,25 @@ public class Fighter : MonoBehaviour
         }
         grabbed = null;
         g.Enter(State.Hurt); // makes them hittable again
+        if (move == Move.LowBlow) // let go, and he doubles over: open to anything for a while
+        {
+            g.TakeHit(Feel.LowBlowDamage, facing, false, 0f);
+            if (g.state == State.Hurt) g.stun = Feel.LowBlowStun;
+            Sfx.Play("hit_heavy");
+            Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
+            return;
+        }
+        if (move == Move.HairSlam) // over by the hair and face-first into the floor, right in front: elbow-drop range
+        {
+            g.TakeHit(Feel.HairSlamDamage, facing, true);
+            g.vel = new Vector2(facing * 1f, 0f);
+            g.heightVel = 1.5f;
+            g.bounced = true; // flat on the floor, no bounce
+            if (!g.Alive) Fx.Blood(g.ground, 4f, 30, 0f, 3f);
+            Sfx.Play("hit_heavy");
+            Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
+            return;
+        }
         if (move == Move.Rip)
         {
             g.TakeHit(Feel.ArmRipDamage, facing, true);
@@ -795,7 +817,8 @@ public class Fighter : MonoBehaviour
                 Move.BicycleKick => striking ? art.Bicycle[stateFrames / 3 % 2] : art.KickWind, // left-right-left
                 Move.ElbowDrop => heightVel > 0f ? art.ElbowRise : art.ElbowDrop, // up with the elbow raised, down flat
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
-                Move.Throw or Move.Rip => art.Throw[WindingUp ? 0 : 1],
+                Move.Throw or Move.Rip or Move.HairSlam => art.Throw[WindingUp ? 0 : 1],
+                Move.LowBlow => striking ? art.Kick : art.KickWind,
                 Move.Special => striking ? art.Kick : art.KickWind,
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : WindingUp && team != 0 ? art.WindUp : art.Idle[0],
             },
@@ -807,7 +830,7 @@ public class Fighter : MonoBehaviour
         body.flipX = spinning ? stateFrames / 4 % 2 == 0 : facing < 0; // the kick turns round and round
         // shakes in place through the hitstop; leans back winding up, lunges into the blow
         float jolt = Game.Frozen && flashFrames > 0 ? (Game.Frame % 2 == 0 ? Feel.HitJolt : -Feel.HitJolt) : 0f;
-        float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw or Move.Special ? 0f
+        float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw or Move.HairSlam or Move.Special ? 0f
             : WindingUp ? -Feel.WindUpLean : striking ? (move is Move.Punch or Move.Knee ? Feel.JabLunge : Feel.HeavyLunge) : 0f;
         body.transform.localPosition = new Vector3(jolt + lunge * facing, h, 0f);
         body.transform.localScale = size * (landSquash > 0 ? new Vector3(1.12f, 0.88f, 1f)
