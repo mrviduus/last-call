@@ -38,6 +38,7 @@ When you tune a value by playtesting, drop the `guess` tag.
 | Physics extras | `WallSplat*`, `WallBounceFrames`, `BossMass` |
 | Enemy types | `Drunk*`, `Chucker*`, `Boss*` |
 | Puddles | `Puddle*`, `SlipCooldown`, `EnemySlipChance` |
+| Fire | `Fire*`, `Burn*` |
 | Session | `LastCallFrames`, `IntroFrames`, `ComboFrames`, `SpawnGap` |
 
 ## Changing a number

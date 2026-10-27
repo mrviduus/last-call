@@ -51,6 +51,7 @@ public class Game : MonoBehaviour
         Lamps.Clear();
         Prop.parts.Clear();
         Puddle.Clear();
+        Fire.Clear();
         Hero = LastHit = null;
         Wave = Clock = Score = HeroCombo = comboTimer = 0;
         Midnight = Won = false;
@@ -100,6 +101,7 @@ public class Game : MonoBehaviour
         stepping.AddRange(Props);
         foreach (var p in stepping) if (Props.Contains(p)) p.Step();
         Puddle.StepAll();
+        Fire.StepAll();
         if (comboTimer > 0 && --comboTimer == 0) HeroCombo = 0;
         Separate();
         BlockByTables();

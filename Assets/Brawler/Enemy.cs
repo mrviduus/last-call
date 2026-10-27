@@ -118,6 +118,13 @@ public class Enemy : MonoBehaviour
             return;
         }
         if (p == null || !p.Alive || !f.CanAct) { engaging = false; return; } // hurt or striking: the turn is over
+        if (f.burning > 0) // on fire: runs about flailing, no thought of fighting
+        {
+            engaging = false;
+            float t = Game.Frame + pace * 40f;
+            f.moveInput = new Vector2(Mathf.Sign(Mathf.Sin(t / 15f)), Mathf.Sin(t / 9f));
+            return;
+        }
         if (chucker) { Chuck(p); return; }
         if (!engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
         if (engaging && --giveUp <= 0) { engaging = false; cooldown = 30; } // couldn't get there: let someone else try

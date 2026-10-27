@@ -998,4 +998,40 @@ public class FeelTests
         Assert.IsFalse(q.DirtyMove(), "not on the boss");
         Assert.IsFalse(Game.Spawn(0, Art.Hero, new Vector2(900f, -50f), 100).DirtyMove(), "nobody in reach");
     }
+
+    [Test]
+    public void ABottleBrickThrowsIsAMolotov()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        var bottle = Game.SpawnProp(Prop.Kind.Bottle, p.ground);
+        p.PickUp(bottle);
+        p.Attack(Move.ThrowProp);
+        int frames = 0;
+        while (Game.Props.Contains(bottle) && frames++ < 120) Game.Simulate();
+        Assert.IsTrue(bottle == null || !Game.Props.Contains(bottle), "broke on landing");
+        Assert.AreEqual(1, Fire.Count, "the floor burns where it broke");
+
+        var e = Game.Spawn(0, Art.Hero, new Vector2(300f, -90f), 30); // enemy bottles hit Brick's side
+        var q = Game.Spawn(1, Art.Chucker, new Vector2(200f, -90f), 30);
+        var enemyBottle = Game.SpawnProp(Prop.Kind.Bottle, q.ground);
+        q.PickUp(enemyBottle);
+        q.Attack(Move.ThrowProp);
+        Run(120);
+        Assert.AreEqual(1, Fire.Count, "an enemy's bottle is just beer");
+        Assert.Less(e.health, 30, "but it still hurts");
+    }
+
+    [Test]
+    public void StandingInFireBurnsAndBurntToDeathIsDown()
+    {
+        var e = Game.Spawn(1, Art.Guy, new Vector2(400f, -50f), Feel.BurnDamage * 2);
+        Fire.Spawn(e.ground);
+        Run(1);
+        Assert.Greater(e.burning, 0, "caught fire");
+        int frames = 0;
+        while (e.Alive && frames++ < Feel.BurnTick * 3) Game.Simulate();
+        Assert.IsFalse(e.Alive, "burnt to death");
+        Run(30);
+        Assert.IsTrue(e.state is State.Down or State.Dead, "drops where he stood");
+    }
 }

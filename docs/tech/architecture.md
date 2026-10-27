@@ -14,7 +14,7 @@ There are no prefabs and no gameplay objects in the scene: everything is built i
 | `Assets/Brawler/Enemy.cs` | The enemy brain: ring AI, attack tokens, the drunk, the bottle thrower, the boss grab |
 | `Assets/Brawler/Prop.cs` | Furniture and weapons: carry, swing, throw, break; `Shard` (debris) |
 | `Assets/Brawler/Lamp.cs` | Pendulum lamps you can hang on |
-| `Assets/Brawler/Fx.cs` | Cosmetic effects: sparks, dust, afterimages; `Drop` (blood and stains); `Puddle` (beer, which does affect gameplay) |
+| `Assets/Brawler/Fx.cs` | Cosmetic effects: sparks, dust, afterimages; `Drop` (blood and stains); `Puddle` (beer) and `Fire` (Molotov), which do affect gameplay |
 | `Assets/Brawler/Art.cs` | Loads, recolours and derives sprites; paints procedural sprites |
 | `Assets/Brawler/Sfx.cs` | Plays `Resources/Sfx/<name>.wav` by name |
 | `Assets/Brawler/Feel.cs` | Every tuning constant (see [Tuning](tuning.md)) |
@@ -167,7 +167,7 @@ A brain is a `MonoBehaviour` that sets `Fighter.Think` (a delegate run at the st
 
 - **`Fx` sprites** are cosmetic and count real ticks, so they keep animating through hitstop.
 - **`Drop`:** blood drops land as permanent stains, up to 500.
-- **`Puddle`:** stepped by `Simulate()`, because it affects gameplay.
+- **`Puddle`, `Fire`:** stepped by `Simulate()`, because they affect gameplay. `Fighter.Tick()` checks `Puddle.Under` (slip) and `Fire.Under` (`Ignite`), then applies burn damage every `BurnTick`.
 
 ## Rendering
 

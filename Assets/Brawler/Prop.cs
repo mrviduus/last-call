@@ -19,8 +19,9 @@ public class Prop : MonoBehaviour
     public Fighter seatedBy;        // a chair with a patron on it
     public bool flipped;            // a table knocked onto its side
     public bool mirrored;           // drawn facing left (a chair turned towards its table)
+    public bool lit;                // a bottle the hero threw: a molotov
 
-    SpriteRenderer sr, shadow;
+    SpriteRenderer sr, shadow, flame;
 
     public bool Free => holder == null && thrower == null;
     public bool Heavy => kind == Kind.Table || kind == Kind.PoolTable;
@@ -55,6 +56,12 @@ public class Prop : MonoBehaviour
             Kind.Cue => Art.Cue, Kind.Ball => Art.Ball, Kind.Lamp => Art.LampShade, Kind.Arm => Art.Arm,
             Kind.Head or Kind.Gib => null, _ => Art.Table, // a head or a half body: Fling sets its picture
         });
+        if (k == Kind.Bottle) // the rag in its neck, burning once Brick lights it
+        {
+            flame = Child("Flame", Art.Flame[0]);
+            flame.transform.SetParent(sr.transform, false); // tumbles with the bottle
+            flame.transform.localPosition = new Vector3(0f, 10f, 0f);
+        }
     }
 
     public void Tint(Color c) => sr.color = c; // pool balls come in colours
@@ -96,6 +103,7 @@ public class Prop : MonoBehaviour
         holder = null;
         thrower = by;
         resting = false;
+        lit = kind == Kind.Bottle && by.team == 0; // Brick lights the rag first
         ground = by.ground;
         height = Feel.PropThrowHeight;
         vel = new Vector2(by.facing * Feel.PropThrowSpeed, 0f);
@@ -170,7 +178,8 @@ public class Prop : MonoBehaviour
         Game.Props.Remove(this);
         bool flesh = kind is Kind.Head or Kind.Arm or Kind.Gib;
         Sfx.Play(kind is Kind.Bottle or Kind.Lamp ? "glass" : flesh ? "splat" : "wood");
-        if (kind == Kind.Bottle && !resting) Puddle.Spawn(ground); // what was in it goes on the floor
+        if (kind == Kind.Bottle && lit) Fire.Spawn(ground); // a molotov: the floor burns
+        else if (kind == Kind.Bottle && !resting) Puddle.Spawn(ground); // what was in it goes on the floor
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
         if (flesh) Fx.Blood(ground, height + 4f, 20, 0f, 3f);
         var color = kind switch
@@ -239,6 +248,7 @@ public class Prop : MonoBehaviour
                 && Mathf.Abs(height - f.height) < Feel.HeightBand + 20f)
             {
                 f.TakeHit(Damage, vel.x > 0f ? 1 : -1, true);
+                if (lit) f.Ignite(); // a molotov in the face
                 Sfx.Play("hit_heavy");
                 Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
                 if (kind == Kind.Table) vel *= 0.5f;
@@ -301,6 +311,12 @@ public class Prop : MonoBehaviour
             pose.localRotation = Quaternion.Euler(0f, 0f, tumbling ? Game.Frame * 25f : 0f);
         }
         shadow.enabled = holder == null && !resting && kind != Kind.PoolTable;
+        if (flame != null) // the rag catches as Brick winds up to throw, and burns all the way
+        {
+            flame.enabled = lit || holder != null && holder.team == 0 && holder.state == State.Attack && holder.move == Move.ThrowProp;
+            flame.sprite = Art.Flame[Game.Frame / 4 % 3];
+            flame.sortingOrder = sr.sortingOrder + 1;
+        }
         int order = -Mathf.RoundToInt(ground.y) * 2;
         sr.sortingOrder = holder != null || resting ? order + 1 : order; // on top of what it stands on
     }

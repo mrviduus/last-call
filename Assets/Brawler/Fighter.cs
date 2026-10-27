@@ -45,9 +45,13 @@ public class Fighter : MonoBehaviour
     int wallBounce;    // frames left bouncing off the wall, open for one more hit
     int slipCooldown;  // frames before a puddle can take our feet again
     int stun;          // hurt lasts at least this long (doubled over after a low blow)
+    public int burning; // frames left on fire
+    int burnClock;      // frames since catching fire: a burn every BurnTick of them
+    bool charred;       // burnt to death: drawn black
     public bool Girl => Art.IsGirl(look);
     SpriteRenderer body, shadow, whipLine;
     SpriteRenderer[] dizzy; // stars round the head while doubled over
+    SpriteRenderer[] burnFx; // flames on the body while burning
     public float lift, tilt; // held up by the hair: drawn this much higher, tipped this many degrees
     Material normalMat;
     int landSquash, jumpStretch; // frames left of squashing on landing / stretching on take-off
@@ -119,6 +123,7 @@ public class Fighter : MonoBehaviour
         normalMat = body.sharedMaterial;
         whipLine = MakeSprite("Whip", Art.Whip);
         dizzy = new[] { MakeSprite("Dizzy", Art.Spark[0]), MakeSprite("Dizzy", Art.Spark[0]) };
+        burnFx = new[] { MakeSprite("Burn", Art.Flame[0]), MakeSprite("Burn", Art.Flame[1]), MakeSprite("Burn", Art.Flame[2]) };
     }
 
     SpriteRenderer MakeSprite(string name, Sprite sprite)
@@ -363,6 +368,33 @@ public class Fighter : MonoBehaviour
         Game.Freeze(Feel.Hitstop, Feel.SmashShake);
     }
 
+    // set alight (a molotov's flames, or one in the face); standing in the fire keeps it going
+    public void Ignite()
+    {
+        if (!Alive || state == State.Sit) return;
+        if (burning == 0) { Sfx.Play("fire", 0.6f); burnClock = 0; }
+        burning = Feel.BurnFrames;
+    }
+
+    // the fire eats at us; burnt to death, we drop where we stand, black
+    void Burn()
+    {
+        health -= Feel.BurnDamage;
+        flashFrames = 4;
+        if (team != 0) { Game.LastHit = this; Game.Scored(); }
+        if (Alive) return;
+        charred = true;
+        burning = 0;
+        Release();
+        if (held != null) { held.Drop(); held = null; }
+        if (state is State.Launched or State.Down or State.Dead or State.Buried or State.Headless) return; // already falling or lying
+        Enter(State.Launched);
+        bounced = true; // straight down, no bounce
+        vel = Vector2.zero;
+        heightVel = 1.5f;
+        Sfx.Play("thud", 0.8f);
+    }
+
     // feet out from under us on a spilled drink: down without a blow
     public void Slip()
     {
@@ -594,6 +626,14 @@ public class Fighter : MonoBehaviour
             case State.GetUp:
                 if (stateFrames >= Feel.GetUpFrames) { Enter(State.Idle); if (team == 0) invulnFrames = Feel.GetUpInvuln; }
                 break;
+        }
+
+        // fire: standing in the flames sets us alight; burning hurts every BurnTick frames
+        if (Alive && height <= 0f && state != State.Sit && Fire.Under(ground)) Ignite();
+        if (burning > 0)
+        {
+            burning--;
+            if (++burnClock % Feel.BurnTick == 0 && Alive) Burn();
         }
 
         // a spilled drink: running, landing or being knocked across it takes your feet; walking carefully is safe,
@@ -886,6 +926,7 @@ public class Fighter : MonoBehaviour
         body.color = white ? Color.white
             : flashFrames > 0 && flashFrames / 2 % 2 == 0 ? new Color(1f, 0.45f, 0.45f)
             : telegraph ? new Color(1f, 1f, 0.45f)
+            : charred ? new Color(0.22f, 0.17f, 0.15f)
             : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
 
         whipLine.enabled = move == Move.Whip && striking;
@@ -897,5 +938,15 @@ public class Fighter : MonoBehaviour
         body.sortingOrder = state == State.Sit ? order + 1 : order; // in front of the chair
         whipLine.sortingOrder = order + 1;
         foreach (var star in dizzy) star.sortingOrder = order + 1;
+        // flames on the body: up the chest and head standing, along the body lying down
+        bool lying = state is State.Down or State.Dead or State.Launched;
+        for (int i = 0; i < burnFx.Length; i++)
+        {
+            burnFx[i].enabled = burning > 0;
+            burnFx[i].sprite = Art.Flame[(Game.Frame / 4 + i) % 3];
+            burnFx[i].transform.localPosition = lying ? new Vector3((i - 1) * 12f, h + 2f, 0f)
+                : new Vector3((i - 1) * 6f, h + 20f + i % 2 * 14f, 0f);
+            burnFx[i].sortingOrder = order + 1;
+        }
     }
 }

@@ -344,6 +344,20 @@ public static class Art
         return d > 1f ? Clear : y == 2 && x > 6 && x < 11 ? C(0xffe9c0, 200) : d > 0.6f ? C(0x9a5e2e, 170) : C(0xc08040, 150);
     }, Center);
 
+    // fire: a flickering teardrop flame, three frames with the tip swaying differently; drawn from the base
+    static Sprite[] flame;
+    public static Sprite[] Flame => flame ??= new[] { FlameFrame(0), FlameFrame(1), FlameFrame(2) };
+    static Sprite FlameFrame(int seed) => Paint(9, 16, (x, y) =>
+    {
+        float t = y / 15f; // 0 at the tip, 1 at the base
+        float sway = Mathf.Sin(t * 4f + seed * 2.1f) * (1f - t) * 2f;
+        float half = 4.2f * Mathf.Sqrt(t) * (0.8f + 0.2f * Mathf.Sin(seed * 1.7f + y));
+        float d = Mathf.Abs(x - 4f - sway);
+        if (d > half) return Clear;
+        float core = d / Mathf.Max(half, 0.01f);
+        return t > 0.55f && core < 0.45f ? C(0xfff0b0) : core < 0.75f && t > 0.25f ? C(0xffb347) : C(0xff6a2a);
+    }, new Vector2(0.5f, 0f));
+
     // a torn-off arm to club people with: bloody stump, forearm, fist
     static Sprite arm;
     public static Sprite Arm => arm != null ? arm : arm = Paint(24, 5, (x, y) =>

@@ -30,6 +30,7 @@ All sounds are synthesised for this project. A recorded file with the same name 
 | ball | Pool balls |
 | splat / crunch | Gore |
 | bell | Midnight |
+| fire | A Molotov bursting into flames, someone catching fire |
 
 ## To fill
 - [ ] Music: style, when it plays, a change at midnight?

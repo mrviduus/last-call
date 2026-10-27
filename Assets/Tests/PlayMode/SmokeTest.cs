@@ -123,6 +123,34 @@ public class SmokeTest
         Shot("hairslam_down");
     }
 
+    // a molotov: the bottle burning in flight, the floor on fire where it broke, then a guy standing in the flames
+    [UnityTest]
+    public IEnumerator Molotov()
+    {
+        if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
+        Game.RestartRequested = true;
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        var hero = Game.Hero;
+        hero.ground = new Vector2(640f, -60f); // between the pool tables, nothing in front of the shot
+        hero.facing = 1;
+        var bottle = Game.SpawnProp(Prop.Kind.Bottle, hero.ground);
+        hero.PickUp(bottle);
+        hero.Attack(Move.ThrowProp);
+        for (int i = 0; i < Feel.PropThrowStartup + 6; i++) yield return new WaitForFixedUpdate();
+        Shot("molotov_flight");
+        for (int i = 0; i < 40; i++) yield return new WaitForFixedUpdate();
+        Assert.AreEqual(1, Fire.Count);
+        Shot("molotov_fire");
+
+        var guy = Game.Spawn(1, Art.Guy, hero.ground + new Vector2(60f, 0f), 1000);
+        guy.facing = -1;
+        Fire.Spawn(guy.ground);
+        for (int i = 0; i < 10; i++) yield return new WaitForFixedUpdate();
+        Assert.Greater(guy.burning, 0);
+        Shot("molotov_burning");
+    }
+
     static Fighter Victim(Fighter hero, float ahead, int hp)
     {
         var e = Game.Spawn(1, Art.GruntA, hero.ground + new Vector2(ahead, 0f), hp);

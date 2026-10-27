@@ -4,6 +4,7 @@
 
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
+| 2026-10-27 | Only bottles Brick throws are Molotovs; enemy bottles stay beer | A power for the player, not a hazard spammed at him | Every bottle burns |
 | 2026-10-27 | Dirty move on J+L, with no grab first | Easy to do mid-fight | S+J inside a grab (too many steps) |
 | 2026-10-27 | The midnight clock counts real seconds from the first punch, not waves | One tense minute is short and replayable | 5 waves at a minute each (too long) |
 | 2026-10-27 | Enemies have no invulnerability after getting up; they lie down for 70 frames | So downed enemies can be finished with the elbow drop | 40 frames lying plus 30 invulnerable frames (impossible to finish) |

@@ -27,7 +27,7 @@ Almost everything can be used as a weapon.
 | Prop | Hits before breaking | Damage | Notes |
 |---|---|---|---|
 | Chair, stool | 3 | 18 | A swing knocks flying |
-| Bottle | 1 | 12 | Shatters on landing and leaves a beer puddle |
+| Bottle | 1 | 12 | Thrown by Brick it's a **Molotov** (see [Fire](#fire-molotov)). Thrown by an enemy or broken in a swing, it leaves a beer puddle |
 | Pool cue | 4 | 12 | Longest reach in the game |
 | Pool ball | Never | 12 | Kick it along the floor: it bounces and rolls |
 | Lamp shade | 2 | 18 | Ripped down from a pendant lamp |
@@ -55,6 +55,19 @@ A bottle that breaks leaves a beer puddle on the floor for 20 seconds.
 - **Slipping:** running, landing from a jump or being knocked across a puddle makes anyone slip and fall. It does no damage.
 - **Brick** can walk over a puddle safely.
 - **Enemies** are past walking carefully: they may slip even while walking.
+
+## Fire (Molotov)
+
+Every bottle **Brick throws** is a Molotov:
+- **Lighting it:** the rag catches as he winds up, and the bottle burns as it tumbles through the air.
+- **The fire:** where it breaks, the floor burns for 4 seconds, then dies down.
+- **Catching fire:** anyone standing in the flames catches fire, and so does anyone hit by the bottle itself. Brick does too, if he walks into his own fire.
+- **Burning:** 3 damage every third of a second. It keeps going 2 seconds after leaving the flames.
+- **Panic:** burning enemies run around flailing and don't attack.
+- **Death:** anyone burnt to death drops where they stand, charred black.
+- **Score:** every burn tick on an enemy counts as a hit for score and combo.
+
+Enemy bottles (BOTTLES) are never lit: they leave beer puddles.
 
 ## Physics
 

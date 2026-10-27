@@ -51,6 +51,7 @@ For prop and weapon damage see [Environment](06-environment.md#props).
 | Lying down | 70 frames | The window for an elbow drop |
 | Getting up | 20 frames | Enemies can be hit the moment they stand |
 | Buried | 100 frames | Then pops out |
+| Burning | While in the fire, then 120 frames | 3 damage every 20 frames; enemies panic; burnt to death = charred black body |
 | Brick hurt | 30 frames invulnerable | So a crowd can't hit him nonstop; he also blinks for 30 frames after getting up |
 
 ## Hit feel

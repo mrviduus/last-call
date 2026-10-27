@@ -146,7 +146,19 @@ def bell():
     save("bell", mix(*layers))
 
 
+def fire():
+    """A molotov catching: a soft whump of low noise swelling up, with a few crackles on top."""
+    n = int(0.9 * RATE)
+    body = times(noise(n, 0.05), env(n, 0.08, 1.2))
+    layers = [scale(body, 1.4)]
+    for k in range(6):
+        start = int(rng.uniform(0.1, 0.8) * RATE)
+        m = int(0.008 * RATE)
+        layers.append([0.0] * start + scale(times(noise(m, 0.9), env(m, 0.0002, 3)), 0.5))
+    save("fire", mix(*layers))
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for make in (whoosh, hit, hit_heavy, glass, wood, thud, ball, splat, crunch, bell):
+    for make in (whoosh, hit, hit_heavy, glass, wood, thud, ball, splat, crunch, bell, fire):
         make()

@@ -215,6 +215,14 @@ public static class Feel
     public const int SlipCooldown = 120;          // frames before the same fighter can slip again
     public const float EnemySlipChance = 0.02f;   // per frame an enemy walks through a puddle
 
+    // molotov: a bottle Brick throws is lit; where it breaks the floor burns, and so does whoever stands in it
+    public const int FireFrames = 4 * 60;
+    public const float FireHalfWidth = 18f;
+    public const float FireHalfDepth = 6f;
+    public const int BurnFrames = 120;            // on fire this long after leaving the flames
+    public const int BurnTick = 20;               // frames between burns
+    public const int BurnDamage = 3;
+
     // last call: from the first punch the clock runs 11:59:00 to midnight in real seconds, then the boss
     public const int LastCallFrames = 60 * 60;
     public const int IntroFrames = 6 * 60;

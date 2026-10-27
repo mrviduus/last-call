@@ -12,6 +12,7 @@ The crowd surrounds Brick and takes turns, so it's never a queue and never a mob
 - **Rest:** after a strike an enemy waits about 1.2–1.7 s before its next turn.
 - **Tables:** enemies walk around tables and don't stand inside them.
 - **Telegraph:** every enemy blow flashes yellow while winding up. Hit them during the wind-up and their blow is cancelled.
+- **On fire:** a burning enemy forgets the fight and runs about flailing (see [Fire](06-environment.md#fire-molotov)).
 
 ## Roster
 

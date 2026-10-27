@@ -54,7 +54,7 @@ Hair and clothes share those reds, so they are split by height: the top rows of 
 | `HalfStays`, `HalfFlies` | The lying sprite split in two |
 | `Sinking[]` | The hurt frame cut 3 rows higher each frame |
 | `Doubled` | The hurt frame folded at the waist |
-| Spark, dust, shard, whip, arm, puddle | Painted pixel by pixel (`Art.Paint`) |
+| Spark, dust, shard, whip, arm, puddle, flame (3 frames) | Painted pixel by pixel (`Art.Paint`) |
 
 ## Generator scripts
 
