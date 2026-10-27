@@ -346,7 +346,7 @@ public class Game : MonoBehaviour
             GUI.DrawTexture(new Rect(view.x, view.y, view.width, 20 * scale), Texture2D.whiteTexture);
             GUI.color = Color.white;
         }
-        Text(view.x + 8 * scale, view.y + 6 * scale, scale, "VASYL");
+        Text(view.x + 8 * scale, view.y + 6 * scale, scale, "BRICK");
         Bar(view.x + 44 * scale, view.y + 8 * scale, 100 * scale, 6 * scale, Hero);
         if (LastHit != null) // the enemy you're fighting, Streets of Rage style
         {

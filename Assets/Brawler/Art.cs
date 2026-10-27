@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Fighters: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt), recoloured per look (hair and clothes only).
-// The bar is PNGs from Tools/make_bar_art.py; Vasyl's frames and the sitting frames from Tools/make_vasyl_frames.py;
+// The bar is PNGs from Tools/make_bar_art.py; Brick's frames and the sitting frames from Tools/make_brick_frames.py;
 // the whip is drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
-    public const string Hero = "Vasyl";          // blond, leather vest
+    public const string Hero = "Brick";          // blond, leather vest
     public const string Guy = "Punk";            // red mohawk, red vest
     public const string GuyDenim = "PunkDenim";  // black hair, denim vest
     public const string GruntA = "Girl";         // red outfit
@@ -18,7 +18,7 @@ public static class Art
     static readonly Dictionary<string, (bool girl, uint[] hair, uint[] clothes)> Looks =
         new Dictionary<string, (bool, uint[], uint[])>
         {
-            ["Vasyl"] = (false, new[] { 0xf0d070u, 0xfff0a0u, 0xb08830u }, new[] { 0x4a3a32u, 0x6a5248u, 0x2a201cu }),
+            ["Brick"] = (false, new[] { 0xf0d070u, 0xfff0a0u, 0xb08830u }, new[] { 0x4a3a32u, 0x6a5248u, 0x2a201cu }),
             ["Punk"] = (false, null, null),
             ["PunkDenim"] = (false, new[] { 0x2a2a2eu, 0x4a4a52u, 0x16161au }, new[] { 0x3a5a8au, 0x5a7aaau, 0x2a3a5au }),
             ["Girl"] = (true, null, null),
@@ -75,15 +75,15 @@ public static class Art
 
     // only idle, walk, punch and hurt; the last hurt frame lies on the ground
     // the punk's sheets face left (he was drawn as an enemy); mirrored so every character faces right
-    static Frames Punk(bool asVasyl, uint[] hair, uint[] clothes)
+    static Frames Punk(bool asBrick, uint[] hair, uint[] clothes)
     {
         var raw = FeetPivot(Load("Punk/idle"), FrameW);
         var pivot = new Vector2(1f - raw.x, raw.y); // the sheets are mirrored below
         Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, hair, clothes, hairRows: 10, mirror: true);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
-        // Vasyl has his own frames (Tools/make_vasyl_frames.py): knee up, kick, high kick, jump kick; elbow drop
-        var kick = asVasyl ? Sheet("Vasyl/kick", pivot) : new[] { punch[1], punch[2], punch[2], punch[2] };
-        var elbow = asVasyl ? Sheet("Vasyl/elbow", pivot) : new[] { idle[0], hurt[2] };
+        // Brick has his own frames (Tools/make_brick_frames.py): knee up, kick, high kick, jump kick; elbow drop
+        var kick = asBrick ? Sheet("Brick/kick", pivot) : new[] { punch[1], punch[2], punch[2], punch[2] };
+        var elbow = asBrick ? Sheet("Brick/elbow", pivot) : new[] { idle[0], hurt[2] };
         return new Frames
         {
             Idle = idle, Walk = S("walk"),

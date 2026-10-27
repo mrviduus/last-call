@@ -1,6 +1,6 @@
 Art
 - Fighters (Brawler Girl, Enemy Punk): "Streets of Fight" by Luis Zuno (ansimuz), CC0
   https://ansimuz.itch.io/streets-of-fight
-  The hero (Vasyl) is the punk recoloured; enemy variants are tinted copies.
+  The hero (Brick) is the punk recoloured; enemy variants are tinted copies.
 - ORBIT 9 bar (layers, chair, stool, bottle, table): drawn for this project by Tools/make_bar_art.py.
 - Whip and giant boot: drawn in code for this project.

@@ -1,7 +1,7 @@
-"""Vasyl's own frames -> Assets/Resources/Art/Vasyl/*.png (rows of 96x63 frames, facing right).
+"""Brick's own frames -> Assets/Resources/Art/Brick/*.png (rows of 96x63 frames, facing right).
 
-Run:  python3 Tools/make_vasyl_frames.py   (needs Pillow)
-Until Vasyl has a full hand-drawn set, his body is the placeholder fighter (Resources/Art/Punk, CC0)
+Run:  python3 Tools/make_brick_frames.py   (needs Pillow)
+Until Brick has a full hand-drawn set, his body is the placeholder fighter (Resources/Art/Punk, CC0)
 recoloured blond with a leather vest. This script keeps that upper body and paints new legs for each pose:
   kick.png: 0 knee up (wind-up), 1 straight kick, 2 high kick (second leg of the bicycle), 3 jump kick;
   elbow.png: 0 rising with the elbow raised, 1 falling flat elbow-first (the wrestling elbow drop).
@@ -16,12 +16,12 @@ HIP_ROW = 41            # rows below this are legs
 HIP = (51, 42)          # where the kicking leg starts
 JEANS, JEANS_LIGHT, OUTLINE, BOOT, BOOT_DARK = (0x40, 0x60, 0xa0), (0x60, 0x80, 0xe0), (0x24, 0x18, 0x18), (0x80, 0x60, 0x60), (0x45, 0x3c, 0x3c)
 
-# same recolour the game applies to the placeholder at runtime (Art.RecolorAsVasyl)
+# same recolour the game applies to the placeholder at runtime (Art.RecolorAsBrick)
 BLOND = {(0xce, 0x20, 0x38): (0xf0, 0xd0, 0x70), (0xed, 0x49, 0x24): (0xff, 0xf0, 0xa0), (0x8a, 0x0b, 0x41): (0xb0, 0x88, 0x30)}
 LEATHER = {(0xce, 0x20, 0x38): (0x4a, 0x3a, 0x32), (0xed, 0x49, 0x24): (0x6a, 0x52, 0x48), (0x8a, 0x0b, 0x41): (0x2a, 0x20, 0x1c)}
 
 
-def vasyl_idle():
+def brick_idle():
     im = ImageOps.mirror(Image.open(os.path.join(ROOT, "Punk", "idle.png")).convert("RGBA").crop((0, 0, FW, FH)))
     top = im.getbbox()[1]
     px = im.load()
@@ -113,7 +113,7 @@ def elbow_drop(base):
     return arm(im, [(58, FEET_ROW - 12), (54, FEET_ROW - 3), (49, FEET_ROW - 6)])
 
 
-def save_sheet(name, frames, folder="Vasyl"):
+def save_sheet(name, frames, folder="Brick"):
     sheet = Image.new("RGBA", (FW * len(frames), FH))
     for i, f in enumerate(frames):
         sheet.paste(f, (i * FW, 0), f)
@@ -157,7 +157,7 @@ def sit_frames():
 
 
 def main():
-    base = vasyl_idle()
+    base = brick_idle()
     save_sheet("kick", [
         pose(base, [[HIP, (60, 34), (63, 46)]]),        # knee up
         pose(base, [[HIP, (66, 40), (80, 38)]]),        # straight kick
