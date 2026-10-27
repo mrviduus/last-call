@@ -6,7 +6,6 @@
 
 | Area | Idea |
 |---|---|
-| Combat | An elbow drop that dives onto an enemy lying further away |
 | Combat | 1 hit on a downed enemy per combo |
 | Combat | Bodies knocked flying slide tables and knock bottles off them |
 | Enemies | **Cue hustler:** a long poke with a pool cue; a low sweep you have to jump over |

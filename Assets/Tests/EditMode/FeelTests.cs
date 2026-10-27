@@ -1034,4 +1034,37 @@ public class FeelTests
         Run(30);
         Assert.IsTrue(e.state is State.Down or State.Dead, "drops where he stood");
     }
+
+    static Fighter LyingEnemy(Vector2 at, int hp)
+    {
+        var e = Game.Spawn(1, Art.Guy, at, hp);
+        e.TakeHit(1, 1, true);
+        while (e.state != State.Down) Game.Simulate();
+        e.ground = at;
+        e.vel = Vector2.zero;
+        return e;
+    }
+
+    [Test]
+    public void TheElbowDropSteersOntoABodyFurtherAway()
+    {
+        var e = LyingEnemy(new Vector2(370f, -35f), 100);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        Assert.IsTrue(p.IsDownedEnemyInReach(Feel.ElbowDropHoming, Feel.ElbowDropHomingDepth), "70 px ahead, 15 off the lane");
+        int hp = e.health;
+        p.Attack(Move.ElbowDrop);
+        Run(Feel.ElbowDropStartup + 2);
+        Assert.Less(e.health, hp, "landed on him");
+    }
+
+    [Test]
+    public void AFlyingKickHitsBodiesOnTheFloorOnce()
+    {
+        var e = LyingEnemy(new Vector2(380f, -50f), 100);
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        int hp = e.health;
+        p.Attack(Move.FlyingKick);
+        Run(Feel.FlyingKickStartup + Feel.FlyingKickActive);
+        Assert.AreEqual(hp - Feel.FlyingKickDamage, e.health, "kicked once on the way over, not every frame");
+    }
 }

@@ -103,7 +103,9 @@ public static class Feel
     public const float ElbowDropHop = 4.5f;       // guess, wrestling-style jump onto a downed enemy
     public const int ElbowDropStartup = 30;       // ~ the jump's airtime: lands elbow-first
     public const int ElbowDropRecovery = 14;      // guess, getting back up off the floor
-    public const float ElbowDropReach = 40f;      // guess
+    public const float ElbowDropReach = 40f;      // guess, the landing hits this far ahead
+    public const float ElbowDropHoming = 80f;     // guess, a body lying this far ahead (x) can be elbow-dropped: Brick steers onto it
+    public const float ElbowDropHomingDepth = 24f; // ...and this far off his lane
 
     public const float PickupRange = 22f;         // guess, how close a prop must be to pick it up
     public const int SwingStartup = 6;            // guess, chair/bottle raised overhead

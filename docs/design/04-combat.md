@@ -19,10 +19,10 @@ Two fighters can hit each other only when they are on the same **lane**: their d
 | Smash (3rd punch) | 14 | 3 | 44 | Knocks flying |
 | Kick | 12 | 6 | 46 | Bigger push |
 | Jump kick | 14 | — | 40 | Knocks flying; hits from anywhere in the jump |
-| Flying kick (run + J) | 24 | 4 | 40 | Knocks flying; crosses the screen fast |
-| Bicycle kick (run + L) | 6 per kick | 4 | 40 | A kick every 6 frames; the last one knocks flying |
+| Flying kick (run + J) | 24 | 4 | 40 | Knocks flying; crosses the screen fast. Also kicks bodies lying on the floor it passes, once each |
+| Bicycle kick (run + L) | 6 per kick | 4 | 40 | A kick every 6 frames; the last one knocks flying. Also kicks bodies lying on the floor, once each |
 | Hammer stomp (S + L) | 14 | 8 | 40 | Buries the enemy for 100 frames |
-| Elbow drop | 20 | 30 (in the air) | 40 | Only on enemies lying down |
+| Elbow drop | 20 | 30 (in the air) | starts up to 80 | Only on enemies lying down. Homes in: Brick steers onto the body, and it can't get up until the elbow lands |
 | Headbutt (in a grab) | 8 | 4 | — | Keeps the hold; the 3rd one throws |
 | Throw (in a grab) | 18 | 10 | — | Thrown behind Brick |
 | Arm rip (in a grab) | 20 | 8 | — | Knocks flying; Brick gets the arm as a club |
@@ -85,6 +85,5 @@ Arm rip (in a grab, L) works any time, not only as a kill.
 Every hit draws blood, and harder hits draw more. Blood stays on the floor as stains.
 
 ## To fill
-- [ ] A dive elbow drop that reaches enemies further away? (see [Backlog](09-backlog.md))
 - [ ] Should dirty moves work on THE CLOSER? J+L skips him now.
 - [ ] Hand-drawn frames for the dirty moves (see [Art direction](08-art-direction.md))

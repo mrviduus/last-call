@@ -23,7 +23,7 @@
 | In the air | J | Jump kick |
 | Running | J | Flying kick |
 | Running | L | Bicycle kick |
-| An enemy lying in front | J | Wrestling elbow drop |
+| An enemy lying ahead (up to 80 px), nobody standing in reach | J | Wrestling elbow drop: Brick steers through the air onto the body |
 | An enemy buried in the floor | L | Kick the head off |
 | A prop in reach, nobody to hit | J | Pick the prop up |
 | Holding a prop | J | Swing it |

@@ -48,6 +48,8 @@ public class Fighter : MonoBehaviour
     public int burning; // frames left on fire
     int burnClock;      // frames since catching fire: a burn every BurnTick of them
     bool charred;       // burnt to death: drawn black
+    Fighter elbowTarget; // the body an elbow drop is steering onto
+    readonly System.Collections.Generic.List<Fighter> floorHits = new System.Collections.Generic.List<Fighter>(); // bodies on the floor this move already kicked
     public bool Girl => Art.IsGirl(look);
     SpriteRenderer body, shadow, whipLine;
     SpriteRenderer[] dizzy; // stars round the head while doubled over
@@ -143,7 +145,12 @@ public class Fighter : MonoBehaviour
         move = m;
         punchAlt = !punchAlt;
         if (m != Move.BicycleKick && m != Move.FlyingKick) vel = Vector2.zero; // running kicks keep the momentum
-        if (m == Move.ElbowDrop) heightVel = Feel.ElbowDropHop;
+        if (m == Move.ElbowDrop)
+        {
+            heightVel = Feel.ElbowDropHop;
+            elbowTarget = DownedEnemyInReach(Feel.ElbowDropHoming, Feel.ElbowDropHomingDepth);
+        }
+        floorHits.Clear();
         Enter(State.Attack);
         Sfx.Play("whoosh", team == 0 ? 0.5f : 0.3f);
     }
@@ -187,16 +194,21 @@ public class Fighter : MonoBehaviour
         return true;
     }
 
-    public bool IsDownedEnemyInReach(float reach)
+    public bool IsDownedEnemyInReach(float reach, float depth = Feel.DepthBand) => DownedEnemyInReach(reach, depth) != null;
+
+    // the nearest living enemy lying on the floor ahead
+    Fighter DownedEnemyInReach(float reach, float depth)
     {
+        Fighter best = null;
         foreach (var t in Game.Fighters)
         {
             float dx = (t.ground.x - ground.x) * facing;
             if (t.team != team && t.Alive && t.state == State.Down && dx > -4f && dx < reach
-                && Mathf.Abs(t.ground.y - ground.y) < Feel.DepthBand)
-                return true;
+                && Mathf.Abs(t.ground.y - ground.y) < depth
+                && (best == null || dx < (best.ground.x - ground.x) * facing))
+                best = t;
         }
-        return false;
+        return best;
     }
 
     public void StartRun(int dir)
@@ -395,6 +407,16 @@ public class Fighter : MonoBehaviour
         Sfx.Play("thud", 0.8f);
     }
 
+    // kicked while lying on the floor: bounced along it, then down again
+    void KickedOnTheFloor(int dir)
+    {
+        Enter(State.Launched);
+        bounced = true; // lands flat, no second bounce
+        vel = new Vector2(dir * 1.5f, 0f);
+        heightVel = 2f;
+        if (!Alive) Fx.Blood(ground, 4f, 20, dir, 3f);
+    }
+
     // feet out from under us on a spilled drink: down without a blow
     public void Slip()
     {
@@ -551,6 +573,14 @@ public class Fighter : MonoBehaviour
                     grabbed.tilt = -60f * t * facing;
                 }
                 if (stateFrames == Startup) strikePending = true;
+                if (move == Move.ElbowDrop && elbowTarget != null && WindingUp)
+                {
+                    // steers through the air to land elbow-first right on the body, which stays down until it lands
+                    if (elbowTarget.state == State.Down) elbowTarget.stateFrames = Mathf.Min(elbowTarget.stateFrames, Feel.DownFrames - 1);
+                    var aim = elbowTarget.ground - new Vector2(facing * 12f, 0f);
+                    vel = (aim - ground) / Mathf.Max(1, Startup - stateFrames);
+                }
+                if (move == Move.ElbowDrop && stateFrames == Startup) vel = Vector2.zero;
                 if (move == Move.FlyingKick && stateFrames >= Startup && stateFrames < Startup + Active)
                 {
                     // flies straight across the screen, feet first, just above the ground
@@ -706,6 +736,18 @@ public class Fighter : MonoBehaviour
                 else if (move == Move.Kick && team == 0 && t.state == State.Buried) t.Punt(facing, this);
                 else t.TakeHit(Damage, allRound ? (t.ground.x >= ground.x ? 1 : -1) : facing, Launches, Push);
                 if (team == 0 && !t.Alive) { Finish(t); Gore(t); finished = true; }
+                hit = solidHit = true;
+                landed++;
+            }
+        if (move is Move.FlyingKick or Move.BicycleKick) // flying low over bodies on the floor still kicks them, once each
+            foreach (var t in Game.Fighters)
+            {
+                float dx = (t.ground.x - ground.x) * facing;
+                if (t.team == team || !t.Alive || t.state != State.Down || floorHits.Contains(t) || dx <= -4f || dx >= Reach
+                    || Mathf.Abs(t.ground.y - ground.y) >= Feel.DepthBand) continue;
+                floorHits.Add(t);
+                t.Damaged(Damage);
+                t.KickedOnTheFloor(facing);
                 hit = solidHit = true;
                 landed++;
             }

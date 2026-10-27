@@ -107,9 +107,10 @@ public class Player : MonoBehaviour
             f.StartRun(runRequested);
             runRequested = 0;
         }
-        else if (attackBuffer > 0 && f.CanAct && f.IsDownedEnemyInReach(Feel.ElbowDropReach))
+        else if (attackBuffer > 0 && f.CanAct && !f.EnemyInReach(Feel.PunchReach)
+                 && f.IsDownedEnemyInReach(Feel.ElbowDropHoming, Feel.ElbowDropHomingDepth))
         {
-            f.Attack(Move.ElbowDrop); // enemy lying in front: wrestling elbow drop
+            f.Attack(Move.ElbowDrop); // enemy lying ahead, nobody standing in reach: wrestling elbow drop, steered onto them
             attackBuffer = 0;
         }
         else if (kickBuffer > 0 && f.CanAct && f.moveInput.y < 0f)

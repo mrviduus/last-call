@@ -4,6 +4,7 @@
 
 | Date | Decision | Why | Alternatives rejected |
 |---|---|---|---|
+| 2026-10-27 | The elbow drop homes onto its target; flying and bicycle kicks hit bodies on the floor | Once a big move starts, it should land, not whiff | A fixed-spot elbow drop; kicks passing over lying bodies |
 | 2026-10-27 | Only bottles Brick throws are Molotovs; enemy bottles stay beer | A power for the player, not a hazard spammed at him | Every bottle burns |
 | 2026-10-27 | Dirty move on J+L, with no grab first | Easy to do mid-fight | S+J inside a grab (too many steps) |
 | 2026-10-27 | The midnight clock counts real seconds from the first punch, not waves | One tense minute is short and replayable | 5 waves at a minute each (too long) |
