@@ -87,6 +87,42 @@ public class SmokeTest
         LogAssert.NoUnexpectedReceived();
     }
 
+    // the dirty moves in a hold, mid-move: screenshots to look at the poses
+    [UnityTest]
+    public IEnumerator DirtyMoves()
+    {
+        if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
+        Game.RestartRequested = true;
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        var hero = Game.Hero;
+        hero.ground = new Vector2(500f, -50f);
+        hero.facing = 1;
+
+        var guy = Game.Spawn(1, Art.Guy, hero.ground + new Vector2(24f, 0f), 100);
+        hero.Grab(guy);
+        hero.Attack(Move.LowBlow);
+        for (int i = 0; i < Feel.KneeStartup + 2; i++) yield return new WaitForFixedUpdate();
+        Shot("lowblow_knee");
+        for (int i = 0; i < 30; i++) yield return new WaitForFixedUpdate();
+        Assert.AreEqual(State.Hurt, guy.state);
+        Shot("lowblow_doubled");
+
+        for (int i = 0; i < 120; i++) yield return new WaitForFixedUpdate();
+        hero.ground = new Vector2(700f, -50f);
+        var girl = Victim(hero, 24f, 100);
+        hero.Grab(girl);
+        hero.Attack(Move.HairSlam);
+        for (int i = 0; i < Feel.HairSlamStartup - 2; i++) yield return new WaitForFixedUpdate();
+        Assert.Greater(girl.lift, 10f, "lifted by the hair");
+        Shot("hairslam_lift");
+        for (int i = 0; i < 4; i++) yield return new WaitForFixedUpdate();
+        Shot("hairslam_fall");
+        for (int i = 0; i < 20; i++) yield return new WaitForFixedUpdate();
+        Assert.AreEqual(State.Down, girl.state);
+        Shot("hairslam_down");
+    }
+
     static Fighter Victim(Fighter hero, float ahead, int hp)
     {
         var e = Game.Spawn(1, Art.GruntA, hero.ground + new Vector2(ahead, 0f), hp);

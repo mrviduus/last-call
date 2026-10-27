@@ -46,6 +46,7 @@ public static class Art
         public Sprite[] Idle, Walk, Throw, Bicycle, Sinking;
         public Sprite Punch1, Punch2, KickWind, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
         public Sprite ElbowRise, ElbowDrop, Sit;
+        public Sprite Doubled; // bent over, after a low blow
         public Sprite Head, HeadlessHurt, HeadlessDown, HalfStays, HalfFlies; // gore, cut from the hurt and down poses
         public Sprite[] HeadlessSinking;
     }
@@ -210,8 +211,33 @@ public static class Art
         f.HalfFlies = Sprite.Create(f.Down.texture, new Rect(d.x + half, d.y, d.width - half, d.height),
             new Vector2((f.Down.pivot.x - half) / (d.width - half), py), 1f, 0, SpriteMeshType.FullRect);
 
+        f.Doubled = Doubled(f.Hurt);
         f.Sinking = Sinking(f.Hurt);
         f.HeadlessSinking = Sinking(f.HeadlessHurt);
+    }
+
+    // the hurt pose folded at the waist: everything above it squashed down and leaned forward (sheets face right)
+    static Sprite Doubled(Sprite hurt)
+    {
+        var r = hurt.rect;
+        int w = (int)r.width, h = (int)r.height;
+        var src = hurt.texture.GetPixels((int)r.x, (int)r.y, w, h);
+        var px = new Color[w * h];
+        int soles = (int)hurt.pivot.y, top = h - 1 - EmptyRowsOnTop(hurt);
+        int waist = soles + (top - soles) * 4 / 10;
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                var c = src[y * w + x];
+                if (c.a == 0f) continue;
+                int up = y - waist, dy = y, dx = x;
+                if (up > 0) { dy = waist + up / 2; dx = x + up * 3 / 4; }
+                if (dx < w) px[dy * w + dx] = c;
+            }
+        var tex = new Texture2D(w, h) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+        tex.SetPixels(px);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(hurt.pivot.x / w, hurt.pivot.y / h), 1f, 0, SpriteMeshType.FullRect);
     }
 
     static int EmptyRowsOnTop(Sprite s)

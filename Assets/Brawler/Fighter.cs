@@ -47,6 +47,8 @@ public class Fighter : MonoBehaviour
     int stun;          // hurt lasts at least this long (doubled over after a low blow)
     public bool Girl => Art.IsGirl(look);
     SpriteRenderer body, shadow, whipLine;
+    SpriteRenderer[] dizzy; // stars round the head while doubled over
+    public float lift, tilt; // held up by the hair: drawn this much higher, tipped this many degrees
     Material normalMat;
     int landSquash, jumpStretch; // frames left of squashing on landing / stretching on take-off
     Art.Frames art;
@@ -55,7 +57,7 @@ public class Fighter : MonoBehaviour
     {
         Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
         Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee or Move.LowBlow => Feel.KneeStartup,
-        Move.Throw or Move.HairSlam => Feel.ThrowStartup, Move.Rip => Feel.RipStartup, Move.Whip => Feel.WhipStartup,
+        Move.Throw => Feel.ThrowStartup, Move.HairSlam => Feel.HairSlamStartup, Move.Rip => Feel.RipStartup, Move.Whip => Feel.WhipStartup,
         Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, Move.Special => Feel.SpecialStartup,
         _ => team == 0 ? Feel.PunchStartup : Feel.EnemyPunchStartup,
     };
@@ -116,6 +118,7 @@ public class Fighter : MonoBehaviour
         body = MakeSprite("Body", art.Idle[0]);
         normalMat = body.sharedMaterial;
         whipLine = MakeSprite("Whip", Art.Whip);
+        dizzy = new[] { MakeSprite("Dizzy", Art.Spark[0]), MakeSprite("Dizzy", Art.Spark[0]) };
     }
 
     SpriteRenderer MakeSprite(string name, Sprite sprite)
@@ -457,6 +460,7 @@ public class Fighter : MonoBehaviour
     void Tick()
     {
         stateFrames++;
+        if (state != State.Held && state != State.Launched) lift = tilt = 0f; // let go by the hair, or landed
         if (flashFrames > 0) flashFrames--;
         if (landSquash > 0) landSquash--;
         if (bleed > 0 && --bleed % 5 == 0) Fx.Blood(ground, state is State.Down or State.Dead ? 4f : height + Feel.ShoulderHeight, 1, 0f, 0.3f);
@@ -488,6 +492,12 @@ public class Fighter : MonoBehaviour
                 break;
             case State.Attack:
                 if (grabbed != null) HoldVictim();
+                if (grabbed != null && move == Move.HairSlam && WindingUp) // up by the hair, tipping over
+                {
+                    float t = (float)stateFrames / Startup;
+                    grabbed.lift = Mathf.Sin(t * Mathf.PI / 2f) * Feel.HairSlamLift;
+                    grabbed.tilt = -60f * t * facing;
+                }
                 if (stateFrames == Startup) strikePending = true;
                 if (move == Move.FlyingKick && stateFrames >= Startup && stateFrames < Startup + Active)
                 {
@@ -737,6 +747,7 @@ public class Fighter : MonoBehaviour
         if (move == Move.LowBlow) // let go, and he doubles over: open to anything for a while
         {
             g.TakeHit(Feel.LowBlowDamage, facing, false, 0f);
+            Fx.Spark(new Vector2(g.ground.x, g.ground.y + 24f), true);
             if (g.state == State.Hurt) g.stun = Feel.LowBlowStun;
             Sfx.Play("hit_heavy");
             Game.Freeze(Feel.SmashHitstop, Feel.SmashShake);
@@ -744,9 +755,13 @@ public class Fighter : MonoBehaviour
         }
         if (move == Move.HairSlam) // over by the hair and face-first into the floor, right in front: elbow-drop range
         {
+            float lifted = g.lift;
             g.TakeHit(Feel.HairSlamDamage, facing, true);
             g.vel = new Vector2(facing * 1f, 0f);
-            g.heightVel = 1.5f;
+            g.height = lifted;   // from up there, straight down face-first
+            g.heightVel = -2.5f;
+            g.lift = 0f;
+            g.tilt = -90f * facing;
             g.bounced = true; // flat on the floor, no bounce
             if (!g.Alive) Fx.Blood(g.ground, 4f, 30, 0f, 3f);
             Sfx.Play("hit_heavy");
@@ -818,11 +833,11 @@ public class Fighter : MonoBehaviour
                 Move.ElbowDrop => heightVel > 0f ? art.ElbowRise : art.ElbowDrop, // up with the elbow raised, down flat
                 Move.Knee => striking ? art.Headbutt : art.Punch1,
                 Move.Throw or Move.Rip or Move.HairSlam => art.Throw[WindingUp ? 0 : 1],
-                Move.LowBlow => striking ? art.Kick : art.KickWind,
+                Move.LowBlow => striking ? art.KickWind : art.Punch1, // still holding on, then the knee comes up
                 Move.Special => striking ? art.Kick : art.KickWind,
                 _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : WindingUp && team != 0 ? art.WindUp : art.Idle[0],
             },
-            State.Hurt => art.Hurt,
+            State.Hurt => stun > 0 ? art.Doubled : art.Hurt,
             State.Launched => art.Fall,
             _ => halved ? art.HalfStays : headless ? art.HeadlessDown : art.Down, // down, dead
         };
@@ -832,7 +847,15 @@ public class Fighter : MonoBehaviour
         float jolt = Game.Frozen && flashFrames > 0 ? (Game.Frame % 2 == 0 ? Feel.HitJolt : -Feel.HitJolt) : 0f;
         float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw or Move.HairSlam or Move.Special ? 0f
             : WindingUp ? -Feel.WindUpLean : striking ? (move is Move.Punch or Move.Knee ? Feel.JabLunge : Feel.HeavyLunge) : 0f;
-        body.transform.localPosition = new Vector3(jolt + lunge * facing, h, 0f);
+        body.transform.localPosition = new Vector3(jolt + lunge * facing, h + Mathf.Round(lift), 0f);
+        body.transform.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        // two stars circling the bowed head while doubled over
+        for (int i = 0; i < dizzy.Length; i++)
+        {
+            dizzy[i].enabled = state == State.Hurt && stun > 0;
+            float a = Game.Frame * 0.15f + i * Mathf.PI;
+            dizzy[i].transform.localPosition = new Vector3(Mathf.Round(facing * 12f + Mathf.Cos(a) * 9f), Mathf.Round(h + 36f + Mathf.Sin(a) * 3f), 0f);
+        }
         body.transform.localScale = size * (landSquash > 0 ? new Vector3(1.12f, 0.88f, 1f)
             : jumpStretch > 0 ? new Vector3(0.9f, 1.1f, 1f) : Vector3.one);
         shadow.enabled = state != State.Buried && !sunk;
@@ -853,5 +876,6 @@ public class Fighter : MonoBehaviour
         int order = -Mathf.RoundToInt(ground.y) * 2;
         body.sortingOrder = state == State.Sit ? order + 1 : order; // in front of the chair
         whipLine.sortingOrder = order + 1;
+        foreach (var star in dizzy) star.sortingOrder = order + 1;
     }
 }
