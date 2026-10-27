@@ -139,7 +139,14 @@ def crunch():
     save("crunch", mix(*layers))
 
 
+def bell():
+    """The last-call bell over the bar: a brass ring, a few inharmonic partials dying away slowly."""
+    n = int(1.6 * RATE)
+    layers = [scale(times(sweep(n, f, f), env(n, 0.002, 1.5)), a) for f, a in ((880, 1.0), (2420, 0.5), (4250, 0.25))]
+    save("bell", mix(*layers))
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for make in (whoosh, hit, hit_heavy, glass, wood, thud, ball, splat, crunch):
+    for make in (whoosh, hit, hit_heavy, glass, wood, thud, ball, splat, crunch, bell):
         make()

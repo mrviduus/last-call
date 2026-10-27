@@ -19,6 +19,10 @@ public class Game : MonoBehaviour
     public static bool RestartRequested;
     public static bool Brawl; // the hero has thrown the first punch: patrons get up, waves come in
     public static bool ShowHelp; // H held
+    public static int Wave;      // 1..Feel.Waves, then the boss wave; the HUD clock reads it
+    public static bool Won;      // the closer is down
+    public static int Score, HeroCombo; // combo: the hero's hits in a row, until he's hit or stops hitting
+    static int comboTimer;
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames, flashFrames, slowMoFrames;
     static readonly List<Prop> stepping = new List<Prop>();
@@ -26,7 +30,7 @@ public class Game : MonoBehaviour
 
     Camera cam;
     float camX = ScreenW / 2f;
-    int wave, toSpawn, spawnDelay;
+    int toSpawn, spawnDelay;
 
     // layers that scroll at their own speed: < 1 is further away, > 1 is in front of the fighters
     readonly List<(Transform layer, float speed, float x)> parallax = new List<(Transform, float, float)>();
@@ -44,7 +48,10 @@ public class Game : MonoBehaviour
         Props.Clear();
         Lamps.Clear();
         Prop.parts.Clear();
+        Puddle.Clear();
         Hero = LastHit = null;
+        Wave = Score = HeroCombo = comboTimer = 0;
+        Won = false;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = slowMoFrames = 0;
         Time.timeScale = 1f;
         RestartRequested = false;
@@ -55,6 +62,14 @@ public class Game : MonoBehaviour
     {
         freezeFrames = Mathf.Max(freezeFrames, frames);
         shakeFrames = Mathf.Max(shakeFrames, shake);
+    }
+
+    // a hero hit landed: the combo goes on, each hit scores more
+    public static void Scored()
+    {
+        HeroCombo++;
+        comboTimer = Feel.ComboFrames;
+        Score += 10 * HeroCombo;
     }
 
     public static void Flash(int frames) => flashFrames = Mathf.Max(flashFrames, frames);
@@ -82,6 +97,8 @@ public class Game : MonoBehaviour
         stepping.Clear();
         stepping.AddRange(Props);
         foreach (var p in stepping) if (Props.Contains(p)) p.Step();
+        Puddle.StepAll();
+        if (comboTimer > 0 && --comboTimer == 0) HeroCombo = 0;
         Separate();
         BlockByTables();
         if (Hero != null) Hero.ResolveStrike(); // the hero wins ties
@@ -99,9 +116,10 @@ public class Game : MonoBehaviour
                 float dx = b.ground.x - a.ground.x;
                 float overlap = Feel.BodyGap - Mathf.Abs(dx);
                 if (overlap <= 0f) continue;
-                float push = (dx != 0f ? Mathf.Sign(dx) : a.facing) * overlap / 2f;
-                a.ground.x = Mathf.Clamp(a.ground.x - push, MinX, MaxX);
-                b.ground.x = Mathf.Clamp(b.ground.x + push, MinX, MaxX);
+                // the lighter one gives way more
+                float push = (dx != 0f ? Mathf.Sign(dx) : a.facing) * overlap / (a.mass + b.mass);
+                a.ground.x = Mathf.Clamp(a.ground.x - push * b.mass, MinX, MaxX);
+                b.ground.x = Mathf.Clamp(b.ground.x + push * a.mass, MinX, MaxX);
             }
     }
 
@@ -252,7 +270,7 @@ public class Game : MonoBehaviour
         foreach (var l in Lamps) if (l != null) Destroy(l.gameObject);
         Reset();
         Drop.Clear();
-        wave = toSpawn = 0;
+        toSpawn = 0;
         Hero = Spawn(0, Art.Hero, new Vector2(340f, -8f), Feel.HeroHealth); // at the counter
         Hero.gameObject.AddComponent<Player>();
         camX = CameraX(Hero.ground.x);
@@ -262,10 +280,13 @@ public class Game : MonoBehaviour
     static float CameraX(float target) => Mathf.Clamp(target, ScreenW / 2f, LevelW - ScreenW / 2f);
 
     // a wave walks in one at a time (SpawnGap apart), so nobody pops in on top of anyone
+    // 1:55 to 1:59 a wave a minute; at 2:00 the bell rings and the closer comes in with two of his own; then it's over
     void SpawnWave()
     {
-        wave++;
-        toSpawn = Mathf.Min(1 + wave, 5);
+        Wave++;
+        if (Wave > Feel.Waves + 1) { Won = true; return; }
+        if (Wave == Feel.Waves + 1) Sfx.Play("bell");
+        toSpawn = Wave > Feel.Waves ? 3 : Mathf.Min(1 + Wave, 5);
         spawnDelay = 0;
     }
 
@@ -276,14 +297,23 @@ public class Game : MonoBehaviour
         bool door = Mathf.Abs(Hero.ground.x - Door) > Mathf.Abs(Hero.ground.x - StageEnd);
         var pos = new Vector2(door ? Door : StageEnd, door ? MaxDepth - 4f : Random.Range(MinDepth, MaxDepth));
 
-        // guys and girls take turns; every third one is a whip fighter
-        bool lasher = toSpawn % 3 == 0, guy = !lasher && toSpawn % 2 == 0;
-        var e = lasher ? Spawn(1, Art.Lasher, pos, Feel.GuyHealth)
+        // guys and girls take turns; every third one is a whip fighter; from wave 2 the last one in is a drunk,
+        // from wave 3 a bottle thrower comes too; the boss leads the last wave
+        bool boss = Wave > Feel.Waves && toSpawn == 3;
+        bool drunk = !boss && Wave >= 2 && toSpawn == 1, chucker = !boss && Wave >= 3 && toSpawn == 4;
+        bool lasher = !boss && !drunk && !chucker && toSpawn % 3 == 0, guy = !lasher && toSpawn % 2 == 0;
+        var e = boss ? Spawn(1, Art.Boss, pos, Feel.BossHealth)
+            : drunk ? Spawn(1, Art.Drunk, pos, Feel.DrunkHealth)
+            : chucker ? Spawn(1, Art.Chucker, pos, Feel.ChuckerHealth)
+            : lasher ? Spawn(1, Art.Lasher, pos, Feel.GuyHealth)
             : guy ? Spawn(1, Random.value < 0.5f ? Art.Guy : Art.GuyDenim, pos, Feel.GuyHealth)
             : Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, Feel.GirlHealth);
         e.whip = lasher;
         e.gameObject.AddComponent<Enemy>().Setup();
-        if (guy) e.walkX = Feel.EnemyWalkX * 0.85f; // heavier, a bit slower
+        e.GetComponent<Enemy>().chucker = chucker;
+        if (guy || drunk) e.walkX = Feel.EnemyWalkX * 0.85f; // heavier, a bit slower
+        if (drunk) e.drunk = true;
+        if (boss) { e.armored = true; e.mass = Feel.BossMass; e.size = 1.25f; }
     }
 
     void FixedUpdate()
@@ -300,7 +330,7 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (Brawl && Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (Brawl && !Won && Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0)) SpawnWave();
         if (toSpawn > 0 && --spawnDelay <= 0)
         {
             SpawnNext();
@@ -358,6 +388,22 @@ public class Game : MonoBehaviour
         {
             Text(view.x + 200 * scale, view.y + 6 * scale, scale, Art.Name(LastHit.look));
             Bar(view.x + 270 * scale, view.y + 8 * scale, 100 * scale * LastHit.maxHealth / Feel.HeroHealth, 6 * scale, LastHit);
+        }
+        // the clock over the bar: 1:55 when the fight starts, a minute a wave, 2:00 is last call
+        int minute = 55 + Mathf.Clamp(Wave - 1, 0, Feel.Waves);
+        Text(view.x + 8 * scale, view.y + 22 * scale, scale, (minute == 60 ? "2:00" : "1:" + minute) + " AM   SCORE " + Score
+            + (HeroCombo >= 2 ? "   " + HeroCombo + " HITS" : ""));
+        if (Frame < Feel.IntroFrames && !Won)
+        {
+            Text(view.x + 96 * scale, view.y + 70 * scale, scale, "1:55 AM. THE OLD LAMP.");
+            Text(view.x + 96 * scale, view.y + 84 * scale, scale, "BRICK CAME FOR ONE LAST PINT.");
+            Text(view.x + 96 * scale, view.y + 98 * scale, scale, "THE GANG IS CLOSING IT TONIGHT.");
+        }
+        if (Won)
+        {
+            Text(view.x + 120 * scale, view.y + 80 * scale, scale, "2:00 AM. LAST CALL.");
+            Text(view.x + 120 * scale, view.y + 94 * scale, scale, "THE CLOSER IS DOWN. YOU STAYED.");
+            Text(view.x + 120 * scale, view.y + 108 * scale, scale, "SCORE " + Score + " - PRESS J");
         }
         if (ShowHelp || Frame < 8 * 60) // controls for the first seconds, then while H is held
         {

@@ -27,6 +27,29 @@ public class SmokeTest
         Shot("smoke");
     }
 
+    // five waves from 1:55 to 1:59, the boss at 2:00, then the win card; every enemy is knocked out as it arrives
+    [UnityTest]
+    public IEnumerator LastCallEndsWithTheBossAndAWin()
+    {
+        if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
+        Game.RestartRequested = true;
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        Game.Hero.maxHealth = Game.Hero.health = 100000;
+        Game.Brawl = true;
+        bool sawBoss = false;
+        for (int i = 0; i < 60 * 120 && !Game.Won; i++)
+        {
+            foreach (var e in Game.Fighters)
+                if (e.team != 0 && e.Alive) { sawBoss |= e.armored; e.TakeHit(9999, 1, true); }
+            yield return new WaitForFixedUpdate();
+        }
+        Assert.IsTrue(sawBoss, "the closer came at 2:00");
+        Assert.IsTrue(Game.Won);
+        Assert.Greater(Game.Score, 0);
+        Shot("win");
+    }
+
     // the hero's killing blows on enemies in front of him, one after another; screenshots to look at the gore
     [UnityTest]
     public IEnumerator GoreFinishers()

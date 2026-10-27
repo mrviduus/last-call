@@ -186,4 +186,32 @@ public static class Feel
     public const int EngageGiveUp = 180;          // guess, frames to reach the hero on our turn before passing it on
     public const int CorpseFrames = 60;
     public const int SpawnGap = 40;               // guess, frames between enemies walking in
+
+    // physics: end walls, weight
+    public const float WallSplatSpeed = 3f;       // guess, a body launched this fast bounces off the end wall
+    public const int WallSplatDamage = 4;         // guess
+    public const int WallBounceFrames = 20;       // guess, off the wall: open for one more hit this long
+    public const float BossMass = 2f;             // flies half as far, pushes others twice as hard
+
+    // the pub's regulars
+    public const int DrunkHealth = 50;
+    public const float DrunkSway = 0.6f;          // guess, how much his walk wanders in depth
+    public const int ChuckerHealth = 30;
+    public const int ChuckerCooldown = 120;       // guess, frames between bottles
+    public const float ChuckerRange = 110f;       // guess, keeps this far off the hero (x); a bottle flies ~134 px
+    public const int BossHealth = 200;
+    public const int BossHold = 30;               // guess, frames the boss holds the hero up before the throw
+    public const float BossGrabChance = 0.35f;    // guess, of his turns he grabs instead of punching
+
+    // spilled drinks
+    public const int PuddleFrames = 60 * 20;      // dries up after this long
+    public const float PuddleHalfWidth = 12f;
+    public const float PuddleHalfDepth = 5f;
+    public const int SlipCooldown = 120;          // frames before the same fighter can slip again
+    public const float EnemySlipChance = 0.02f;   // per frame an enemy walks through a puddle
+
+    // last call: waves from 1:55 to 1:59, the boss at 2:00
+    public const int Waves = 5;
+    public const int IntroFrames = 6 * 60;
+    public const int ComboFrames = 90;            // the hero's combo counter resets after this long without a hit
 }

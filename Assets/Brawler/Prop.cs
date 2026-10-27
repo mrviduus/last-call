@@ -170,6 +170,7 @@ public class Prop : MonoBehaviour
         Game.Props.Remove(this);
         bool flesh = kind is Kind.Head or Kind.Arm or Kind.Gib;
         Sfx.Play(kind is Kind.Bottle or Kind.Lamp ? "glass" : flesh ? "splat" : "wood");
+        if (kind == Kind.Bottle && !resting) Puddle.Spawn(ground); // what was in it goes on the floor
         if (!Application.isPlaying) { DestroyImmediate(gameObject); return; } // edit-mode tests
         if (flesh) Fx.Blood(ground, height + 4f, 20, 0f, 3f);
         var color = kind switch

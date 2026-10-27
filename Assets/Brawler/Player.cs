@@ -39,7 +39,7 @@ public class Player : MonoBehaviour
             lastTapFrame = Game.Frame;
         }
 
-        if (f.state == State.Dead && attackPressed) Game.RestartRequested = true;
+        if ((f.state == State.Dead || Game.Won) && attackPressed) Game.RestartRequested = true;
         Game.ShowHelp = HelpHeld();
     }
 

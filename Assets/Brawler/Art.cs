@@ -12,6 +12,9 @@ public static class Art
     public const string GruntA = "Girl";         // red outfit
     public const string GruntB = "GirlBlue";     // brown hair, blue outfit
     public const string Lasher = "GirlBlack";    // purple hair, black leather: the whip fighter
+    public const string Drunk = "PunkDrunk";     // grey hair, old brown cardigan: sways, punches his own mates
+    public const string Chucker = "GirlGreen";   // green hair, white top: throws bottles from a distance
+    public const string Boss = "PunkBoss";       // slicked black hair, burgundy suit: the man closing the pub
 
     // a look = which sheet (girl or the male punk) + new colours for its three reds, which both sheets use for
     // hair (top of the body) and clothes (below); null keeps the original. Skin and boots are never touched.
@@ -24,11 +27,15 @@ public static class Art
             ["Girl"] = (true, null, null),
             ["GirlBlue"] = (true, new[] { 0x5a3a2au, 0x7a5038u, 0x3a2418u }, new[] { 0x2a5ab0u, 0x4a8ae0u, 0x1a3470u }),
             ["GirlBlack"] = (true, new[] { 0x8a3ab0u, 0xb05ae0u, 0x5a1a7au }, new[] { 0x2a2a34u, 0x4a4a58u, 0x16161cu }),
+            ["PunkDrunk"] = (false, new[] { 0x9a9a92u, 0xc8c8bcu, 0x5a5a54u }, new[] { 0x6a4a2au, 0x8a6a40u, 0x3a2814u }),
+            ["GirlGreen"] = (true, new[] { 0x2a8a3au, 0x4ac05au, 0x145a20u }, new[] { 0xd8d8d0u, 0xf8f8f0u, 0x8a8a84u }),
+            ["PunkBoss"] = (false, new[] { 0x16161au, 0x34343cu, 0x08080au }, new[] { 0x6a1424u, 0x9a2a3au, 0x3a0812u }),
         };
     // what the HUD calls them
     public static string Name(string look) => look switch
     {
-        Guy => "MOHAWK", GuyDenim => "BIKER", GruntA => "RUBY", GruntB => "SKYE", Lasher => "WHIP", _ => look.ToUpper(),
+        Guy => "MOHAWK", GuyDenim => "BIKER", GruntA => "RUBY", GruntB => "SKYE", Lasher => "WHIP",
+        Drunk => "OLD TOM", Chucker => "BOTTLES", Boss => "THE CLOSER", _ => look.ToUpper(),
     };
     static readonly int[] SourceReds = { 0xce2038, 0xed4924, 0x8a0b41 }; // red, light red, dark red
 
@@ -299,6 +306,15 @@ public static class Art
     public static Sprite[] Dust => dust ??= new[] { Puff(2, 200), Puff(3, 150), Puff(4, 90) };
     static Sprite Puff(int r, byte a) => Paint(4 * r + 1, 2 * r + 1, (x, y) =>
         (x - 2 * r) * (x - 2 * r) / 4 + (y - r) * (y - r) <= r * r ? C(0xd8c4a4, a) : Clear, new Vector2(0.5f, 0.2f));
+
+    // spilled beer: a flat amber pool with a pale glint
+    static Sprite puddle;
+    public static Sprite Puddle => puddle != null ? puddle : puddle = Paint(25, 9, (x, y) =>
+    {
+        float dx = (x - 12) / 12.5f, dy = (y - 4) / 4.5f;
+        float d = dx * dx + dy * dy;
+        return d > 1f ? Clear : y == 2 && x > 6 && x < 11 ? C(0xffe9c0, 200) : d > 0.6f ? C(0x9a5e2e, 170) : C(0xc08040, 150);
+    }, Center);
 
     // a torn-off arm to club people with: bloody stump, forearm, fist
     static Sprite arm;

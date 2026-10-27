@@ -13,6 +13,8 @@ public class Enemy : MonoBehaviour
     float ringX;       // ...and this far off the hero (x)
     int waitSide;      // ...on this side of the hero (-1 left, 1 right; 0 = not picked yet)
     float pace;        // phase of the slow drift while waiting, so the ring never stands still
+    public bool chucker; // throws bottles from a distance instead of queueing for a melee turn
+    int hold;            // the boss: frames left holding the hero up before the throw
 
     // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
     // wakeDelay: frames a seated patron waits after the fight starts before getting up
@@ -41,6 +43,25 @@ public class Enemy : MonoBehaviour
                 return t;
         }
         return null;
+    }
+
+    // keeps its distance in the hero's lane and throws bottles along it
+    void Chuck(Fighter p)
+    {
+        Vector2 to = p.ground - f.ground;
+        int side = to.x > 0f ? 1 : -1;
+        float standX = p.ground.x - side * Feel.ChuckerRange;
+        if (standX < Game.MinX + 10f || standX > Game.MaxX - 10f) standX = p.ground.x + side * Feel.ChuckerRange; // no room: the other side
+        float wantX = standX - f.ground.x;
+        f.moveInput = new Vector2(Mathf.Abs(wantX) > 8f ? Mathf.Sign(wantX) : 0f, Mathf.Abs(to.y) > 2f ? Mathf.Sign(to.y) : 0f);
+        f.facing = side;
+        if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table);
+        if (cooldown == 0 && Mathf.Abs(to.y) < Feel.DepthBand && Mathf.Abs(to.x) > 60f && Mathf.Abs(to.x) < Feel.ChuckerRange + 25f)
+        {
+            f.PickUp(Game.SpawnProp(Prop.Kind.Bottle, f.ground)); // one more from the crate
+            f.Attack(Move.ThrowProp);
+            cooldown = Feel.ChuckerCooldown + Random.Range(0, 40);
+        }
     }
 
     static bool InTable(float x, float y)
@@ -91,7 +112,13 @@ public class Enemy : MonoBehaviour
             return;
         }
         if (cooldown > 0) cooldown--;
+        if (f.state == State.Grab && f.grabbed == p) // the boss has the hero: holds him up a moment, then throws
+        {
+            if (--hold <= 0) f.Attack(Move.Throw);
+            return;
+        }
         if (p == null || !p.Alive || !f.CanAct) { engaging = false; return; } // hurt or striking: the turn is over
+        if (chucker) { Chuck(p); return; }
         if (!engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
         if (engaging && --giveUp <= 0) { engaging = false; cooldown = 30; } // couldn't get there: let someone else try
 
@@ -110,13 +137,19 @@ public class Enemy : MonoBehaviour
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
             Mathf.Abs(wantY) > 2f ? Mathf.Sign(wantY) : 0f);
+        if (f.drunk) f.moveInput.y = Mathf.Clamp(f.moveInput.y + Mathf.Sin((Game.Frame + pace * 40f) / 25f) * Feel.DrunkSway, -1f, 1f);
         f.facing = side;
         if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table); // step around it instead of pushing into it
 
         if (engaging && cooldown == 0 && f.InReach(p, reach))
         {
             engaging = false; // striking holds the turn until the blow is over
-            f.Attack(f.whip ? Move.Whip : Move.Punch);
+            if (f.armored && p.CanBeHit && Random.value < Feel.BossGrabChance)
+            {
+                f.Grab(p);
+                hold = Feel.BossHold;
+            }
+            else f.Attack(f.whip ? Move.Whip : Move.Punch);
             cooldown = (f.whip ? Feel.WhipCooldown : Feel.EnemyAttackCooldown) + Random.Range(0, 30);
         }
     }

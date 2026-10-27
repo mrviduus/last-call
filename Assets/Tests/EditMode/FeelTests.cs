@@ -862,4 +862,77 @@ public class FeelTests
         Assert.IsTrue(e.headless);
         Assert.AreEqual(State.Headless, e.state);
     }
+
+    [Test]
+    public void ALaunchedBodyBouncesOffTheEndWall()
+    {
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(Game.MaxX - 10f, -50f), 40);
+        e.TakeHit(1, 1, true);
+        int frames = 0;
+        while (e.vel.x > 0f && frames++ < 30) Game.Simulate();
+        Assert.Less(e.vel.x, 0f, "bounced back off the wall");
+        Assert.AreEqual(40 - 1 - Feel.WallSplatDamage, e.health);
+        Assert.IsTrue(e.CanBeHit, "open for one more hit off the wall");
+    }
+
+    [Test]
+    public void TheHeavyBossFliesLessFarAndShrugsOffJabs()
+    {
+        var a = Game.Spawn(1, Art.GruntA, new Vector2(300f, -20f), 100);
+        var b = Game.Spawn(1, Art.Boss, new Vector2(300f, -90f), 100);
+        b.mass = Feel.BossMass;
+        a.TakeHit(1, 1, true);
+        b.TakeHit(1, 1, true);
+        Run(60);
+        Assert.Less(b.ground.x - 300f, (a.ground.x - 300f) * 0.75f);
+
+        var p = Game.Spawn(0, Art.Hero, new Vector2(600f, -50f), 100);
+        var boss = Game.Spawn(1, Art.Boss, new Vector2(620f, -50f), Feel.BossHealth);
+        boss.armored = true;
+        boss.facing = -1;
+        p.Attack(Move.Punch);
+        Run(20);
+        Assert.Less(boss.health, Feel.BossHealth, "the jab hurts");
+        Assert.AreNotEqual(State.Hurt, boss.state, "but doesn't stagger him");
+    }
+
+    [Test]
+    public void TheBossThrowsTheHero()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        var boss = Game.Spawn(1, Art.Boss, new Vector2(320f, -50f), Feel.BossHealth);
+        boss.Grab(p);
+        Assert.AreEqual(State.Held, p.state);
+        boss.Attack(Move.Throw);
+        Run(30);
+        Assert.Less(p.health, 100);
+        Assert.IsTrue(p.state is State.Launched or State.Down);
+    }
+
+    [Test]
+    public void TheDrunkPunchesHisOwnMate()
+    {
+        var d = Game.Spawn(1, Art.Drunk, new Vector2(200f, -70f), Feel.DrunkHealth);
+        d.drunk = true;
+        d.facing = 1;
+        var mate = Game.Spawn(1, Art.GruntA, new Vector2(224f, -70f), 30);
+        d.Attack(Move.Punch);
+        Run(30);
+        Assert.Less(mate.health, 30);
+        Assert.AreEqual(Feel.DrunkHealth, d.health, "not himself");
+    }
+
+    [Test]
+    public void ABrokenBottleLeavesAPuddleThatTripsARunner()
+    {
+        Game.SpawnProp(Prop.Kind.Bottle, new Vector2(300f, -50f)).Break();
+        Assert.IsTrue(Puddle.Under(new Vector2(300f, -50f)));
+        var p = Game.Spawn(0, Art.Hero, new Vector2(240f, -50f), 100);
+        p.StartRun(1);
+        p.moveInput = Vector2.right;
+        int frames = 0;
+        while (p.state == State.Run && frames++ < 60) Game.Simulate();
+        Assert.AreEqual(State.Launched, p.state, "slipped");
+        Assert.AreEqual(100, p.health, "a slip doesn't hurt");
+    }
 }
