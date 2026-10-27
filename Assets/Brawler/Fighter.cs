@@ -25,7 +25,7 @@ public class Fighter : MonoBehaviour
     public bool whip; // enemy type: long reach, slow telegraphed wind-up
     public float mass = 1f; // heavier flies less far from the same blow and shoves others aside
     public bool armored;    // the boss: light blows hurt but don't stagger him
-    public bool drunk;      // his punches land on whoever is in front, mates too
+    public bool drunk;      // sways as he walks (every enemy's blow lands on whoever is in front, mates too)
     public float size = 1f; // drawn this much bigger (the boss); reach stays the same
     public bool faceMove = true; // walking turns us; enemies turn to the hero themselves
     public Fighter grabbed;
@@ -730,11 +730,12 @@ public class Fighter : MonoBehaviour
         bool allRound = move == Move.Special;
         float heightBand = move is Move.JumpKick or Move.FlyingKick or Move.BicycleKick or Move.HangKick ? Feel.JumpKickHeight : Feel.HeightBand;
         foreach (var t in Game.Fighters)
-            if ((t.team != team || drunk && t != this) && t.state != State.Held && InReach(t, Reach, heightBand, allRound))
+            if ((t.team != team || team != 0 && t != this) && t.state != State.Held && InReach(t, Reach, heightBand, allRound)) // enemies hit mates in the way
             {
                 if (move == Move.Pound) t.Bury(Damage, facing);
                 else if (move == Move.Kick && team == 0 && t.state == State.Buried) t.Punt(facing, this);
                 else t.TakeHit(Damage, allRound ? (t.ground.x >= ground.x ? 1 : -1) : facing, Launches, Push);
+                if (t.team == team) t.GetComponent<Enemy>()?.HitByMate(this); // may start a fight among themselves
                 if (team == 0 && !t.Alive) { Finish(t); Gore(t); finished = true; }
                 hit = solidHit = true;
                 landed++;

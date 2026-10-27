@@ -15,6 +15,9 @@ public class Enemy : MonoBehaviour
     float pace;        // phase of the slow drift while waiting, so the ring never stands still
     public bool chucker; // throws bottles from a distance instead of queueing for a melee turn
     int hold;            // the boss: frames left holding the hero up before the throw
+    Fighter grudge;      // a mate who hit us: settling that comes first
+    int grudgeFrames;
+    SpriteRenderer anger; // a red flash over the head while holding a grudge
 
     // called right after AddComponent (also works in edit-mode tests, where Awake doesn't run);
     // wakeDelay: frames a seated patron waits after the fight starts before getting up
@@ -125,22 +128,26 @@ public class Enemy : MonoBehaviour
             f.moveInput = new Vector2(Mathf.Sign(Mathf.Sin(t / 15f)), Mathf.Sin(t / 9f));
             return;
         }
-        if (chucker) { Chuck(p); return; }
-        if (!engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
+        if (grudge != null && (--grudgeFrames <= 0 || !grudge.Alive || !grudge.Solid)) grudge = null; // settled, or they're down
+        if (chucker && grudge == null) { Chuck(p); return; }
+        if (grudge == null && !engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
         if (engaging && --giveUp <= 0) { engaging = false; cooldown = 30; } // couldn't get there: let someone else try
 
-        Vector2 to = p.ground - f.ground;
-        int side = to.x > 0f ? 1 : to.x < 0f ? -1 : f.facing; // hero exactly on top: keep facing
+        // a grudge goes straight at the mate who hit us, no waiting for a turn
+        var target = grudge != null ? grudge : p;
+        bool going = engaging || grudge != null;
+        Vector2 to = target.ground - f.ground;
+        int side = to.x > 0f ? 1 : to.x < 0f ? -1 : f.facing; // target exactly on top: keep facing
         // our turn: into the hero's lane at striking distance (whips stay at whip range);
         // otherwise wait on the ring, off the lane, drifting a little
         float reach = f.whip ? Feel.WhipReach : Feel.PunchReach;
         if (waitSide == 0 || (Game.Frame + (int)(pace * 40f)) % 60 == 0) waitSide = PickSide(-side);
-        float wantX = engaging ? to.x - side * reach * (f.whip ? 0.8f : 0.7f)
+        float wantX = going ? to.x - side * reach * (f.whip ? 0.8f : 0.7f)
             : to.x + waitSide * (ringX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
         float laneY = p.ground.y + laneOffset;
         if (laneY > Game.MaxDepth || laneY < Game.MinDepth || InTable(f.ground.x + wantX, laneY))
             laneY = p.ground.y - laneOffset; // the floor ends there, or a table stands there: other side
-        float wantY = engaging ? to.y : laneY - f.ground.y;
+        float wantY = going ? to.y : laneY - f.ground.y;
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
             Mathf.Abs(wantY) > 2f ? Mathf.Sign(wantY) : 0f);
@@ -148,10 +155,10 @@ public class Enemy : MonoBehaviour
         f.facing = side;
         if (TableAhead() is Prop table) f.moveInput.y = AroundSide(table); // step around it instead of pushing into it
 
-        if (engaging && cooldown == 0 && f.InReach(p, reach))
+        if (going && cooldown == 0 && f.InReach(target, reach))
         {
             engaging = false; // striking holds the turn until the blow is over
-            if (f.armored && p.CanBeHit && Random.value < Feel.BossGrabChance)
+            if (f.armored && target == p && p.CanBeHit && Random.value < Feel.BossGrabChance)
             {
                 f.Grab(p);
                 hold = Feel.BossHold;
@@ -159,5 +166,29 @@ public class Enemy : MonoBehaviour
             else f.Attack(f.whip ? Move.Whip : Move.Punch);
             cooldown = (f.whip ? Feel.WhipCooldown : Feel.EnemyAttackCooldown) + Random.Range(0, 30);
         }
+    }
+
+    // hit by one of our own: sometimes we take it personally (the boss never does)
+    public void HitByMate(Fighter mate)
+    {
+        if (f.armored || mate == f || Random.value > Feel.GrudgeChance) return;
+        grudge = mate;
+        grudgeFrames = Feel.GrudgeFrames;
+        engaging = false;
+        if (anger == null)
+        {
+            anger = new GameObject("Anger").AddComponent<SpriteRenderer>();
+            anger.transform.SetParent(transform, false);
+            anger.sprite = Art.Spark[1];
+            anger.color = new Color(1f, 0.25f, 0.2f);
+        }
+    }
+
+    void LateUpdate()
+    {
+        if (anger == null) return;
+        anger.enabled = grudge != null && Game.Frame / 8 % 2 == 0; // blinks over the head
+        anger.transform.localPosition = new Vector3(0f, f.height + 70f, 0f);
+        anger.sortingOrder = 29000;
     }
 }

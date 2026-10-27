@@ -1067,4 +1067,25 @@ public class FeelTests
         Run(Feel.FlyingKickStartup + Feel.FlyingKickActive);
         Assert.AreEqual(hp - Feel.FlyingKickDamage, e.health, "kicked once on the way over, not every frame");
     }
+
+    [Test]
+    public void AnEnemyHitByAMateMayTurnOnThem()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(800f, -50f), 1000);
+        Game.Hero = p;
+        var a = Game.Spawn(1, Art.Guy, new Vector2(300f, -50f), 100);
+        var b = Game.Spawn(1, Art.GruntA, new Vector2(330f, -50f), 100);
+        a.facing = 1;
+        a.Attack(Move.Punch);
+        Run(20);
+        Assert.Less(b.health, 100, "an enemy's punch lands on a mate in the way");
+
+        var be = b.gameObject.AddComponent<Enemy>();
+        be.Setup();
+        Random.InitState(1);
+        for (int i = 0; i < 5; i++) be.HitByMate(a); // at 60% one of five sticks
+        int hp = a.health;
+        Run(300);
+        Assert.Less(a.health, hp, "she went after him, not the hero");
+    }
 }

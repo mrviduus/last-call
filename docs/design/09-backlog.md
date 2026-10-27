@@ -16,7 +16,6 @@
 | Enemy behaviour | One holds Brick from behind while a mate punches; mash to break free |
 | Enemy behaviour | Enemies flee at low health and come back |
 | Enemy behaviour | Taunts while Brick is down |
-| Enemy behaviour | Infighting: a drunk's stray punch starts a fight between two enemies |
 | Fun | A pint on the counter heals, but the controls go drunk for 5 s |
 | Fun | Kicking the jukebox makes everyone dance for 2 s: free hits |
 | Fun | Darts from the dartboard: a 3-shot ranged weapon |

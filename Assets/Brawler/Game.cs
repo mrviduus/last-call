@@ -227,7 +227,7 @@ public class Game : MonoBehaviour
         // a couple chatting at the counter, up on two neighbouring stools
         Seat(Art.GuyDenim, stools[3], 1, Feel.GuyHealth, StoolSeat);
         Seat(Art.GruntB, stools[4], -1, Feel.GirlHealth, StoolSeat);
-        foreach (float x in new[] { 425f, 612f, 795f })
+        foreach (float x in new[] { 350f, 425f, 520f, 612f, 700f, 795f, 870f })
             SpawnProp(Prop.Kind.Bottle, new Vector2(x, CounterEdge), CounterTop);
 
         // pool tables, each with its balls and a cue on the felt (towards the front rail, where you can reach them)
@@ -255,6 +255,16 @@ public class Game : MonoBehaviour
                 SpawnProp(Prop.Kind.Bottle, new Vector2(x - 4f + i * 9f, depth), TableTop);
             Seat(t % 2 == 0 ? Art.Guy : Art.GuyDenim, left, 1, Feel.GuyHealth);
             Seat(t % 2 == 0 ? Art.GruntA : Art.GruntB, right, -1, Feel.GirlHealth);
+        }
+
+        // empty tables, their drinks left behind: more furniture and more bottles to throw
+        foreach (var (x, depth, bottles) in new (float, float, int)[] { (290f, -60f, 2), (520f, -45f, 3), (730f, -97f, 2), (870f, -78f, 3) })
+        {
+            SpawnProp(Prop.Kind.Table, new Vector2(x, depth));
+            SpawnProp(Prop.Kind.Chair, new Vector2(x - 28f, depth));
+            SpawnProp(Prop.Kind.Chair, new Vector2(x + 28f, depth), faceLeft: true);
+            for (int i = 0; i < bottles; i++)
+                SpawnProp(Prop.Kind.Bottle, new Vector2(x - 8f + i * 8f, depth), TableTop);
         }
     }
 

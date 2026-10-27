@@ -13,7 +13,7 @@ public class SmokeTest
     {
         if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
         yield return new WaitForFixedUpdate();
-        Assert.AreEqual(36, Game.Props.Count, "stools, tables, chairs, bottles, pool tables with balls and cues");
+        Assert.AreEqual(62, Game.Props.Count, "stools, tables, chairs, bottles, pool tables with balls and cues");
         Assert.AreEqual(8, Game.Fighters.FindAll(f => f.state == State.Sit).Count, "a couple at each round table and one at the counter");
 
         for (int i = 0; i < 120; i++) yield return new WaitForFixedUpdate();

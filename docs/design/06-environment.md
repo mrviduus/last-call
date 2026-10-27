@@ -11,10 +11,14 @@ The pub is three screens wide (1152 × 240 px). The walkable floor is the lower 
 | ~60 | Entrance door: enemies come in here |
 | 170 | Round table, 2 chairs, a couple sitting |
 | 250, 900 | Pillars in front of everything (fade when someone stands behind them) |
-| 300–900 | The bar counter: 6 stools, bottles on top, a couple on two stools |
+| 290 | Empty round table, 2 chairs, 2 bottles |
+| 300–900 | The bar counter: 6 stools, 7 bottles on top, a couple on two stools |
 | 400 | Round table, 2 chairs, a couple |
+| 520 | Empty round table, 2 chairs, 3 bottles |
 | 620 | Pool table with balls, cue and a pendant lamp |
+| 730 | Empty round table at the front, 2 chairs, 2 bottles |
 | 790 | Round table, 2 chairs, a couple |
+| 870 | Empty round table, 2 chairs, 3 bottles |
 | 1010 | Pool table with balls, cue and a pendant lamp |
 | ~1112 | Stage end: enemies come in here too |
 

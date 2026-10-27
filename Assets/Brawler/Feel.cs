@@ -209,6 +209,8 @@ public static class Feel
     public const int BossHealth = 200;
     public const int BossHold = 30;               // guess, frames the boss holds the hero up before the throw
     public const float BossGrabChance = 0.35f;    // guess, of his turns he grabs instead of punching
+    public const float GrudgeChance = 0.6f;       // guess, an enemy hit by a mate turns on them
+    public const int GrudgeFrames = 5 * 60;       // guess, how long the grudge lasts before they remember Brick
 
     // spilled drinks
     public const int PuddleFrames = 60 * 20;      // dries up after this long
