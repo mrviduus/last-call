@@ -260,7 +260,7 @@ public static class Art
 
     static Sprite shadow, whip;
 
-    // ORBIT 9 bar, drawn by Tools/make_bar_art.py: separate layers and props (redraw the PNGs freely)
+    // OLD LAMP pub, drawn by Tools/make_bar_art.py: separate layers and props (redraw the PNGs freely)
     static Sprite barView, barBack, barCounter, barFloor, barPillar, chair, stool, bottle, table, tableFlipped, shard;
     static Sprite poolTable, poolLamp, lampShade, cue, ball;
     static readonly Vector2 Feet = new Vector2(0.5f, 0f);

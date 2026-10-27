@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Boots itself in any scene: 60 Hz fixed loop, 384x240 pixel screen, the ORBIT 9 bar level, player, enemy waves.
+// Boots itself in any scene: 60 Hz fixed loop, 384x240 pixel screen, the OLD LAMP pub level, player, enemy waves.
 public class Game : MonoBehaviour
 {
     public const int ScreenW = 384, ScreenH = 240;
@@ -21,6 +21,7 @@ public class Game : MonoBehaviour
     public static bool ShowHelp; // H held
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames, flashFrames, slowMoFrames;
+    static readonly List<Prop> stepping = new List<Prop>();
     public static bool Frozen => freezeFrames > 0;
 
     Camera cam;
@@ -42,6 +43,7 @@ public class Game : MonoBehaviour
         Fighters.Clear();
         Props.Clear();
         Lamps.Clear();
+        Prop.parts.Clear();
         Hero = LastHit = null;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = slowMoFrames = 0;
         Time.timeScale = 1f;
@@ -76,7 +78,10 @@ public class Game : MonoBehaviour
         SimFrame++;
         foreach (var l in Lamps) l.Step(); // before the fighters, so whoever hangs on one moves with it this frame
         for (int i = 0; i < Fighters.Count; i++) Fighters[i].Step();
-        for (int i = Props.Count - 1; i >= 0; i--) Props[i].Step(); // backwards: a prop may break and remove itself
+        // a snapshot: a prop may break and remove itself (and the table it hit), each steps once
+        stepping.Clear();
+        stepping.AddRange(Props);
+        foreach (var p in stepping) if (Props.Contains(p)) p.Step();
         Separate();
         BlockByTables();
         if (Hero != null) Hero.ResolveStrike(); // the hero wins ties
@@ -95,8 +100,8 @@ public class Game : MonoBehaviour
                 float overlap = Feel.BodyGap - Mathf.Abs(dx);
                 if (overlap <= 0f) continue;
                 float push = (dx != 0f ? Mathf.Sign(dx) : a.facing) * overlap / 2f;
-                a.ground.x -= push;
-                b.ground.x += push;
+                a.ground.x = Mathf.Clamp(a.ground.x - push, MinX, MaxX);
+                b.ground.x = Mathf.Clamp(b.ground.x + push, MinX, MaxX);
             }
     }
 
@@ -113,8 +118,9 @@ public class Game : MonoBehaviour
                 float dx = f.ground.x - t.ground.x, dy = f.ground.y - t.ground.y;
                 float px = t.HalfWidth - Mathf.Abs(dx), py = t.HalfDepth - Mathf.Abs(dy);
                 if (px <= 0f || py <= 0f) continue;
-                if (px < py) f.ground.x += dx >= 0f ? px : -px;
-                else f.ground.y += dy >= 0f ? py : -py;
+                float x = f.ground.x + (dx >= 0f ? px : -px);
+                if (px < py && x >= MinX && x <= MaxX) f.ground.x = x;
+                else f.ground.y = Mathf.Clamp(f.ground.y + (dy >= 0f ? py : -py), MinDepth, MaxDepth); // cornered by the wall: out sideways
             }
         }
     }
@@ -162,7 +168,7 @@ public class Game : MonoBehaviour
         Restart();
     }
 
-    // ORBIT 9: layers from Resources/Art/Bar, placed by their pixel rows (screen top = y 120, floor from row 112)
+    // OLD LAMP: layers from Resources/Art/Bar, placed by their pixel rows (screen top = y 120, floor from row 112)
     void BuildBar()
     {
         Layer(Art.BarView, new Vector2(LevelW / 2f, 120f - 2f - 24f), -20004, 0.5f);  // the street seen through the windows

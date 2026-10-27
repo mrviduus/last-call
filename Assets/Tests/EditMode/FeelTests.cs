@@ -558,14 +558,28 @@ public class FeelTests
         Run(10);
         Assert.Greater(Mathf.Abs(lamp.angle) + Mathf.Abs(lamp.angVel), 0f, "still swinging");
         Assert.Greater(swing, 0f);
+        Assert.AreNotEqual(State.Hang, p.state, "let go means off, not caught again by the same lamp");
 
         var lamp2 = Lamp.Spawn(300f, -70f, Feel.LampBottom);
         var q = Game.Spawn(0, Art.Hero, new Vector2(300f, -82f), 100);
+        var bottle = Game.SpawnProp(Prop.Kind.Bottle, q.ground);
+        q.PickUp(bottle);
         q.Hang(lamp2);
         q.RipLamp();
         Assert.IsFalse(Game.Lamps.Contains(lamp2), "torn down");
         Assert.IsNotNull(q.held);
         Assert.AreEqual(Prop.Kind.Lamp, q.held.kind);
+        Assert.IsNull(bottle.holder, "the bottle carried up is dropped, not stuck to the hero");
+    }
+
+    [Test]
+    public void FighterCorneredByATableStaysInTheBar()
+    {
+        var table = Game.SpawnProp(Prop.Kind.Table, new Vector2(Game.MinX + 4f, -60f));
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(Game.MinX, -60f), 40);
+        Run(2);
+        Assert.GreaterOrEqual(e.ground.x, Game.MinX);
+        Assert.IsTrue(Mathf.Abs(e.ground.y - table.ground.y) >= Feel.TableHalfDepth - 0.01f, "pushed out sideways");
     }
 
     [Test]

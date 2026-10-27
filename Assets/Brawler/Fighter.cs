@@ -211,7 +211,7 @@ public class Fighter : MonoBehaviour
         vel = new Vector2(Mathf.Clamp(hangingOn.angVel * Lamp.Length, -5f, 5f), 0f);
         hangingOn.hanger = null;
         hangingOn = null;
-        heightVel = 1f;
+        heightVel = 0f; // falling, not rising: a rising jump would catch the same lamp again next frame
         airKick = false;
         Enter(State.Jump);
     }
@@ -226,6 +226,7 @@ public class Fighter : MonoBehaviour
         lamp.Rip();
         Sfx.Play("glass", 0.5f);
         var shade = Game.SpawnProp(Prop.Kind.Lamp, ground);
+        held?.Drop(); // whatever we carried up falls
         held = shade;
         shade.holder = this;
     }

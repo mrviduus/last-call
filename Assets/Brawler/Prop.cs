@@ -60,7 +60,7 @@ public class Prop : MonoBehaviour
     public void Tint(Color c) => sr.color = c; // pool balls come in colours
 
     const int MaxParts = 12;
-    static readonly Queue<Prop> parts = new Queue<Prop>();
+    internal static readonly Queue<Prop> parts = new Queue<Prop>();
 
     // a body part torn off and sent flying (thrower: a kicked head hurts whoever it hits); past MaxParts the oldest goes
     public static Prop Fling(Kind kind, Sprite sprite, Vector2 ground, float height, Vector2 vel, float up, bool faceLeft, Fighter thrower = null)

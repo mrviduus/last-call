@@ -43,6 +43,14 @@ public class Enemy : MonoBehaviour
         return null;
     }
 
+    static bool InTable(float x, float y)
+    {
+        foreach (var t in Game.Props)
+            if (t.Blocks && Mathf.Abs(t.ground.x - x) < t.HalfWidth + 4f && Mathf.Abs(t.ground.y - y) < t.HalfDepth + 4f)
+                return true;
+        return false;
+    }
+
     // go around on the side we're already leaning to, unless the floor ends there
     float AroundSide(Prop table)
     {
@@ -96,7 +104,8 @@ public class Enemy : MonoBehaviour
         float wantX = engaging ? to.x - side * reach * (f.whip ? 0.8f : 0.7f)
             : to.x + waitSide * (ringX + Mathf.Sin((Game.Frame + pace * 40f) / 40f) * 8f);
         float laneY = p.ground.y + laneOffset;
-        if (laneY > Game.MaxDepth || laneY < Game.MinDepth) laneY = p.ground.y - laneOffset; // the floor ends there: other side
+        if (laneY > Game.MaxDepth || laneY < Game.MinDepth || InTable(f.ground.x + wantX, laneY))
+            laneY = p.ground.y - laneOffset; // the floor ends there, or a table stands there: other side
         float wantY = engaging ? to.y : laneY - f.ground.y;
         f.moveInput = new Vector2(
             Mathf.Abs(wantX) > 2f ? Mathf.Sign(wantX) : 0f,
