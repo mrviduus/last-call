@@ -19,8 +19,10 @@ public class Game : MonoBehaviour
     public static bool RestartRequested;
     public static bool Brawl; // the hero has thrown the first punch: patrons get up, waves come in
     public static bool ShowHelp; // H held
-    public static int Wave;      // 1..Feel.Waves, then the boss wave; the HUD clock reads it
-    public static bool Won;      // the closer is down
+    public static int Wave;      // waves so far; later ones bring the drunk and the bottle thrower
+    public static int Clock;     // ticks since the first punch; at Feel.LastCallFrames it is midnight
+    public static bool Midnight; // the bell has rung: the closer is coming, no more waves after his
+    public static bool Won;      // midnight, and everyone is down
     public static int Score, HeroCombo; // combo: the hero's hits in a row, until he's hit or stops hitting
     static int comboTimer;
     public static RenderTexture PixelScreen;
@@ -50,8 +52,8 @@ public class Game : MonoBehaviour
         Prop.parts.Clear();
         Puddle.Clear();
         Hero = LastHit = null;
-        Wave = Score = HeroCombo = comboTimer = 0;
-        Won = false;
+        Wave = Clock = Score = HeroCombo = comboTimer = 0;
+        Midnight = Won = false;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = slowMoFrames = 0;
         Time.timeScale = 1f;
         RestartRequested = false;
@@ -280,13 +282,20 @@ public class Game : MonoBehaviour
     static float CameraX(float target) => Mathf.Clamp(target, ScreenW / 2f, LevelW - ScreenW / 2f);
 
     // a wave walks in one at a time (SpawnGap apart), so nobody pops in on top of anyone
-    // 1:55 to 1:59 a wave a minute; at 2:00 the bell rings and the closer comes in with two of his own; then it's over
+    // until midnight a new wave comes in whenever the bar is clear
     void SpawnWave()
     {
         Wave++;
-        if (Wave > Feel.Waves + 1) { Won = true; return; }
-        if (Wave == Feel.Waves + 1) Sfx.Play("bell");
-        toSpawn = Wave > Feel.Waves ? 3 : Mathf.Min(1 + Wave, 5);
+        toSpawn = Mathf.Min(1 + Wave, 5);
+        spawnDelay = 0;
+    }
+
+    // midnight: the bell rings and the closer walks in with two of his own, whoever is still standing
+    void CallMidnight()
+    {
+        Midnight = true;
+        Sfx.Play("bell");
+        toSpawn = 3;
         spawnDelay = 0;
     }
 
@@ -299,7 +308,7 @@ public class Game : MonoBehaviour
 
         // guys and girls take turns; every third one is a whip fighter; from wave 2 the last one in is a drunk,
         // from wave 3 a bottle thrower comes too; the boss leads the last wave
-        bool boss = Wave > Feel.Waves && toSpawn == 3;
+        bool boss = Midnight && toSpawn == 3;
         bool drunk = !boss && Wave >= 2 && toSpawn == 1, chucker = !boss && Wave >= 3 && toSpawn == 4;
         bool lasher = !boss && !drunk && !chucker && toSpawn % 3 == 0, guy = !lasher && toSpawn % 2 == 0;
         var e = boss ? Spawn(1, Art.Boss, pos, Feel.BossHealth)
@@ -330,7 +339,12 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
-        if (Brawl && !Won && Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0)) SpawnWave();
+        if (Brawl && !Midnight && Hero.Alive && ++Clock >= Feel.LastCallFrames) CallMidnight();
+        if (Brawl && !Won && Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0))
+        {
+            if (Midnight) Won = true;
+            else SpawnWave();
+        }
         if (toSpawn > 0 && --spawnDelay <= 0)
         {
             SpawnNext();
@@ -389,19 +403,19 @@ public class Game : MonoBehaviour
             Text(view.x + 200 * scale, view.y + 6 * scale, scale, Art.Name(LastHit.look));
             Bar(view.x + 270 * scale, view.y + 8 * scale, 100 * scale * LastHit.maxHealth / Feel.HeroHealth, 6 * scale, LastHit);
         }
-        // the clock over the bar: 1:55 when the fight starts, a minute a wave, 2:00 is last call
-        int minute = 55 + Mathf.Clamp(Wave - 1, 0, Feel.Waves);
-        Text(view.x + 8 * scale, view.y + 22 * scale, scale, (minute == 60 ? "2:00" : "1:" + minute) + " AM   SCORE " + Score
+        // the clock over the bar: 11:59:00 at the first punch, midnight is last call
+        Text(view.x + 8 * scale, view.y + 22 * scale, scale, (Midnight ? "12:00 AM" : "11:59:" + (Clock / 60).ToString("00") + " PM")
+            + "   SCORE " + Score
             + (HeroCombo >= 2 ? "   " + HeroCombo + " HITS" : ""));
         if (Frame < Feel.IntroFrames && !Won)
         {
-            Text(view.x + 96 * scale, view.y + 70 * scale, scale, "1:55 AM. THE OLD LAMP.");
+            Text(view.x + 96 * scale, view.y + 70 * scale, scale, "11:59 PM. THE OLD LAMP.");
             Text(view.x + 96 * scale, view.y + 84 * scale, scale, "BRICK CAME FOR ONE LAST PINT.");
-            Text(view.x + 96 * scale, view.y + 98 * scale, scale, "THE GANG IS CLOSING IT TONIGHT.");
+            Text(view.x + 96 * scale, view.y + 98 * scale, scale, "AT MIDNIGHT THE GANG CLOSES IT.");
         }
         if (Won)
         {
-            Text(view.x + 120 * scale, view.y + 80 * scale, scale, "2:00 AM. LAST CALL.");
+            Text(view.x + 120 * scale, view.y + 80 * scale, scale, "MIDNIGHT. LAST CALL.");
             Text(view.x + 120 * scale, view.y + 94 * scale, scale, "THE CLOSER IS DOWN. YOU STAYED.");
             Text(view.x + 120 * scale, view.y + 108 * scale, scale, "SCORE " + Score + " - PRESS J");
         }

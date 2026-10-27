@@ -210,8 +210,8 @@ public static class Feel
     public const int SlipCooldown = 120;          // frames before the same fighter can slip again
     public const float EnemySlipChance = 0.02f;   // per frame an enemy walks through a puddle
 
-    // last call: waves from 1:55 to 1:59, the boss at 2:00
-    public const int Waves = 5;
+    // last call: from the first punch the clock runs 11:59:00 to midnight in real seconds, then the boss
+    public const int LastCallFrames = 60 * 60;
     public const int IntroFrames = 6 * 60;
     public const int ComboFrames = 90;            // the hero's combo counter resets after this long without a hit
 }

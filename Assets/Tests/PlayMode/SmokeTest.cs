@@ -27,7 +27,7 @@ public class SmokeTest
         Shot("smoke");
     }
 
-    // five waves from 1:55 to 1:59, the boss at 2:00, then the win card; every enemy is knocked out as it arrives
+    // waves for a minute from the first punch, the boss at midnight, then the win card; every enemy is knocked out as it arrives
     [UnityTest]
     public IEnumerator LastCallEndsWithTheBossAndAWin()
     {
@@ -44,7 +44,7 @@ public class SmokeTest
                 if (e.team != 0 && e.Alive) { sawBoss |= e.armored; e.TakeHit(9999, 1, true); }
             yield return new WaitForFixedUpdate();
         }
-        Assert.IsTrue(sawBoss, "the closer came at 2:00");
+        Assert.IsTrue(sawBoss, "the closer came at midnight");
         Assert.IsTrue(Game.Won);
         Assert.Greater(Game.Score, 0);
         Shot("win");
