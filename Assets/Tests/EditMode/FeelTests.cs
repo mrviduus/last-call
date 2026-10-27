@@ -981,4 +981,21 @@ public class FeelTests
         Assert.AreEqual(100 - Feel.HairSlamDamage, e.health);
         Assert.Less(Mathf.Abs(e.ground.x - p.ground.x), Feel.ElbowDropReach, "right in front: elbow-drop range");
     }
+
+    [Test]
+    public void TheDirtyMoveNeedsNoGrabFirst()
+    {
+        var p = Game.Spawn(0, Art.Hero, new Vector2(300f, -50f), 100);
+        var guy = Game.Spawn(1, Art.Guy, new Vector2(330f, -50f), 40);
+        Assert.IsTrue(p.DirtyMove(), "an idle guy right in front");
+        Run(Feel.KneeStartup + 2);
+        Assert.AreEqual(40 - Feel.LowBlowDamage, guy.health);
+        Assert.AreEqual(State.Hurt, guy.state);
+
+        var boss = Game.Spawn(1, Art.Boss, new Vector2(600f, -50f), Feel.BossHealth);
+        boss.armored = true;
+        var q = Game.Spawn(0, Art.Hero, new Vector2(570f, -50f), 100);
+        Assert.IsFalse(q.DirtyMove(), "not on the boss");
+        Assert.IsFalse(Game.Spawn(0, Art.Hero, new Vector2(900f, -50f), 100).DirtyMove(), "nobody in reach");
+    }
 }

@@ -12,6 +12,7 @@
 | L | Kick |
 | K or Space | Jump |
 | J + K together | **Special**: a spinning kick all round. It costs health, which you win back by landing hits |
+| J + L together | **Dirty move** on whoever is right in front: a knee to the groin for a guy, a hair slam for a girl. No grab needed. Not on THE CLOSER |
 | S + L | Hammer stomp: drives the enemy into the floor |
 | H (hold) | Show the controls |
 
@@ -31,7 +32,6 @@
 | In a grab | J | Headbutt; the 3rd one throws |
 | In a grab | K | Throw |
 | In a grab | L | Rip an arm off (it becomes a club) |
-| In a grab | S + J | **Dirty move**: a low blow on a guy, a hair slam on a girl |
 | Jumping into a pool lamp | (jump) | Hang on it |
 | Hanging from a lamp | A / D | Swing |
 | Hanging from a lamp | J / L | Kick |
@@ -41,7 +41,7 @@
 ## Feel
 
 - **Input buffer:** a press counts for 8 frames, so pressing slightly early still works.
-- **Special:** J and K may be up to 3 frames apart and still count as together.
+- **Special and dirty move:** J+K and J+L may be up to 3 frames apart and still count as together.
 
 ## To fill
 - [ ] Gamepad layout

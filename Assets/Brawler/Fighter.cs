@@ -143,6 +143,26 @@ public class Fighter : MonoBehaviour
         Sfx.Play("whoosh", team == 0 ? 0.5f : 0.3f);
     }
 
+    // J+L: grabs whoever is right in front (or the one already held) and does the dirty one:
+    // a low blow on a guy, a hair slam on a girl. Not the boss: he doesn't let anyone that close.
+    public bool DirtyMove()
+    {
+        Fighter target = state == State.Grab && grabbed != null && grabbed.state == State.Held ? grabbed : null;
+        bool starting = CanAct || state == State.Attack && stateFrames <= Feel.SpecialLeniency; // J or L just pressed: cancel it
+        if (target == null && starting)
+            foreach (var t in Game.Fighters)
+                if (t.team != team && !t.armored && t.state != State.Sit && t.state != State.Held && InReach(t, Feel.PunchReach))
+                {
+                    target = t;
+                    break;
+                }
+        if (target == null) return false;
+        strikePending = false; // the cancelled jab or kick never lands
+        if (state != State.Grab) Grab(target);
+        Attack(target.Girl ? Move.HairSlam : Move.LowBlow);
+        return true;
+    }
+
     // desperation move (J+K): a spinning kick all round that can't be interrupted, even from hitstun;
     // costs health, which comes back by landing hits before getting hit again
     public bool Special()

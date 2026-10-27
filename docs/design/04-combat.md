@@ -26,8 +26,8 @@ Two fighters can hit each other only when they are on the same **lane**: their d
 | Headbutt (in a grab) | 8 | 4 | — | Keeps the hold; the 3rd one throws |
 | Throw (in a grab) | 18 | 10 | — | Thrown behind Brick |
 | Arm rip (in a grab) | 20 | 8 | — | Knocks flying; Brick gets the arm as a club |
-| Low blow (grab, S + J, guy) | 10 | 4 | — | He stays doubled over for 90 frames, open to anything |
-| Hair slam (grab, S + J, girl) | 22 | 18 | — | Lifted by the hair and slammed face-first, right in front |
+| Low blow (J + L, guy) | 10 | 4 | 36 | Grabs him and knees him; he stays doubled over for 90 frames, open to anything |
+| Hair slam (J + L, girl) | 22 | 18 | 36 | Grabs her by the hair, lifts her and slams her face-first right in front |
 | Special (J + K) | 15 | 4 | 40 both sides | Untouchable for 20 frames; works even while being hit; costs 8 health |
 | Lamp kick | 14 | 4 | 46 | Knocks flying |
 
@@ -85,5 +85,5 @@ Every hit draws blood, and harder hits draw more. Blood stays on the floor as st
 
 ## To fill
 - [ ] A dive elbow drop that reaches enemies further away? (see [Backlog](09-backlog.md))
-- [ ] Should dirty moves work on THE CLOSER? He can't be grabbed now.
+- [ ] Should dirty moves work on THE CLOSER? J+L skips him now.
 - [ ] Hand-drawn frames for the dirty moves (see [Art direction](08-art-direction.md))
