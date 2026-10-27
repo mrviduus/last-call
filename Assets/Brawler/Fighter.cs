@@ -559,7 +559,7 @@ public class Fighter : MonoBehaviour
                 if (stateFrames >= Feel.DownFrames) Enter(Alive ? State.GetUp : State.Dead);
                 break;
             case State.GetUp:
-                if (stateFrames >= Feel.GetUpFrames) { Enter(State.Idle); invulnFrames = Feel.GetUpInvuln; }
+                if (stateFrames >= Feel.GetUpFrames) { Enter(State.Idle); if (team == 0) invulnFrames = Feel.GetUpInvuln; }
                 break;
         }
 

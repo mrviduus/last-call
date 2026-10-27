@@ -79,9 +79,9 @@ public static class Feel
     public const float LaunchUp = 5f;             // guess
     public const float BounceUp = 2.5f;             // guess
     public const float BodyHitSpeed = 2.5f;         // guess
-    public const int DownFrames = 40;             // guess
+    public const int DownFrames = 70;             // guess, long enough to walk up and elbow-drop them
     public const int GetUpFrames = 20;            // guess
-    public const int GetUpInvuln = 30;            // guess
+    public const int GetUpInvuln = 30;            // guess, the hero only: enemies are fair game the moment they stand
     public const int HeroHurtInvuln = 30;         // guess, hero can't be hit again right away (covers Hitstun)
     public const int BreakFreeInvuln = 20;        // guess, a released enemy can't be re-grabbed or hit at once
 

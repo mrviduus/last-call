@@ -935,4 +935,16 @@ public class FeelTests
         Assert.AreEqual(State.Launched, p.state, "slipped");
         Assert.AreEqual(100, p.health, "a slip doesn't hurt");
     }
+
+    [Test]
+    public void AnEnemyIsOpenTheMomentItStandsUp()
+    {
+        var e = Game.Spawn(1, Art.GruntA, new Vector2(300f, -50f), 100);
+        e.TakeHit(1, 1, true);
+        while (e.state != State.Down) Game.Simulate();
+        Run(Feel.DownFrames - 1);
+        Assert.AreEqual(State.Down, e.state, "still lying there");
+        while (e.state != State.Idle) Game.Simulate();
+        Assert.IsTrue(e.CanBeHit, "no blinking invulnerability for enemies");
+    }
 }
