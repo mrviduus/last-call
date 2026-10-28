@@ -453,7 +453,7 @@ public class FeelTests
         int skin = 0, changed = 0;
         for (int i = 0; i < pa.Length; i++)
         {
-            bool isSkin = pa[i].r == 0xff && pa[i].g == 0xb1 && pa[i].b == 0x64;
+            bool isSkin = pa[i].a > 0 && pa[i].r > pa[i].g && pa[i].g > pa[i].b && pa[i].r - pa[i].b > 60; // warm
             if (isSkin) { skin++; Assert.AreEqual(pa[i], pb[i]); }
             else if (!pa[i].Equals(pb[i])) changed++;
         }

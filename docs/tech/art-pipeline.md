@@ -12,7 +12,8 @@ All runtime art is loaded by path from `Assets/Resources/Art/`:
 | `Punk/`, `Girl/` | Fighter sheets (CC0 "Streets of Fight"): `idle`, `walk`, `punch`, `hurt`, `sit`, and more for the girl |
 | `Toad/` | Brick (the toad): `idle`, `walk`, `punch`, `hurt`, `kick`, `elbow`, `sit` |
 | `Brick/` | The old punk Brick's `kick`, `elbow` (unused since the toad) |
-| `Whip/` | `lash`: WHIP's whip strike, 15 frames **104 px** wide (the whip reaches past the body), from Lekha's AnimateDiff clip |
+| `Latex/` | Every girl: `idle`, `walk`, `jab`, `punch`, `kick`, `jump`, `jump_kick`, `dive_kick`, `hurt`, `sit` (72 px tall frames, black latex) |
+| `Whip/` | `lash`: WHIP's whip strike, 15 frames 96x79, from Lekha's AnimateDiff clip |
 | `shadow.png` | The shadow under every body |
 
 ## Import settings
@@ -39,6 +40,8 @@ Don't change these per file.
 - new colours for the three source reds (`0xce2038`, `0xed4924`, `0x8a0b41`).
 
 Hair and clothes share those reds, so they are split by height: the top rows of each frame's body are hair.
+
+The girls are tinted instead: their look's `clothes[0]` colours the black latex and hair (`Art.Tint`); skin, outlines and white shine stay.
 
 **Adding a look:**
 1. Add an entry to `Art.Looks`.
@@ -68,6 +71,7 @@ All scripts live in `Tools/` and write into `Assets/Resources/`. **The output PN
 | `make_brick_frames.py` | `Art/Brick/*.png`, `Art/Punk/sit.png`, `Art/Girl/sit.png` | Pillow |
 | `make_sfx.py` | `Sfx/*.wav` | Standard library only |
 | `make_toad_frames.py` | `Art/Toad/*.png` from `Tools/src/toad_idle.mp4` | Pillow, ffmpeg |
+| `make_girl_frames.py` | `Art/Latex/*.png` from `Tools/src/whip_lash.mp4` | Pillow, ffmpeg |
 | `make_whip_frames.sh` | `Art/Whip/lash.png` from `Tools/src/whip_lash.mp4` | ffmpeg |
 
 Pillow isn't installed system-wide, so run the art scripts in a virtual environment:

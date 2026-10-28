@@ -19,7 +19,7 @@
 | Brick | The toad in a spiked leather jacket, by Lekha. Idle is his animation; walk, punch, kick, hurt, fall, elbow drop are cut-out poses of it (rough, to be replaced) |
 | Sitting poses | Painted over the placeholder by a script |
 | Lying down, headless, torn in half, buried, doubled over | Cut and bent from existing frames in code |
-| WHIP's whip strike | Animated by Lekha (AnimateDiff); the rest of her moves are still the placeholder |
+| The girls | Lekha's girl in latex, one colour per enemy (RUBY red, SKYE blue, WHIP black, BOTTLES green). The whip strike is his animation; the other moves are cut-out poses of one frame (rough) |
 | Sparks, dust, blood, beer puddles, flames, the torn arm | Drawn in code |
 
 ## Needs drawing

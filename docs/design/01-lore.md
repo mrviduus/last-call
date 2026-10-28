@@ -63,10 +63,10 @@ Open:
 | **BRICK** | Hero, a regular who won't leave | A big toad in a spiked leather jacket (by Lekha) | Who is he? Why this pub? |
 | **THE CLOSER** | Boss, the man closing the pub | Slicked black hair, burgundy suit, bigger than everyone | Who sent him? |
 | **OLD TOM** | The drunk | Grey hair, brown cardigan | Has he drunk here forever? Whose side is he on? |
-| **BOTTLES** | Bottle thrower | Green hair, white top | Barmaid? |
-| **WHIP** | Fighter with a whip | Purple hair, black leather | |
+| **BOTTLES** | Bottle thrower | Green latex | Barmaid? |
+| **WHIP** | Fighter with a whip | Black latex, long black hair | |
 | **MOHAWK**, **BIKER** | Bar guys | Red mohawk / black hair, denim vest | |
-| **RUBY**, **SKYE** | Bar girls | Red outfit / brown hair, blue outfit | |
+| **RUBY**, **SKYE** | Bar girls | Red latex / blue latex | |
 
 ## To fill
 - [ ] Tone: comedy vs drama, reference films or shows

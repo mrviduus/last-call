@@ -1,9 +1,10 @@
 Art
-- Fighters (Brawler Girl, Enemy Punk): "Streets of Fight" by Luis Zuno (ansimuz), CC0
+- Guys (Enemy Punk): "Streets of Fight" by Luis Zuno (ansimuz), CC0
   https://ansimuz.itch.io/streets-of-fight
   Enemy variants are tinted copies.
 - The hero (Brick, the toad): idle clip animated for this project by Lekha (AnimateDiff), Tools/src/toad_idle.mp4;
   the other moves are cut-out poses of it from Tools/make_toad_frames.py.
 - OLD LAMP pub (layers and props): drawn for this project by Tools/make_bar_art.py.
 - Whip, sparks, blood and dust: drawn in code for this project.
-- WHIP's whip strike: animated for this project by Lekha (AnimateDiff), Tools/src/whip_lash.mp4 -> Tools/make_whip_frames.sh.
+- The girls (RUBY, SKYE, WHIP, BOTTLES) and WHIP's whip strike: animated for this project by Lekha (AnimateDiff),
+  Tools/src/whip_lash.mp4 -> Tools/make_whip_frames.sh; the other girl moves are cut-out poses from Tools/make_girl_frames.py.
