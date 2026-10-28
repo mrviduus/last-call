@@ -39,7 +39,7 @@ public static class Feel
     public const int GuyHealth = 40;              // a grunt dies to about one full combo
     public const int GirlHealth = 30;
     public const int PunchDamage = 7;             // the hero's jab
-    public const int EnemyPunchDamage = 5;        // an enemy's jab: about 20 to put the hero down
+    public const int EnemyPunchDamage = 7;        // guess, an enemy's jab: about 15 to put the hero down
     public const int SmashDamage = 14;            // combo finisher
     public const int KickDamage = 12;
     public const int JumpKickDamage = 14;         // also the kick from a lamp
@@ -172,6 +172,7 @@ public static class Feel
     public const int ThrowStartup = 10;           // guess
     public const int ThrowRecovery = 16;          // guess
     public const int LowBlowDamage = 10;          // J+L on a guy: knee where it hurts
+    public const int DirtyCooldown = 180;         // guess, frames before J+L works again
     public const int LowBlowStun = 90;            // guess, frames he stays doubled over, open to anything
     public const int HairSlamStartup = 18;        // guess, lifting her up by the hair before the slam
     public const float HairSlamLift = 28f;        // how high she's lifted
@@ -188,6 +189,8 @@ public static class Feel
     public const int EnemyAttackCooldown = 70;    // guess
     public const int EnemyPunchStartup = 10;      // guess, a wind-up you can see (and punch them out of)
     public const int MaxAttackers = 2;            // enemies swinging at once; the rest wait their turn
+    public const int MaxAttackersLate = 3;        // guess, ...from LateWave on and at midnight
+    public const int LateWave = 3;                // guess
     public const float RingX = 70f;               // guess, how far off the hero (x) enemies wait their turn
     public const float RingDepth = 22f;           // guess, ...and off the hero's lane (depth), out of reach
     public const int EngageGiveUp = 180;          // guess, frames to reach the hero on our turn before passing it on

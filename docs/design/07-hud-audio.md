@@ -13,6 +13,7 @@
 | Controls panel | Bottom | The first 8 s, then while H is held |
 | Prop hint | Bottom | `J - SWING / L - THROW` while holding a prop |
 | End cards | Centre | The win card, or `GAME OVER - PRESS J` |
+| Playtest stats | Below the end card | One line per wave: seconds it took, health Brick lost (also in the browser console as `[balance]`). For tuning; remove before release |
 
 All text is bold white with a black shadow, sized in game pixels so it scales with the picture.
 

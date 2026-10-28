@@ -33,8 +33,8 @@ When you tune a value by playtesting, drop the `guess` tag.
 | Props and lamps | `Chair*`, `Cue*`, `Table*`, `Pool*`, `Lamp*` |
 | Special | `Special*`, `RecoverPerHit` |
 | Gore | `NeckHeight`, `Head*`, `Bleed*`, `ArmRipDamage` |
-| Holds and dirty moves | `GrabFrames`, `Knee*`, `Throw*`, `LowBlow*`, `HairSlam*` |
-| Enemy AI | `EnemyWalkX`, `MaxAttackers`, `RingX/Depth`, `EngageGiveUp` |
+| Holds and dirty moves | `GrabFrames`, `Knee*`, `Throw*`, `LowBlow*`, `HairSlam*`, `DirtyCooldown` |
+| Enemy AI | `EnemyWalkX`, `MaxAttackers`, `MaxAttackersLate`, `LateWave`, `RingX/Depth`, `EngageGiveUp` |
 | Physics extras | `WallSplat*`, `WallBounceFrames`, `BossMass` |
 | Enemy types | `Drunk*`, `Chucker*`, `Boss*` |
 | Puddles | `Puddle*`, `SlipCooldown`, `EnemySlipChance` |
@@ -46,3 +46,7 @@ When you tune a value by playtesting, drop the `guess` tag.
 1. Edit `Feel.cs`.
 2. Run the EditMode tests: several assert behaviour that depends on timings.
 3. If the number appears in the [design docs](../design/README.md), update them in the same commit.
+
+## Playtesting balance
+
+End cards (win or game over) list each wave: `WAVE N: <seconds>S -<health lost> HP`; the browser console has the same lines tagged `[balance]`. Play a few runs, note the lines, tune `Feel.cs`. The log lives in `Game.LogWave`.

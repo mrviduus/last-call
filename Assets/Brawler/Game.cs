@@ -25,6 +25,10 @@ public class Game : MonoBehaviour
     public static bool Won;      // midnight, and everyone is down
     public static int Score, HeroCombo; // combo: the hero's hits in a row, until he's hit or stops hitting
     static int comboTimer;
+    // playtest stats: one line per wave (time, health lost), shown on the end cards and in the console
+    public static readonly List<string> WaveLog = new List<string>();
+    static int waveStartClock, waveStartHealth;
+    static bool deathLogged;
     public static RenderTexture PixelScreen;
     static int freezeFrames, shakeFrames, flashFrames, slowMoFrames;
     static readonly List<Prop> stepping = new List<Prop>();
@@ -54,6 +58,8 @@ public class Game : MonoBehaviour
         Fire.Clear();
         Hero = LastHit = null;
         Wave = Clock = Score = HeroCombo = comboTimer = 0;
+        WaveLog.Clear();
+        deathLogged = false;
         Midnight = Won = false;
         Frame = SimFrame = freezeFrames = shakeFrames = flashFrames = slowMoFrames = 0;
         Time.timeScale = 1f;
@@ -297,6 +303,7 @@ public class Game : MonoBehaviour
     // until midnight a new wave comes in whenever the bar is clear
     void SpawnWave()
     {
+        StartWaveStats();
         Wave++;
         toSpawn = Mathf.Min(1 + Wave, 5);
         spawnDelay = 0;
@@ -307,8 +314,23 @@ public class Game : MonoBehaviour
     {
         Midnight = true;
         Sfx.Play("bell");
+        LogWave("WAVE " + Wave + " (BELL)"); // cut short by the bell
+        StartWaveStats();
         toSpawn = 3;
         spawnDelay = 0;
+    }
+
+    static void StartWaveStats()
+    {
+        waveStartClock = Clock;
+        waveStartHealth = Hero.health;
+    }
+
+    static void LogWave(string name)
+    {
+        string line = name + ": " + ((Clock - waveStartClock) / 60f).ToString("0.0") + "S  -" + (waveStartHealth - Hero.health) + " HP";
+        WaveLog.Add(line);
+        Debug.Log("[balance] " + line);
     }
 
     void SpawnNext()
@@ -351,11 +373,16 @@ public class Game : MonoBehaviour
                 Destroy(f.gameObject);
             }
         }
+        if (Brawl && Hero.state == State.Dead && !deathLogged)
+        {
+            LogWave((Midnight ? "BOSS" : "WAVE " + Wave) + " (DIED)");
+            deathLogged = true;
+        }
         if (Brawl && !Midnight && Hero.Alive && ++Clock >= Feel.LastCallFrames) CallMidnight();
         if (Brawl && !Won && Hero.Alive && toSpawn == 0 && !Fighters.Exists(f => f.team != 0))
         {
-            if (Midnight) Won = true;
-            else SpawnWave();
+            if (Midnight) { Won = true; LogWave("BOSS"); }
+            else { if (Wave > 0) LogWave("WAVE " + Wave); SpawnWave(); }
         }
         if (toSpawn > 0 && --spawnDelay <= 0)
         {
@@ -448,6 +475,9 @@ public class Game : MonoBehaviour
             Text(view.x + 8 * scale, view.y + 224 * scale, scale, "J - SWING      L - THROW");
         if (Hero.state == State.Dead)
             Text(view.x + 120 * scale, view.y + 100 * scale, scale, "GAME OVER - PRESS J");
+        if (Won || Hero.state == State.Dead) // playtest stats
+            for (int i = Mathf.Max(0, WaveLog.Count - 10), row = 0; i < WaveLog.Count; i++, row++) // the last 10 fit
+                Text(view.x + 8 * scale, view.y + (124 + 10 * row) * scale, scale, WaveLog[i]);
     }
 
     GUIStyle hud;

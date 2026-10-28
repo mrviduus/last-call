@@ -132,7 +132,7 @@ public class Enemy : MonoBehaviour
         if (grudge != null && (--grudgeFrames <= 0 || !grudge.Alive)) grudge = null; // settled (waits for them to get up)
         if (f.drunk && grudge == null && Random.value < Feel.DrunkPickFight) PickFight(); // a drunk takes offence at nothing
         if (chucker && grudge == null) { Chuck(p); return; }
-        if (grudge == null && !engaging && cooldown == 0 && Engaged() < Feel.MaxAttackers) { engaging = true; giveUp = Feel.EngageGiveUp; }
+        if (grudge == null && !engaging && cooldown == 0 && Engaged() < (Game.Wave >= Feel.LateWave || Game.Midnight ? Feel.MaxAttackersLate : Feel.MaxAttackers)) { engaging = true; giveUp = Feel.EngageGiveUp; }
         if (engaging && --giveUp <= 0) { engaging = false; cooldown = 30; } // couldn't get there: let someone else try
 
         // a grudge goes straight at the mate who hit us, no waiting for a turn

@@ -991,6 +991,10 @@ public class FeelTests
         Run(Feel.KneeStartup + 2);
         Assert.AreEqual(40 - Feel.LowBlowDamage, guy.health);
         Assert.AreEqual(State.Hurt, guy.state);
+        Run(Feel.KneeRecovery + 4);
+        Assert.IsFalse(p.DirtyMove(), "cooling down");
+        Run(Feel.DirtyCooldown);
+        Assert.IsTrue(p.DirtyMove(), "ready again");
 
         var boss = Game.Spawn(1, Art.Boss, new Vector2(600f, -50f), Feel.BossHealth);
         boss.armored = true;

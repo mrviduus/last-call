@@ -12,7 +12,7 @@
 | L | Kick |
 | K or Space | Jump |
 | J + K together | **Special**: a spinning kick all round. It costs health, which you win back by landing hits |
-| J + L together | **Dirty move** on whoever is right in front: a knee to the groin for a guy, a hair slam for a girl. No grab needed. Not on THE CLOSER |
+| J + L together | **Dirty move** on whoever is right in front: a knee to the groin for a guy, a hair slam for a girl. No grab needed. Not on THE CLOSER. Works again after 3 s |
 | S + L | Hammer stomp: drives the enemy into the floor |
 | H (hold) | Show the controls |
 

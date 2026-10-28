@@ -46,6 +46,7 @@ public class Fighter : MonoBehaviour
     int slipCooldown;  // frames before a puddle can take our feet again
     int stun;          // hurt lasts at least this long (doubled over after a low blow)
     public int burning; // frames left on fire
+    public int dirtyCooldown; // frames before J+L works again
     bool caughtFromAnother; // set alight by a burning body: doesn't pass it on (no chain reactions through a crowd)
     int stumble;        // frames left lurching forward after a blow that hit only air
     int burnClock;      // frames since catching fire: a burn every BurnTick of them
@@ -170,7 +171,8 @@ public class Fighter : MonoBehaviour
                     target = t;
                     break;
                 }
-        if (target == null) return false;
+        if (target == null || dirtyCooldown > 0) return false;
+        dirtyCooldown = Feel.DirtyCooldown;
         strikePending = false; // the cancelled jab or kick never lands
         if (state != State.Grab) Grab(target);
         Attack(target.Girl ? Move.HairSlam : Move.LowBlow);
@@ -543,6 +545,7 @@ public class Fighter : MonoBehaviour
         if (bleed > 0 && --bleed % 5 == 0) Fx.Blood(ground, state is State.Down or State.Dead ? 4f : height + Feel.ShoulderHeight, 1, 0f, 0.3f);
         if (jumpStretch > 0) jumpStretch--;
         if (invulnFrames > 0) invulnFrames--;
+        if (dirtyCooldown > 0) dirtyCooldown--;
 
         bool landed = ApplyPhysics();
         bool landedFromJump = landed && state == State.Jump;
