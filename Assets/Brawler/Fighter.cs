@@ -71,7 +71,7 @@ namespace Brawler
         };
         int Active => move switch
         {
-            Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.BicycleKick => Feel.BicycleKickActive,
+            Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.BicycleKick => Feel.BicycleKickActive, Move.Pound => Feel.PoundActive,
             Move.Swing => Feel.SwingActive, Move.Whip => Feel.WhipActive, Move.Special => Feel.SpecialActive, _ => Feel.PunchActive,
         };
         int Recovery => move switch

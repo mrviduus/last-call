@@ -470,7 +470,7 @@ namespace Brawler
             if (Frame < Feel.IntroFrames && !Won)
             {
                 Text(view.x + 96 * scale, view.y + 70 * scale, scale, "11:59 PM. THE OLD LAMP.");
-                Text(view.x + 96 * scale, view.y + 84 * scale, scale, "BRICK CAME FOR ONE LAST PINT.");
+                Text(view.x + 96 * scale, view.y + 84 * scale, scale, "BRICK CAME FOR ONE LAST DANCE.");
                 Text(view.x + 96 * scale, view.y + 98 * scale, scale, "AT MIDNIGHT THE GANG CLOSES IT.");
             }
             if (Won)

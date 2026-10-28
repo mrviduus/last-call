@@ -7,7 +7,7 @@
 The game shows this as its intro card:
 
 > 11:59 PM. THE OLD LAMP.
-> BRICK CAME FOR ONE LAST PINT.
+> BRICK CAME FOR ONE LAST DANCE.
 > AT MIDNIGHT THE GANG CLOSES IT.
 
 At midnight the bell over the bar rings and **THE CLOSER** walks in to shut the club down. If Brick beats everyone, the win card says:

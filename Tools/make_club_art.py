@@ -213,13 +213,16 @@ def floor():
             col = lit[rng.randrange(len(lit))] if rng.random() < 0.7 else 0x221838
             cv.rect(tx + 1, ty + 1, tx + 15, ty + 11, col)
             cv.rect(tx + 1, ty + 1, tx + 15, ty + 2, 0xffffff if col != 0x221838 else 0x2e2048)
-    # carpet at the counter: purple with a gold trim
+    # runner rug at the counter, flat on the floor: dark, low contrast, a dim trim along its long edges and
+    # fringe at the ends (no bright frame, which read as a raised step)
     for y in range(2, 22):
-        for x in range(296, 904):
-            edge = y in (2, 21) or x in (296, 903)
-            inner = y in (4, 19) or x in (299, 900)
-            col = 0xe0b040 if edge else 0xa87a24 if inner else (0x3c2a5c if (x // 4 + y // 4) % 2 else 0x4a2a6a)
+        for x in range(300, 900):
+            trim = y in (3, 20)
+            col = 0x5a2450 if trim else (0x2c1e44 if (x // 4 + y // 4) % 2 else 0x32204c)
             cv.set(x, y, col)
+        for x in (297, 299, 900, 902):
+            if y % 2 == 0:
+                cv.set(x, y, 0x4a2a5a)
     # light
     for px_, depth in POOL_TABLES:
         cv.light(px_, 8 - depth, 90, 34, 0xff2a9a, 0.4)
