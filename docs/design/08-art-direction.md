@@ -18,7 +18,8 @@
 | Fighters | Placeholders: free CC0 sprites ("Streets of Fight" by ansimuz), recoloured per character |
 | Brick's kicks, elbow drop, sitting poses | Painted over the placeholder by a script |
 | Lying down, headless, torn in half, buried, doubled over | Cut and bent from existing frames in code |
-| Sparks, dust, blood, beer puddles, flames, the whip, the torn arm | Drawn in code |
+| WHIP's whip strike | Animated by Lekha (AnimateDiff); the rest of her moves are still the placeholder |
+| Sparks, dust, blood, beer puddles, flames, the torn arm | Drawn in code |
 
 ## Needs drawing
 

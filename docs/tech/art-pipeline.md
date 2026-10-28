@@ -11,6 +11,7 @@ All runtime art is loaded by path from `Assets/Resources/Art/`:
 | `Bar/` | Level layers (`bar_view`, `bar_back`, `bar_counter`, `bar_floor`, `bar_pillar`) and props (`chair`, `stool`, `bottle`, `table`, `table_flipped`, `pool_table`, `pool_lamp`, `lamp_shade`, `cue`, `ball`) |
 | `Punk/`, `Girl/` | Fighter sheets (CC0 "Streets of Fight"): `idle`, `walk`, `punch`, `hurt`, `sit`, and more for the girl |
 | `Brick/` | Brick's own frames: `kick`, `elbow` |
+| `Whip/` | `lash`: WHIP's whip strike, 15 frames **104 px** wide (the whip reaches past the body), from Lekha's AnimateDiff clip |
 | `shadow.png` | The shadow under every body |
 
 ## Import settings
@@ -65,6 +66,7 @@ All scripts live in `Tools/` and write into `Assets/Resources/`. **The output PN
 | `make_bar_art.py` | `Art/Bar/*.png` | Pillow |
 | `make_brick_frames.py` | `Art/Brick/*.png`, `Art/Punk/sit.png`, `Art/Girl/sit.png` | Pillow |
 | `make_sfx.py` | `Sfx/*.wav` | Standard library only |
+| `make_whip_frames.sh` | `Art/Whip/lash.png` from `Tools/src/whip_lash.mp4` | ffmpeg |
 
 Pillow isn't installed system-wide, so run the art scripts in a virtual environment:
 
@@ -83,3 +85,7 @@ To swap in hand-drawn art for a character:
 3. Point a look at them in `Art`.
 
 Gore and the doubled-over pose are derived from the **hurt** frame, so draw that one with care.
+
+## Animations from video (AnimateDiff)
+
+`make_whip_frames.sh` is the recipe: crop a fixed box (the camera must not move), `hflip` if the character faces left, `colorkey` the flat background out, scale so the body is ~63 px tall, `tile` the frames into one row. A flat background that isn't black or white keys out cleanest. `Fighter.LashFrame` maps the attack's startup, active and recovery frames onto the sheet.

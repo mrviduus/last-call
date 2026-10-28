@@ -530,6 +530,15 @@ public class Fighter : MonoBehaviour
             && Mathf.Abs(t.height - height) < heightBand;
     }
 
+    // the lash sheet: frames 0-5 wind up, 6-7 the crack, 8-14 the whip coming back
+    int LashFrame()
+    {
+        if (state != State.Attack) return 0;
+        if (stateFrames < Startup) return stateFrames * 6 / Startup;
+        if (stateFrames < Startup + Feel.WhipActive) return 6 + (stateFrames - Startup) * 2 / Feel.WhipActive;
+        return Mathf.Min(14, 8 + (stateFrames - Startup - Feel.WhipActive) * 7 / Feel.WhipRecovery);
+    }
+
     public void Step()
     {
         Think?.Invoke();
@@ -962,6 +971,7 @@ public class Fighter : MonoBehaviour
             State.Headless => art.HeadlessHurt,
             State.Attack => move switch
             {
+                Move.Whip when art.Lash != null => art.Lash[LashFrame()],
                 Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
                 Move.Smash or Move.Kick or Move.Pound => WindingUp ? art.KickWind : striking ? art.Kick : art.KickRecover,
                 Move.FlyingKick => striking ? art.JumpKick : art.Crouch,
@@ -1008,7 +1018,7 @@ public class Fighter : MonoBehaviour
             : charred ? new Color(0.22f, 0.17f, 0.15f)
             : Alive ? Color.white : new Color(0.6f, 0.6f, 0.6f);
 
-        whipLine.enabled = move == Move.Whip && striking;
+        whipLine.enabled = move == Move.Whip && striking && art.Lash == null; // the lash frames have their own whip
         whipLine.transform.localScale = new Vector3(facing * 1.8f, 1f, 1f);
         whipLine.transform.localPosition = new Vector3(facing * 20f, h + 38f, 0f);
 

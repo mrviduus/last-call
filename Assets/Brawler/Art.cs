@@ -49,9 +49,11 @@ public static class Art
         public Sprite Doubled; // bent over, after a low blow
         public Sprite Head, HeadlessHurt, HeadlessDown, HalfStays, HalfFlies; // gore, cut from the hurt and down poses
         public Sprite[] HeadlessSinking;
+        public Sprite[] Lash; // the whip strike with the whip in it, wind-up to recovery (WHIP only, else null)
     }
 
     const int FrameW = 96; // every sheet is a row of 96 px wide frames
+    const int LashW = 104; // ...except the whip strike: the whip reaches out past the body
     static readonly Dictionary<string, Frames> cache = new Dictionary<string, Frames>();
     static readonly Vector2 Center = new Vector2(0.5f, 0.5f);
 
@@ -61,6 +63,7 @@ public static class Art
         var (girl, hair, clothes) = Looks[look];
         f = girl ? Girl(hair, clothes) : Punk(look == Hero, hair, clothes);
         Gore(f);
+        if (look == Lasher) f.Lash = Sheet("Whip/lash", FeetPivot(Load("Whip/lash"), LashW), frameW: LashW);
         return cache[look] = f;
     }
 
@@ -108,14 +111,14 @@ public static class Art
 
     static Texture2D Load(string path) => Resources.Load<Texture2D>("Art/" + path);
 
-    static Sprite[] Sheet(string path, Vector2 pivot, uint[] hair = null, uint[] clothes = null, int hairRows = 0, bool mirror = false)
+    static Sprite[] Sheet(string path, Vector2 pivot, uint[] hair = null, uint[] clothes = null, int hairRows = 0, bool mirror = false, int frameW = FrameW)
     {
         var tex = Load(path);
         if (hair != null) tex = Recolor(tex, hair, clothes, hairRows);
         if (mirror) tex = Mirror(tex);
-        var frames = new Sprite[tex.width / FrameW];
+        var frames = new Sprite[tex.width / frameW];
         for (int i = 0; i < frames.Length; i++)
-            frames[i] = Sprite.Create(tex, new Rect(i * FrameW, 0, FrameW, tex.height), pivot, 1f, 0, SpriteMeshType.FullRect);
+            frames[i] = Sprite.Create(tex, new Rect(i * frameW, 0, frameW, tex.height), pivot, 1f, 0, SpriteMeshType.FullRect);
         return frames;
     }
 

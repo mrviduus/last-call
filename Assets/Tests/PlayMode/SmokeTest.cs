@@ -151,6 +151,28 @@ public class SmokeTest
         Shot("molotov_burning");
     }
 
+    [UnityTest]
+    public IEnumerator WhipLash()
+    {
+        if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
+        Game.RestartRequested = true;
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        var hero = Game.Hero;
+        hero.ground = new Vector2(640f, -60f);
+        var whip = Game.Spawn(1, Art.Lasher, hero.ground + new Vector2(-70f, 0f), 1000);
+        whip.whip = true;
+        whip.facing = 1;
+        Assert.AreEqual(15, Art.For(Art.Lasher).Lash.Length);
+        whip.Attack(Move.Whip);
+        for (int i = 0; i < Feel.WhipStartup / 2; i++) yield return new WaitForFixedUpdate();
+        Shot("whip_windup");
+        for (int i = 0; i < Feel.WhipStartup / 2 + 1; i++) yield return new WaitForFixedUpdate();
+        Shot("whip_crack");
+        for (int i = 0; i < Feel.WhipRecovery / 2; i++) yield return new WaitForFixedUpdate();
+        Shot("whip_back");
+    }
+
     static Fighter Victim(Fighter hero, float ahead, int hp)
     {
         var e = Game.Spawn(1, Art.GruntA, hero.ground + new Vector2(ahead, 0f), hp);

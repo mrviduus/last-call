@@ -4,3 +4,4 @@ Art
   The hero (Brick) is the punk recoloured; enemy variants are tinted copies.
 - OLD LAMP pub (layers and props): drawn for this project by Tools/make_bar_art.py.
 - Whip, sparks, blood and dust: drawn in code for this project.
+- WHIP's whip strike: animated for this project by Lekha (AnimateDiff), Tools/src/whip_lash.mp4 -> Tools/make_whip_frames.sh.
