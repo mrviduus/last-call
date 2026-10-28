@@ -2,11 +2,11 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Fighters: "Streets of Fight" by ansimuz, CC0 (see CREDITS.txt), recoloured per look (hair and clothes only).
-// The bar is PNGs from Tools/make_bar_art.py; Brick's frames and the sitting frames from Tools/make_brick_frames.py;
+// The bar is PNGs from Tools/make_bar_art.py; Brick (the toad) from Tools/make_toad_frames.py; the sitting frames from Tools/make_brick_frames.py;
 // the whip is drawn in code. 1 texel = 1 screen pixel.
 public static class Art
 {
-    public const string Hero = "Brick";          // blond, leather vest
+    public const string Hero = "Brick";          // the toad in the spiked leather jacket
     public const string Guy = "Punk";            // red mohawk, red vest
     public const string GuyDenim = "PunkDenim";  // black hair, denim vest
     public const string GruntA = "Girl";         // red outfit
@@ -87,16 +87,18 @@ public static class Art
     }
 
     // only idle, walk, punch and hurt; the last hurt frame lies on the ground
-    // the punk's sheets face left (he was drawn as an enemy); mirrored so every character faces right
+    // the punk's sheets face left (he was drawn as an enemy); mirrored so every character faces right.
+    // Brick is the toad (Tools/make_toad_frames.py): the same sheets facing right, no recolour, plus kick and elbow
     static Frames Punk(bool asBrick, uint[] hair, uint[] clothes)
     {
-        var raw = FeetPivot(Load("Punk/idle"), FrameW);
-        var pivot = new Vector2(1f - raw.x, raw.y); // the sheets are mirrored below
-        Sprite[] S(string sheet) => Sheet("Punk/" + sheet, pivot, hair, clothes, hairRows: 10, mirror: true);
+        var raw = FeetPivot(Load(asBrick ? "Toad/idle" : "Punk/idle"), FrameW);
+        var pivot = asBrick ? raw : new Vector2(1f - raw.x, raw.y); // the punk's sheets are mirrored below
+        Sprite[] S(string sheet) => asBrick ? Sheet("Toad/" + sheet, pivot)
+            : Sheet("Punk/" + sheet, pivot, hair, clothes, hairRows: 10, mirror: true);
         var idle = S("idle"); var punch = S("punch"); var hurt = S("hurt");
-        // Brick has his own frames (Tools/make_brick_frames.py): knee up, kick, high kick, jump kick; elbow drop
-        var kick = asBrick ? Sheet("Brick/kick", pivot) : new[] { punch[1], punch[2], punch[2], punch[2] };
-        var elbow = asBrick ? Sheet("Brick/elbow", pivot) : new[] { idle[0], hurt[2] };
+        // knee up, kick, high kick, jump kick; elbow drop
+        var kick = asBrick ? S("kick") : new[] { punch[1], punch[2], punch[2], punch[2] };
+        var elbow = asBrick ? S("elbow") : new[] { idle[0], hurt[2] };
         return new Frames
         {
             Idle = idle, Walk = S("walk"),

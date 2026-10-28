@@ -60,7 +60,7 @@ Open:
 
 | Name (HUD) | Role | Look `[in game]` | Story *(to fill)* |
 |---|---|---|---|
-| **BRICK** | Hero, a regular who won't leave | Blond, leather vest, jeans | Who is he? Why this pub? |
+| **BRICK** | Hero, a regular who won't leave | A big toad in a spiked leather jacket (by Lekha) | Who is he? Why this pub? |
 | **THE CLOSER** | Boss, the man closing the pub | Slicked black hair, burgundy suit, bigger than everyone | Who sent him? |
 | **OLD TOM** | The drunk | Grey hair, brown cardigan | Has he drunk here forever? Whose side is he on? |
 | **BOTTLES** | Bottle thrower | Green hair, white top | Barmaid? |

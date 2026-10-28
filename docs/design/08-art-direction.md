@@ -16,7 +16,8 @@
 |---|---|
 | Bar background, counter, floor, pillars, props | Drawn for this project by a script; can be redrawn by hand |
 | Fighters | Placeholders: free CC0 sprites ("Streets of Fight" by ansimuz), recoloured per character |
-| Brick's kicks, elbow drop, sitting poses | Painted over the placeholder by a script |
+| Brick | The toad in a spiked leather jacket, by Lekha. Idle is his animation; walk, punch, kick, hurt, fall, elbow drop are cut-out poses of it (rough, to be replaced) |
+| Sitting poses | Painted over the placeholder by a script |
 | Lying down, headless, torn in half, buried, doubled over | Cut and bent from existing frames in code |
 | WHIP's whip strike | Animated by Lekha (AnimateDiff); the rest of her moves are still the placeholder |
 | Sparks, dust, blood, beer puddles, flames, the torn arm | Drawn in code |
@@ -25,7 +26,7 @@
 
 Priority order, top first:
 
-1. **Brick:** a full hand-drawn set to replace the placeholder (idle, walk, run, punches, kicks, jump, hurt, lying, grab, throw, special).
+1. **Brick (the toad):** real frames for walk, run, punches, kicks, jump, hurt, lying, grab, throw, special, to replace the cut-out poses.
 2. **THE CLOSER:** his own look, bigger than everyone.
 3. **Dirty moves:** knee to the groin; a guy holding his groin, doubled over; grabbing a girl by the hair, the lift, the slam.
 4. **OLD TOM and BOTTLES:** their own looks, not recolours.
