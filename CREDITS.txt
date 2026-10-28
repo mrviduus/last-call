@@ -4,7 +4,7 @@ Art
   Enemy variants are tinted copies.
 - The hero (Brick, the toad): idle clip animated for this project by Lekha (AnimateDiff), Tools/src/toad_idle.mp4;
   the other moves are cut-out poses of it from Tools/make_toad_frames.py.
-- OLD LAMP pub (layers and props): drawn for this project by Tools/make_bar_art.py.
+- OLD LAMP strip club: layers by Tools/make_club_art.py, props (from the old pub) by Tools/make_bar_art.py, drawn for this project.
 - Whip, sparks, blood and dust: drawn in code for this project.
 - The girls (RUBY, SKYE, WHIP, BOTTLES) and WHIP's whip strike: animated for this project by Lekha (AnimateDiff),
   Tools/src/whip_lash.mp4 -> Tools/make_whip_frames.sh; the other girl moves are cut-out poses from Tools/make_girl_frames.py.

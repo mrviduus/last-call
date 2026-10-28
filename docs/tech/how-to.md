@@ -15,7 +15,7 @@
 
 ## Add a hero move
 
-1. Add it to the `Move` enum in `Fighter.cs`.
+1. Add it to the `Move` enum in `Move.cs`.
 2. Add its frame data and stats to the switches at the top of `Fighter`: `Startup`, `Active`, `Recovery`, `Reach`, `Damage`, `Push`, and `Launches` if it knocks flying.
 3. If it needs special resolution, route it in `ResolveStrike()` (as with holds and `StrikeHeld()`).
 4. Pick its sprite in `LateUpdate()`'s `move switch`.

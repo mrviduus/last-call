@@ -12,9 +12,9 @@ There are no prefabs and no gameplay objects in the scene: everything is built i
 | `Assets/Brawler/Fighter.cs` | One body, hero or enemy: state machine, moves, hits, physics, gore, drawing |
 | `Assets/Brawler/Player.cs` | The hero's brain: keyboard input, buffering, which move to start |
 | `Assets/Brawler/Enemy.cs` | The enemy brain: ring AI, attack tokens, the drunk, the bottle thrower, the boss grab |
-| `Assets/Brawler/Prop.cs` | Furniture and weapons: carry, swing, throw, break; `Shard` (debris) |
+| `Assets/Brawler/Prop.cs` | Furniture and weapons: carry, swing, throw, break; debris in `Shard.cs` |
 | `Assets/Brawler/Lamp.cs` | Pendulum lamps you can hang on |
-| `Assets/Brawler/Fx.cs` | Cosmetic effects: sparks, dust, afterimages; `Drop` (blood and stains); `Puddle` (beer) and `Fire` (Molotov), which do affect gameplay |
+| `Assets/Brawler/Fx.cs` | Cosmetic effects: sparks, dust, afterimages. Next to it: `Drop.cs` (blood and stains), `Puddle.cs` (beer) and `Fire.cs` (Molotov), which do affect gameplay |
 | `Assets/Brawler/Art.cs` | Loads, recolours and derives sprites; paints procedural sprites |
 | `Assets/Brawler/Sfx.cs` | Plays `Resources/Sfx/<name>.wav` by name |
 | `Assets/Brawler/Feel.cs` | Every tuning constant (see [Tuning](tuning.md)) |

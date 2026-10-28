@@ -10,3 +10,4 @@ UserSettings/
 *.nes
 *.zip
 disasm/
+__pycache__/

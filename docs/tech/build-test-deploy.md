@@ -33,7 +33,7 @@ $UNITY -batchmode -projectPath Game -runTests -testPlatform PlayMode -testFilter
 ## WebGL build
 
 ```sh
-$UNITY -batchmode -quit -projectPath Game -buildTarget WebGL -executeMethod Builds.WebGL   # add -dev for stack traces
+$UNITY -batchmode -quit -projectPath Game -buildTarget WebGL -executeMethod Brawler.EditorTools.Builds.WebGL   # add -dev for stack traces
 python3 Game/Tools/serve.py Game/Build/WebGL 8765                                           # no-cache server
 ```
 

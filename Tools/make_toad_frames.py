@@ -72,55 +72,6 @@ def turn(layer, deg, pivot):
     return layer.rotate(deg, resample=Image.BICUBIC, center=pivot)
 
 
-def rotate_point(p, deg, pivot):
-    import math
-    a = math.radians(deg)
-    dx, dy = p[0] - pivot[0], p[1] - pivot[1]
-    return (pivot[0] + dx * math.cos(a) + dy * math.sin(a), pivot[1] - dx * math.sin(a) + dy * math.cos(a))
-
-
-class Toad:
-    def __init__(self, im):
-        w, h = im.size
-        self.size = (w + 2 * PAD, h + 2 * PAD)
-        big = Image.new("RGBA", self.size)
-        big.paste(im, (PAD, PAD))
-        P = lambda p: (p[0] + PAD, p[1] + PAD)
-        self.P = P
-        arm = lambda x, y: x - PAD >= ARM_X and ARM_Y0 <= y - PAD <= ARM_Y1
-        self.back_leg = part(big, lambda x, y: y - PAD >= HIP_Y and x - PAD < LEG_SPLIT_X)
-        self.front_leg = part(big, lambda x, y: y - PAD >= HIP_Y and x - PAD >= LEG_SPLIT_X)
-        self.upper = part(big, lambda x, y: y - PAD < HIP_Y and not arm(x, y))
-        self.arm = part(big, arm)
-
-    def pose(self, lean=0, front=0, back=0, stretch=1.0, raise_arm=0, bob=0, whole=0, lie=False):
-        """lean: upper body back (+) or forward (-); front/back: legs swung forward (+) at the hip;
-        stretch: the front arm reaching out (>1) or pulled in (<1); raise_arm: the arm turned up; bob: down (+) or up (-);
-        whole: the whole body tipped back around the feet; lie: tipped flat and laid on the floor."""
-        P = self.P
-        img = Image.new("RGBA", self.size)
-        img.alpha_composite(turn(self.back_leg, back, P(BACK_HIP)))
-        img.alpha_composite(turn(self.front_leg, front, P(FRONT_HIP)))
-        arm = self.arm
-        if stretch != 1.0:  # stretched out from the shoulder end
-            box = (P((ARM_X, 0))[0], 0, self.size[0], self.size[1])
-            piece = arm.crop(box)
-            piece = piece.resize((max(1, int(piece.width * stretch)), piece.height), Image.BICUBIC)
-            arm = Image.new("RGBA", self.size)
-            arm.paste(piece, (box[0], 0))
-        arm = turn(arm, raise_arm, P(SHOULDER))
-        upper = Image.new("RGBA", self.size)
-        upper.alpha_composite(self.upper)
-        upper.alpha_composite(arm)
-        img.alpha_composite(turn(upper, lean, P(MID_HIP)))
-        img = turn(img, whole, P((BODY_X, FEET_Y)))
-        if bob:
-            img = img.transform(img.size, Image.AFFINE, (1, 0, 0, 0, 1, -bob))
-        if lie:
-            img = lay_flat(img, whole)
-        return to_frame(img)
-
-
 def lay_flat(img, whole):
     """A tipped body moved so its lowest pixel is on the floor and it's centred on the body line."""
     bbox = img.getbbox()

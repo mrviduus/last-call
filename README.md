@@ -1,6 +1,6 @@
 # Last Call
 
-A 16-bit-style beat-'em-up in the spirit of Battletoads & Double Dragon. It's 11:59 PM at the OLD LAMP pub, Brick came for one last pint, and at midnight the gang closes the place.
+A 16-bit-style beat-'em-up in the spirit of Battletoads & Double Dragon. It's 11:59 PM at the OLD LAMP strip club, Brick came for one last pint, and at midnight the gang closes the place.
 
 > **A hobby project.** Two friends making the game we wish we'd had: we grew up playing Battletoads & Double Dragon as kids, and this is us having fun with that memory. Non-commercial, just for fun.
 

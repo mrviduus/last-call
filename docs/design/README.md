@@ -19,7 +19,7 @@ Everything about **what** the game is and **how it plays**. Written for designer
 Every design decision is checked against these four:
 
 1. **Every hit feels heavy.** Hitstop, flashes, shake, sparks. A hit you can't feel is a bug.
-2. **The room is a weapon.** Anything in the pub can be picked up, kicked, swung on or thrown.
+2. **The room is a weapon.** Anything in the club can be picked up, kicked, swung on or thrown.
 3. **Brutal and funny at once.** Over-the-top gore and dirty moves, played as slapstick.
 4. **Short and replayable.** One real minute of waves, then the boss. Score and combo give a reason to replay.
 

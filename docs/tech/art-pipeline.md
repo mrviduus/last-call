@@ -10,9 +10,8 @@ All runtime art is loaded by path from `Assets/Resources/Art/`:
 |---|---|
 | `Club/` | The level now: layers (`bar_view`, `bar_back`, `bar_counter`, `bar_floor`, `bar_pillar`) and `pool_lamp`, `lamp_shade` |
 | `Bar/` | The old pub's layers (switch back with `Art.Level`) and the props, still used (`chair`, `stool`, `bottle`, `table`, `table_flipped`, `pool_table`, `pool_lamp`, `lamp_shade`, `cue`, `ball`) |
-| `Punk/`, `Girl/` | Fighter sheets (CC0 "Streets of Fight"): `idle`, `walk`, `punch`, `hurt`, `sit`, and more for the girl |
+| `Punk/` | Every guy (CC0 "Streets of Fight"): `idle`, `walk`, `punch`, `hurt`, `sit` |
 | `Toad/` | Brick (the toad): `idle`, `walk`, `punch`, `hurt`, `kick`, `elbow`, `sit` |
-| `Brick/` | The old punk Brick's `kick`, `elbow` (unused since the toad) |
 | `Latex/` | Every girl: `idle`, `walk`, `jab`, `punch`, `kick`, `jump`, `jump_kick`, `dive_kick`, `hurt`, `sit` (72 px tall frames, black latex) |
 | `Whip/` | `lash`: WHIP's whip strike, 15 frames 96x79, from Lekha's AnimateDiff clip |
 | `shadow.png` | The shadow under every body |
@@ -70,7 +69,7 @@ All scripts live in `Tools/` and write into `Assets/Resources/`. **The output PN
 |---|---|---|
 | `make_bar_art.py` | `Art/Bar/*.png` (the old pub; props still come from here) | Pillow |
 | `make_club_art.py` | `Art/Club/*.png`: the strip club's layers and lamps, same sizes as the pub's (`Art.Level` picks the folder) | Pillow |
-| `make_brick_frames.py` | `Art/Brick/*.png`, `Art/Punk/sit.png`, `Art/Girl/sit.png` | Pillow |
+| `make_sit_frames.py` | `Art/Punk/sit.png` | Pillow |
 | `make_sfx.py` | `Sfx/*.wav` | Standard library only |
 | `make_toad_frames.py` | `Art/Toad/*.png` from `Tools/src/toad_idle.mp4` | Pillow, ffmpeg |
 | `make_girl_frames.py` | `Art/Latex/*.png` from `Tools/src/whip_lash.mp4` | Pillow, ffmpeg |

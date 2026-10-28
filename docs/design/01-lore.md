@@ -10,14 +10,14 @@ The game shows this as its intro card:
 > BRICK CAME FOR ONE LAST PINT.
 > AT MIDNIGHT THE GANG CLOSES IT.
 
-At midnight the bell over the bar rings and **THE CLOSER** walks in to shut the pub down. If Brick beats everyone, the win card says:
+At midnight the bell over the bar rings and **THE CLOSER** walks in to shut the club down. If Brick beats everyone, the win card says:
 
 > MIDNIGHT. LAST CALL.
 > THE CLOSER IS DOWN. YOU STAYED.
 
 ## Tone
 
-Fixed by the [pillars](README.md#pillars): brutal and funny at once. A pub brawl played as slapstick, with gore.
+Fixed by the [pillars](README.md#pillars): brutal and funny at once. A strip-club brawl played as slapstick, with gore.
 
 Open:
 - How much drama sits under the jokes: pure comedy, or a real fight for a place Brick loves?
@@ -28,18 +28,18 @@ Open:
 | Question | Answer |
 |---|---|
 | City / country | *to fill* |
-| Era | *to fill* (the art looks 80s–90s: neon BEER sign, pool tables, CRT-era pixel art) |
+| Era | *to fill* (the art looks 80s–90s: pink neon, pool tables, CRT-era pixel art) |
 | What the city outside the windows is like | *to fill* |
 
 ## The OLD LAMP `[in game]` as a place
 
-A warm wooden pub with:
-- an entrance door,
-- round tables,
-- a long bar counter with stools and bottles,
-- two pool tables under green pendant lamps,
-- a neon BEER sign,
-- a stage end.
+A strip club (was a pub until 2026-10-28) with:
+- an entrance door and a lit dance floor,
+- round tables (still the pub's wooden ones),
+- a black lacquer bar with pink LED strips, stools and bottles,
+- two pool tables under pendant lamps,
+- a pink neon OLD LAMP sign,
+- a stage with two poles and dancers at the far end.
 
 See [Environment](06-environment.md) for the layout.
 
@@ -47,7 +47,7 @@ Open:
 - Who owns it, and for how long?
 - Why is it called the OLD LAMP?
 - Who drinks there: regulars, bikers, students?
-- `[proposed]` The landlord sold the pub to the gang, and tonight is its last night.
+- `[proposed]` The owner sold the club to the gang, and tonight is its last night.
 
 ## The gang
 
@@ -60,8 +60,8 @@ Open:
 
 | Name (HUD) | Role | Look `[in game]` | Story *(to fill)* |
 |---|---|---|---|
-| **BRICK** | Hero, a regular who won't leave | A big toad in a spiked leather jacket (by Lekha) | Who is he? Why this pub? |
-| **THE CLOSER** | Boss, the man closing the pub | Slicked black hair, burgundy suit, bigger than everyone | Who sent him? |
+| **BRICK** | Hero, a regular who won't leave | A big toad in a spiked leather jacket (by Lekha) | Who is he? Why this club? |
+| **THE CLOSER** | Boss, the man closing the club | Slicked black hair, burgundy suit, bigger than everyone | Who sent him? |
 | **OLD TOM** | The drunk | Grey hair, brown cardigan | Has he drunk here forever? Whose side is he on? |
 | **BOTTLES** | Bottle thrower | Green latex | Barmaid? |
 | **WHIP** | Fighter with a whip | Black latex, long black hair | |
