@@ -2,7 +2,9 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Last Call**: original 16-bit beat-'em-up in Unity 6 (6000.6.7f1), plays like Battletoads & Double Dragon. One level: the OLD LAMP pub (3 screens, 384x240). Hero: Brick. All art/sound is original or CC0 (see CREDITS.txt): never copy sprites, sounds or characters from BT/MK/other games.
+**Last Call**: original 16-bit beat-'em-up in Unity 6 (6000.6.7f1), plays like Battletoads & Double Dragon. Hobby, non-commercial, two friends (Vasyl + Lekha). One level: the OLD LAMP strip club (3 screens, 384x240; was a pub). Hero: Brick, a toad (Lekha's AnimateDiff art). All art/sound is ours, Lekha's or CC0 (see CREDITS.txt): never rip sprites or sounds from BT/MK/other games.
+
+Level art: `Art.Level` = "Club/" (`Tools/make_club_art.py`); props still from `Bar/`. Brick and the girls are cut-out poses from Lekha's clips (`Tools/make_toad_frames.py`, `make_girl_frames.py`, sources in `Tools/src/`).
 
 Docs: `docs/design/` (lore, mechanics, enemies, level: for designers) and `docs/tech/` (architecture, tuning, pipeline, build). Update the relevant page in the same commit as a mechanic change; numbers there quote `Feel.cs`, which wins on conflict. Conventions in `docs/README.md`.
 

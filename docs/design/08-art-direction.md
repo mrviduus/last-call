@@ -5,7 +5,7 @@
 ## Style
 
 - **Resolution:** 16-bit-era pixel art on a 384×240 screen; 1 texel = 1 screen pixel, no smoothing.
-- **Palette:** one limited warm palette for the pub (wood, brick, brass, warm lamp light, green felt), so every layer matches.
+- **Palette:** one limited neon palette for the club (black, deep purple, pink and cyan neon, chrome, red velvet), so every layer matches. The old pub had a warm one (wood, brick, brass).
 - **Light:** comes from the top left, so highlights are on the top and left and shadows on the bottom and right. Props have dark outlines.
 - **Contrast:** the background has less contrast than the fighters, so the fight always reads clearly.
 - **Fighters:** about 63 px tall, drawn facing right.
@@ -14,7 +14,8 @@
 
 | Asset | State |
 |---|---|
-| Bar background, counter, floor, pillars, props | Drawn for this project by a script; can be redrawn by hand |
+| Club background, counter, floor, pillars, lamps | Drawn for this project by a script (`make_club_art.py`); can be redrawn by hand |
+| Props (tables, chairs, bottles, pool tables) | Still the pub's wooden ones: to be redrawn for the club |
 | Fighters | Placeholders: free CC0 sprites ("Streets of Fight" by ansimuz), recoloured per character |
 | Brick | The toad in a spiked leather jacket, by Lekha. Idle is his animation; walk, punch, kick, hurt, fall, elbow drop are cut-out poses of it (rough, to be replaced) |
 | Sitting poses | Painted over the placeholder by a script |

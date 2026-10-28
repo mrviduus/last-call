@@ -11,7 +11,7 @@ import os
 import subprocess
 import tempfile
 
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 SRC = "Tools/src/toad_idle.mp4"
 OUT = "Assets/Resources/Art/Toad"
@@ -23,6 +23,7 @@ BACK_HIP, FRONT_HIP, MID_HIP = (88, HIP_Y), (108, HIP_Y), (98, HIP_Y)
 LEG_SPLIT_X = 97               # back leg left of this, front leg right
 ARM_X, ARM_Y0, ARM_Y1 = 124, 165, 208  # the front arm (the fist) sits right of the jacket
 SHOULDER = (122, 178)
+BRIGHTEN = 1.3                 # the clip is dark; he has to read on the club's black floor
 PAD = 120                      # working canvas margin, so turned parts never clip
 
 
@@ -136,6 +137,7 @@ def to_frame(img):
     y0 = FEET_Y + PAD + 1.5 - h
     crop = img.crop((round(x0), round(y0), round(x0 + w), round(y0 + h)))
     small = crop.convert("RGBa").resize((FRAME_W, FRAME_H), Image.LANCZOS).convert("RGBA")
+    small = ImageEnhance.Brightness(small).enhance(BRIGHTEN)
     px = small.load()
     for x in range(FRAME_W):
         for y in range(FRAME_H):

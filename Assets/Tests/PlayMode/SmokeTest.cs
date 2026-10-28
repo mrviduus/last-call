@@ -173,6 +173,22 @@ public class SmokeTest
         Shot("whip_back");
     }
 
+    [UnityTest]
+    public IEnumerator ClubStage()
+    {
+        if (Object.FindAnyObjectByType<Game>() == null) new GameObject("Game").AddComponent<Game>();
+        Game.RestartRequested = true;
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+        Game.Hero.ground = new Vector2(1040f, -90f); // the camera follows him to the stage
+        for (int i = 0; i < 90; i++) yield return new WaitForFixedUpdate();
+        yield return null; // LateUpdate: camera and dancers
+        Shot("club_stage");
+        for (int i = 0; i < 20; i++) yield return new WaitForFixedUpdate();
+        yield return null;
+        Shot("club_stage2");
+    }
+
     static Fighter Victim(Fighter hero, float ahead, int hp)
     {
         var e = Game.Spawn(1, Art.GruntA, hero.ground + new Vector2(ahead, 0f), hp);

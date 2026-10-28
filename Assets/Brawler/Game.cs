@@ -41,6 +41,7 @@ public class Game : MonoBehaviour
     // layers that scroll at their own speed: < 1 is further away, > 1 is in front of the fighters
     readonly List<(Transform layer, float speed, float x)> parallax = new List<(Transform, float, float)>();
     readonly List<SpriteRenderer> occluders = new List<SpriteRenderer>(); // foreground pillars, faded when someone is behind
+    readonly List<(SpriteRenderer sr, string look)> dancers = new List<(SpriteRenderer, string)>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot()
@@ -196,7 +197,7 @@ public class Game : MonoBehaviour
         Restart();
     }
 
-    // OLD LAMP: layers from Resources/Art/Bar, placed by their pixel rows (screen top = y 120, floor from row 112)
+    // OLD LAMP: layers from Resources/Art/Club (Art.Level), placed by their pixel rows (screen top = y 120, floor from row 112)
     void BuildBar()
     {
         Layer(Art.BarView, new Vector2(LevelW / 2f, 120f - 2f - 24f), -20004, 0.5f);  // the street seen through the windows
@@ -205,6 +206,23 @@ public class Game : MonoBehaviour
         Layer(Art.BarFloor, new Vector2(LevelW / 2f, 120f - 112f - 64f), -20001);
         foreach (float x in new[] { 250f, 900f })
             occluders.Add(Layer(Art.BarPillar, new Vector2(x, 0f), 30000, 1.25f));     // in front of everyone
+        // a dancer at each pole on the stage (back wall row 88, poles at x 985 and 1085)
+        dancers.Add((Layer(Art.For(Art.DancerA).Idle[0], new Vector2(975f, 120f - 88f), -20002), Art.DancerA));
+        dancers.Add((Layer(Art.For(Art.DancerB).Idle[0], new Vector2(1095f, 120f - 88f), -20002), Art.DancerB));
+    }
+
+    // the dancers' routine: stand, leg up, stand, up on the pole; around the pole every two rounds
+    void Dance()
+    {
+        int beat = Frame / 20;
+        for (int i = 0; i < dancers.Count; i++)
+        {
+            var (sr, look) = dancers[i];
+            var art = Art.For(look);
+            int step = beat + i * 2; // not in step with each other
+            sr.sprite = (step % 4) switch { 0 => art.Idle[0], 1 => art.KickWind, 2 => art.Idle[1], _ => art.Air };
+            sr.flipX = step / 8 % 2 == 1;
+        }
     }
 
     SpriteRenderer Layer(Sprite sprite, Vector2 pos, int order, float speed = 1f)
@@ -396,6 +414,7 @@ public class Game : MonoBehaviour
 
     void LateUpdate()
     {
+        Dance();
         float x = Mathf.Round(camX);
         float shake = shakeFrames > 0 ? (Frame % 2 == 0 ? 2f : -2f) : 0f;
         cam.transform.position = new Vector3(x, shake, -10f);

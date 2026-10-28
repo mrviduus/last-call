@@ -4,11 +4,14 @@
 
 ## The level: the OLD LAMP
 
-The pub is three screens wide (1152 × 240 px). The walkable floor is the lower part of the screen.
+Since 2026-10-28 the OLD LAMP is a **strip club** (it was a pub): tufted purple walls, a pink neon sign, a black lacquer bar with pink LED strips, mirrors where the windows were, a lit dance floor by the door, and a stage with two poles and a red curtain at the far end, where two dancers (pink and purple latex) dance. Not in the fight, for now. No nudity.
+
+It's three screens wide (1152 × 240 px). The walkable floor is the lower part of the screen.
 
 | Position (x, px) | What's there |
 |---|---|
-| ~60 | Entrance door: enemies come in here |
+| ~60 | Entrance door (EXIT sign): enemies come in here |
+| 100–290 | Lit dance floor |
 | 170 | Round table, 2 chairs, a couple sitting |
 | 250, 900 | Pillars in front of everything (fade when someone stands behind them) |
 | 290 | Empty round table, 2 chairs, 2 bottles |
@@ -20,6 +23,7 @@ The pub is three screens wide (1152 × 240 px). The walkable floor is the lower 
 | 790 | Round table, 2 chairs, a couple |
 | 870 | Empty round table, 2 chairs, 3 bottles |
 | 1010 | Pool table with balls, cue and a pendant lamp |
+| 920–1150 | The stage: 2 poles (x 985, 1085), a dancer at each |
 | ~1112 | Stage end: enemies come in here too |
 
 The level's ends are walls: bodies knocked hard into them bounce off (see [Physics](#physics)).

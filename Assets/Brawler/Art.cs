@@ -15,6 +15,8 @@ public static class Art
     public const string Lasher = "GirlBlack";    // black latex: the whip fighter
     public const string Drunk = "PunkDrunk";     // grey hair, old brown cardigan: sways, punches his own mates
     public const string Chucker = "GirlGreen";   // green latex: throws bottles from a distance
+    public const string DancerA = "GirlPink";    // on the stage, not in the fight
+    public const string DancerB = "GirlPurple";
     public const string Boss = "PunkBoss";       // slicked black hair, burgundy suit: the man closing the pub
 
     // a look = which sheet (girl or the male punk) + new colours for the punk's three reds, which it uses for
@@ -31,6 +33,8 @@ public static class Art
             ["GirlBlack"] = (true, null, null),
             ["PunkDrunk"] = (false, new[] { 0x9a9a92u, 0xc8c8bcu, 0x5a5a54u }, new[] { 0x6a4a2au, 0x8a6a40u, 0x3a2814u }),
             ["GirlGreen"] = (true, null, new[] { 0x3aa048u }),
+            ["GirlPink"] = (true, null, new[] { 0xff3aa0u }),
+            ["GirlPurple"] = (true, null, new[] { 0x8a4ec0u }),
             ["PunkBoss"] = (false, new[] { 0x16161au, 0x34343cu, 0x08080au }, new[] { 0x6a1424u, 0x9a2a3au, 0x3a0812u }),
         };
     public static bool IsGirl(string look) => Looks.TryGetValue(look, out var l) && l.girl;
@@ -327,18 +331,19 @@ public static class Art
     static Sprite barView, barBack, barCounter, barFloor, barPillar, chair, stool, bottle, table, tableFlipped, shard;
     static Sprite poolTable, poolLamp, lampShade, cue, ball;
     static readonly Vector2 Feet = new Vector2(0.5f, 0f);
-    public static Sprite BarView => barView != null ? barView : barView = FromResource("Bar/bar_view");
-    public static Sprite BarBack => barBack != null ? barBack : barBack = FromResource("Bar/bar_back");
-    public static Sprite BarCounter => barCounter != null ? barCounter : barCounter = FromResource("Bar/bar_counter");
-    public static Sprite BarFloor => barFloor != null ? barFloor : barFloor = FromResource("Bar/bar_floor");
-    public static Sprite BarPillar => barPillar != null ? barPillar : barPillar = FromResource("Bar/bar_pillar");
+    const string Level = "Club/"; // the strip club (Tools/make_club_art.py); "Bar/" is the old pub. Props stay in Bar/
+    public static Sprite BarView => barView != null ? barView : barView = FromResource(Level + "bar_view");
+    public static Sprite BarBack => barBack != null ? barBack : barBack = FromResource(Level + "bar_back");
+    public static Sprite BarCounter => barCounter != null ? barCounter : barCounter = FromResource(Level + "bar_counter");
+    public static Sprite BarFloor => barFloor != null ? barFloor : barFloor = FromResource(Level + "bar_floor");
+    public static Sprite BarPillar => barPillar != null ? barPillar : barPillar = FromResource(Level + "bar_pillar");
     public static Sprite Chair => chair != null ? chair : chair = FromResource("Bar/chair", Feet);
     public static Sprite Bottle => bottle != null ? bottle : bottle = FromResource("Bar/bottle", Feet);
     public static Sprite Stool => stool != null ? stool : stool = FromResource("Bar/stool", Feet);
     public static Sprite Table => table != null ? table : table = FromResource("Bar/table", Feet);
     public static Sprite PoolTable => poolTable != null ? poolTable : poolTable = FromResource("Bar/pool_table", Feet);
-    public static Sprite PoolLamp => poolLamp != null ? poolLamp : poolLamp = FromResource("Bar/pool_lamp", new Vector2(0.5f, 1f)); // swings from the ceiling
-    public static Sprite LampShade => lampShade != null ? lampShade : lampShade = FromResource("Bar/lamp_shade", Feet);
+    public static Sprite PoolLamp => poolLamp != null ? poolLamp : poolLamp = FromResource(Level + "pool_lamp", new Vector2(0.5f, 1f)); // swings from the ceiling
+    public static Sprite LampShade => lampShade != null ? lampShade : lampShade = FromResource(Level + "lamp_shade", Feet);
     public static Sprite Cue => cue != null ? cue : cue = FromResource("Bar/cue");
     public static Sprite Ball => ball != null ? ball : ball = FromResource("Bar/ball", Feet);
     public static Sprite TableFlipped => tableFlipped != null ? tableFlipped : tableFlipped = FromResource("Bar/table_flipped", Feet);
