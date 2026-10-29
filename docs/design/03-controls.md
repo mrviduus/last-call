@@ -27,7 +27,7 @@
 | An enemy lying ahead (up to 80 px), nobody standing in reach | J | Wrestling elbow drop: Brick steers through the air onto the body |
 | An enemy buried in the floor | L | Kick the head off |
 | A prop in reach, nobody to hit | J | Pick the prop up |
-| Holding a prop | J | Swing it |
+| Holding a prop | J | Swing it (a chair or a bottle: throw it) |
 | Holding a prop | L | Throw it |
 | Walking into a dazed enemy | (walk) | Grab |
 | In a grab | J | Headbutt; the 3rd one throws |

@@ -691,6 +691,7 @@ namespace Brawler.Tests
         [Test]
         public void AtMostTwoEnemiesSwingAtOnce()
         {
+            Random.InitState(1); // a missed whip can hit a mate, who may swing back out of turn: a dice roll
             var p = Game.Spawn(0, Art.Hero, new Vector2(200f, -70f), 1000);
             Game.Hero = p;
             foreach (float x in new[] { 140f, 260f, 150f, 250f }) // whips: long wind-ups would overlap without the cap
@@ -710,8 +711,8 @@ namespace Brawler.Tests
         {
             var p = Game.Spawn(0, Art.Hero, new Vector2(400f, -50f), 1000);
             Game.Hero = p;
-            foreach (float x in new[] { 300f, 500f, 320f, 480f, 340f })
-                Game.Spawn(1, Art.GruntA, new Vector2(x, -50f), 100).gameObject.AddComponent<Enemy>().Setup();
+            foreach (float x in new[] { 300f, 500f, 320f, 480f, 340f }) // punchers: the girls' whips strike from further out
+                Game.Spawn(1, Art.Guy, new Vector2(x, -50f), 100).gameObject.AddComponent<Enemy>().Setup();
             int most = 0;
             for (int i = 0; i < 600; i++)
             {

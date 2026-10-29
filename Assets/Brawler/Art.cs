@@ -57,7 +57,7 @@ namespace Brawler
             public Sprite Doubled; // bent over, after a low blow
             public Sprite Head, HeadlessHurt, HeadlessDown, HalfStays, HalfFlies; // gore, cut from the hurt and down poses
             public Sprite[] HeadlessSinking;
-            public Sprite[] Lash; // the whip strike with the whip in it, wind-up to recovery (WHIP only, else null)
+            public Sprite[] Lash; // the whip strike with the whip in it, wind-up to recovery (the whip girls, else null)
         }
 
         const int FrameW = 96; // every sheet is a row of 96 px wide frames
@@ -70,7 +70,7 @@ namespace Brawler
             var (girl, hair, clothes) = Looks[look];
             f = look == Hero ? Toad() : girl ? Girl(clothes) : Punk(hair, clothes);
             Gore(f);
-            if (look == Lasher) f.Lash = Sheet("Whip/lash", FeetPivot(Load("Whip/lash"), FrameW));
+            if (look is Lasher or GruntA or GruntB) f.Lash = Sheet("Whip/lash", FeetPivot(Load("Whip/lash"), FrameW), tint: clothes?[0]);
             return cache[look] = f;
         }
 
@@ -85,7 +85,7 @@ namespace Brawler
             {
                 Idle = S("idle"), Walk = S("walk"),
                 Punch1 = jab[1], Punch2 = punch[1], Hold = jab[1], LowKick = kick[3], Chamber = kick[1], HighKick = jumpKick[2], SweepKick = kick[3], KickWind = kick[1], Kick = kick[3], KickRecover = kick[4], JumpKick = dive[3],
-                Hurt = hurt[0], Fall = hurt[1], Down = LyingDown(hurt[1]),
+                Hurt = hurt[0], Fall = hurt[2], Down = hurt[3],
                 GetUp = jump[0], Crouch = jump[0], Air = jump[2],
                 WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
                 Bicycle = new[] { kick[3], jumpKick[2] },

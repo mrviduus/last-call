@@ -66,7 +66,7 @@ Open:
 | **BOTTLES** | Bottle thrower | Green latex | Barmaid? |
 | **WHIP** | Fighter with a whip | Black latex, long black hair | |
 | **MOHAWK**, **BIKER** | Bar guys | Red mohawk / black hair, denim vest | |
-| **RUBY**, **SKYE** | Bar girls | Red latex / blue latex | |
+| **RUBY**, **SKYE** | Bar girls with whips | Red latex / blue latex | |
 
 ## To fill
 - [ ] Tone: comedy vs drama, reference films or shows

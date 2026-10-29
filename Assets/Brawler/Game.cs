@@ -161,6 +161,7 @@ namespace Brawler
             var f = new GameObject(team == 0 ? "Player" : "Enemy").AddComponent<Fighter>();
             f.maxHealth = hp;
             f.Init(team, look, pos);
+            f.whip = look is Art.Lasher or Art.GruntA or Art.GruntB; // every girl in the fight carries a whip
             Fighters.Add(f);
             return f;
         }
@@ -360,7 +361,7 @@ namespace Brawler
             bool door = Mathf.Abs(Hero.ground.x - Door) > Mathf.Abs(Hero.ground.x - StageEnd);
             var pos = new Vector2(door ? Door : StageEnd, door ? MaxDepth - 4f : Random.Range(MinDepth, MaxDepth));
 
-            // guys and girls take turns; every third one is a whip fighter; from wave 2 the last one in is a drunk,
+            // guys and girls take turns; every third girl is WHIP; from wave 2 the last one in is a drunk,
             // from wave 3 a bottle thrower comes too; the boss leads the last wave
             bool boss = Midnight && toSpawn == 3;
             bool drunk = !boss && Wave >= 2 && toSpawn == 1, chucker = !boss && Wave >= 3 && toSpawn == 4;
@@ -371,7 +372,6 @@ namespace Brawler
                 : lasher ? Spawn(1, Art.Lasher, pos, Feel.GuyHealth)
                 : guy ? Spawn(1, Random.value < 0.5f ? Art.Guy : Art.GuyDenim, pos, Feel.GuyHealth)
                 : Spawn(1, Random.value < 0.5f ? Art.GruntA : Art.GruntB, pos, Feel.GirlHealth);
-            e.whip = lasher;
             e.gameObject.AddComponent<Enemy>().Setup();
             e.GetComponent<Enemy>().chucker = chucker;
             if (guy || drunk) e.walkX = Feel.EnemyWalkX * 0.85f; // heavier, a bit slower

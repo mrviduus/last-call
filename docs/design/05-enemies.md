@@ -31,7 +31,7 @@ Ways to start a fight between them:
 | Enemy | Health | Attack | Behaviour |
 |---|---|---|---|
 | MOHAWK, BIKER | 40 | Jab, 7 | A bit slower than the girls |
-| RUBY, SKYE | 30 | Jab, 7 | The basic enemy |
+| RUBY, SKYE | 30 | Whip, 8, long reach (80 px) | The basic enemy. Same whip as WHIP, less health |
 | WHIP | 40 | Whip, 8, long reach (80 px) | Long wind-up: punch her during it and she goes flying |
 | OLD TOM | 50 | Jab, 7 | Sways as he walks; picks fights with his own mates about every 8 s |
 | BOTTLES | 30 | Thrown bottle, 12 | Never comes close. Keeps about 110 px away on Brick's lane and throws a bottle every 2–2.7 s. Broken bottles leave beer puddles |

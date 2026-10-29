@@ -96,10 +96,10 @@ class Girl:
         # the arm, shoulder to elbow to fist: skin and the armband near those two bones
         self.arm = part(big, lambda x, y: near_arm(x - PAD, y - PAD) and (skin(src[x, y]) or src[x, y][3]))
 
-    def pose(self, lean=0, front=0, back=0, arm=None, bob=0, whole=0):
+    def pose(self, lean=0, front=0, back=0, arm=None, bob=0, whole=0, lie=False):
         """lean: upper body back (+) or forward (-); front/back: legs swung forward (+) at the hip;
         arm: a second arm swung up from hanging by this many degrees (None = no second arm);
-        bob: down (+) or up (-); whole: the whole body tipped back around the feet."""
+        bob: down (+) or up (-); whole: the whole body tipped back around the feet; lie: laid on the floor."""
         P = self.P
         img = Image.new("RGBA", self.size)
         img.alpha_composite(turn(self.back_leg, back, P(BACK_HIP)))
@@ -111,6 +111,10 @@ class Girl:
         img = turn(img, whole, P((BODY_X, FEET_Y)))
         if bob:
             img = img.transform(img.size, Image.AFFINE, (1, 0, 0, 0, 1, -bob))
+        if lie:  # lowest pixel on the floor, centred on the body line
+            box = img.getbbox()
+            dx, dy = BODY_X + PAD - (box[0] + box[2]) / 2, FEET_Y + PAD - box[3]
+            img = img.transform(img.size, Image.AFFINE, (1, 0, -dx, 0, 1, -dy))
         return to_frame(img)
 
 
@@ -150,7 +154,10 @@ def main():
     sheet("jump", [g.pose(bob=8, front=25, back=15, lean=-6), g.pose(arm=160, back=20), g.pose(front=45, back=35)])
     sheet("jump_kick", [stand, stand, g.pose(front=70, back=40, lean=10)])
     sheet("dive_kick", [stand, stand, stand, g.pose(front=105, back=30, lean=18)])
-    sheet("hurt", [g.pose(whole=10, lean=8), g.pose(whole=28, lean=10, front=20)])  # [0] hurt, [1] falling
+    # [0] hurt, [1] staggering back (her elbow drop), [2] knocked off her feet, legs up, [3] flat on her back
+    sheet("hurt", [g.pose(whole=10, lean=8), g.pose(whole=28, lean=10, front=20),
+                   g.pose(whole=55, lean=12, front=30, back=15, arm=110, bob=-40),
+                   g.pose(whole=90, front=-22, back=4, lie=True)])
     sheet("sit", [g.pose(front=85, back=85, bob=36)])
 
 
