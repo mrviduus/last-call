@@ -376,7 +376,7 @@ namespace Brawler
             e.GetComponent<Enemy>().chucker = chucker;
             if (guy || drunk) e.walkX = Feel.EnemyWalkX * 0.85f; // heavier, a bit slower
             if (drunk) e.drunk = true;
-            if (boss) { e.armored = true; e.mass = Feel.BossMass; e.size = 1.25f; }
+            if (boss) { e.armored = true; e.mass = Feel.BossMass; e.size = Feel.BossScale; }
         }
 
         void FixedUpdate()
@@ -465,7 +465,7 @@ namespace Brawler
             }
             // the clock over the bar: 11:59:00 at the first punch, midnight is last call
             Text(view.x + 8 * scale, view.y + 22 * scale, scale, (Midnight ? "12:00 AM" : "11:59:" + (Clock / 60).ToString("00") + " PM")
-                + "   SCORE " + Score
+                + "   SCORE " + Score + (Sfx.Muted ? "   SOUND OFF" : "")
                 + (HeroCombo >= 2 ? "   " + HeroCombo + " HITS" : ""));
             if (Frame < Feel.IntroFrames && !Won)
             {
@@ -487,8 +487,8 @@ namespace Brawler
                     GUI.DrawTexture(new Rect(view.x, view.y + 170 * scale, view.width, 70 * scale), Texture2D.whiteTexture);
                     GUI.color = Color.white;
                 }
-                Text(view.x + 8 * scale, view.y + 174 * scale, scale, "WASD MOVE  J PUNCH  L KICK  K JUMP  J+K SPECIAL  J+L DIRTY  H HELP");
-                Text(view.x + 8 * scale, view.y + 190 * scale, scale, "TAP TAP = RUN   RUN+J FLYING KICK   RUN+L BICYCLE KICK");
+                Text(view.x + 8 * scale, view.y + 174 * scale, scale, "WASD MOVE  J PUNCH  L KICK  K JUMP  J+K SPECIAL  J+L DIRTY  H HELP  M SOUND");
+                Text(view.x + 8 * scale, view.y + 190 * scale, scale, "L L L KICK STRING  J J L SWEEP  TAP TAP = RUN  RUN+J/L FLYING/BICYCLE");
                 Text(view.x + 8 * scale, view.y + 206 * scale, scale, "WALK INTO A DAZED ONE: J HEADBUTT  K THROW  L RIP ARM");
                 Text(view.x + 8 * scale, view.y + 222 * scale, scale, "S+L STOMP, THEN L: KICK THE HEAD OFF   J BY A PROP: PICK UP");
             }

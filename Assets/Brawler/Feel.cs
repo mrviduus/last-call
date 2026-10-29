@@ -92,6 +92,25 @@ namespace Brawler
         public const int KickRecovery = 12;           // guess
         public const float KickReach = 46f;           // guess
         public const float KickPush = 4f;             // guess
+        // L-L-L: the kick above at the knee, then into the body, then a spinning roundhouse that sends them flying.
+        // J-J-L ends the punches with a sweep that drops them where they stand
+        public const int KickComboWindow = 32;        // guess, frames between kick starts (the kicks are slower than punches)
+        public const int BodyKickStartup = 5;         // guess
+        public const int BodyKickActive = 3;          // guess
+        public const int BodyKickRecovery = 12;       // guess
+        public const float BodyKickReach = 48f;       // guess
+        public const float BodyKickPush = 5f;         // guess
+        public const int BodyKickDamage = 10;
+        public const int RoundhouseStartup = 10;      // guess, the spin: back turned for the second half
+        public const int RoundhouseActive = 4;        // guess
+        public const int RoundhouseRecovery = 18;     // guess
+        public const float RoundhouseReach = 50f;     // guess
+        public const int RoundhouseDamage = 16;       // launches, like the punch finisher
+        public const int SweepStartup = 6;            // guess, drops into a crouch
+        public const int SweepActive = 3;             // guess
+        public const int SweepRecovery = 16;          // guess
+        public const float SweepReach = 44f;          // guess
+        public const int SweepDamage = 8;             // feet taken away: down flat, no flight
         public const float JumpKickReach = 40f;       // guess
         public const float JumpKickHeight = 70f;      // guess, hits grounded targets from anywhere in the jump
 
@@ -203,6 +222,8 @@ namespace Brawler
         public const float WallSplatSpeed = 3f;       // guess, a body launched this fast bounces off the end wall
         public const int WallSplatDamage = 4;         // guess
         public const int WallBounceFrames = 20;       // guess, off the wall: open for one more hit this long
+        public const float GuyScale = 1.26f;          // the guys' sprites (50 px) drawn as tall as Brick (63 px)
+        public const float BossScale = 1.5f;          // THE CLOSER: a head taller than everyone
         public const float BossMass = 2f;             // flies half as far, pushes others twice as hard
 
         // the club's regulars

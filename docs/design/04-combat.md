@@ -17,7 +17,10 @@ Two fighters can hit each other only when they are on the same **lane**: their d
 |---|---|---|---|---|
 | Punch | 7 | 3 | 36 | Small push |
 | Smash (3rd punch) | 14 | 3 | 44 | Knocks flying |
-| Kick | 12 | 6 | 46 | Bigger push |
+| Body kick (2nd L) | 10 | 5 | 48 | Staggers |
+| Roundhouse (3rd L) | 16 | 10 | 50 | Knocks flying; back turned for the 2nd half of the wind-up |
+| Sweep (J-J-L) | 8 | 6 | 44 | Down flat on the spot (not the boss) |
+| Kick (1st L, at the knee) | 12 | 6 | 46 | Bigger push |
 | Jump kick | 14 | — | 40 | Knocks flying; hits from anywhere in the jump |
 | Flying kick (run + J) | 24 | 4 | 40 | Knocks flying; crosses the screen fast. Also kicks bodies lying on the floor it passes, once each |
 | Bicycle kick (run + L) | 6 per kick | 4 | 40 | A kick every 6 frames; the last one knocks flying. Also kicks bodies lying on the floor, once each |

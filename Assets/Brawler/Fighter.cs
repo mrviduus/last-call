@@ -39,7 +39,8 @@ namespace Brawler
         int flashFrames, invulnFrames;
         public int comboHits;        // hits taken in the current combo (since we last stood free)
         public bool lastStrikeHit;   // our last blow connected: the punch combo goes on only on hits
-        bool bounced, strikePending, punchAlt, airKick;
+        bool bounced, strikePending, airKick;
+        public bool punchAlt; // the other hand: the hero's 2nd punch of the combo (set by Player), enemies alternate
         bool splatted;     // hit the end wall on this flight already
         int wallBounce;    // frames left bouncing off the wall, open for one more hit
         int slipCooldown;  // frames before a puddle can take our feet again
@@ -63,7 +64,8 @@ namespace Brawler
 
         int Startup => move switch
         {
-            Move.Kick => Feel.KickStartup, Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
+            Move.Kick => Feel.KickStartup, Move.BodyKick => Feel.BodyKickStartup, Move.Roundhouse => Feel.RoundhouseStartup, Move.Sweep => Feel.SweepStartup,
+            Move.FlyingKick => Feel.FlyingKickStartup, Move.BicycleKick => Feel.BicycleKickStartup,
             Move.Pound => Feel.PoundStartup, Move.ElbowDrop => Feel.ElbowDropStartup, Move.Knee or Move.LowBlow => Feel.KneeStartup,
             Move.Throw => Feel.ThrowStartup, Move.HairSlam => Feel.HairSlamStartup, Move.Rip => Feel.RipStartup, Move.Whip => Feel.WhipStartup,
             Move.Swing => Feel.SwingStartup, Move.ThrowProp => Feel.PropThrowStartup, Move.Special => Feel.SpecialStartup,
@@ -71,12 +73,14 @@ namespace Brawler
         };
         int Active => move switch
         {
-            Move.Kick => Feel.KickActive, Move.FlyingKick => Feel.FlyingKickActive, Move.BicycleKick => Feel.BicycleKickActive, Move.Pound => Feel.PoundActive,
+            Move.Kick => Feel.KickActive, Move.BodyKick => Feel.BodyKickActive, Move.Roundhouse => Feel.RoundhouseActive, Move.Sweep => Feel.SweepActive,
+            Move.FlyingKick => Feel.FlyingKickActive, Move.BicycleKick => Feel.BicycleKickActive, Move.Pound => Feel.PoundActive,
             Move.Swing => Feel.SwingActive, Move.Whip => Feel.WhipActive, Move.Special => Feel.SpecialActive, _ => Feel.PunchActive,
         };
         int Recovery => move switch
         {
             Move.Smash => Feel.SmashRecovery, Move.Kick => Feel.KickRecovery,
+            Move.BodyKick => Feel.BodyKickRecovery, Move.Roundhouse => Feel.RoundhouseRecovery, Move.Sweep => Feel.SweepRecovery,
             Move.FlyingKick => Feel.FlyingKickRecovery, Move.BicycleKick => Feel.BicycleKickRecovery, Move.Pound => Feel.PoundRecovery,
             Move.ElbowDrop => Feel.ElbowDropRecovery, Move.Knee or Move.LowBlow => Feel.KneeRecovery,
             Move.Throw or Move.Rip or Move.HairSlam => Feel.ThrowRecovery, Move.Whip => Feel.WhipRecovery,
@@ -86,24 +90,26 @@ namespace Brawler
         float Reach => move switch
         {
             Move.Smash => Feel.SmashReach, Move.Kick => Feel.KickReach, Move.Special => Feel.SpecialReach,
+            Move.BodyKick => Feel.BodyKickReach, Move.Roundhouse => Feel.RoundhouseReach, Move.Sweep => Feel.SweepReach,
             Move.JumpKick => Feel.JumpKickReach, Move.FlyingKick => Feel.FlyingKickReach, Move.BicycleKick => Feel.BicycleKickReach, Move.Pound => Feel.PoundReach,
             Move.ElbowDrop => Feel.ElbowDropReach, Move.HangKick => Feel.HangKickReach,
             Move.Whip => Feel.WhipReach, Move.Swing when held != null => held.Reach, _ => Feel.PunchReach,
         };
         float Push => move switch
         {
-            Move.Kick => Feel.KickPush, Move.Whip => Feel.WhipPush,
+            Move.Kick => Feel.KickPush, Move.BodyKick => Feel.BodyKickPush, Move.Whip => Feel.WhipPush,
             Move.BicycleKick => Feel.BicycleKickSpeed * 1.6f, // carries them along in front of the kicks
             _ => Feel.JabPush,
         };
         int Damage => move switch
         {
-            Move.Smash => Feel.SmashDamage, Move.Kick => Feel.KickDamage, Move.JumpKick or Move.HangKick => Feel.JumpKickDamage,
+            Move.Smash => Feel.SmashDamage, Move.Kick => Feel.KickDamage,
+            Move.BodyKick => Feel.BodyKickDamage, Move.Roundhouse => Feel.RoundhouseDamage, Move.Sweep => Feel.SweepDamage, Move.JumpKick or Move.HangKick => Feel.JumpKickDamage,
             Move.FlyingKick => Feel.FlyingKickDamage, Move.BicycleKick => Feel.BicycleKickDamage, Move.Pound => Feel.PoundDamage,
             Move.ElbowDrop => Feel.ElbowDropDamage, Move.Whip => Feel.WhipDamage, Move.Special => Feel.SpecialDamage, Move.Swing when held != null => held.Damage,
             _ => team == 0 ? Feel.PunchDamage : armored ? Feel.EnemyPunchDamage * 2 : Feel.EnemyPunchDamage,
         };
-        bool Launches => move is Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick or Move.Special
+        bool Launches => move is Move.Smash or Move.Roundhouse or Move.JumpKick or Move.FlyingKick or Move.HangKick or Move.Special
             || move == Move.BicycleKick && stateFrames >= Startup + Active - Feel.BicycleHitGap // only its last kick
             || move == Move.Swing && held != null && held.kind is Prop.Kind.Chair or Prop.Kind.Lamp;
         bool WindingUp => state == State.Attack && stateFrames < Startup;
@@ -121,6 +127,7 @@ namespace Brawler
             ground = start;
             health = maxHealth;
             art = Art.For(look);
+            if (look != Art.Hero && !Girl) size = Feel.GuyScale; // the CC0 guys are drawn smaller than the toad
             shadow = MakeSprite("Shadow", Art.Shadow);
             shadow.sortingOrder = -10000; // under every body
             body = MakeSprite("Body", art.Idle[0]);
@@ -145,7 +152,7 @@ namespace Brawler
             bool holding = state == State.Grab && m is Move.Knee or Move.Throw or Move.Rip or Move.LowBlow or Move.HairSlam;
             if (!CanAct && !holding) return;
             move = m;
-            punchAlt = !punchAlt;
+            if (team != 0) punchAlt = !punchAlt;
             if (m != Move.BicycleKick && m != Move.FlyingKick) vel = Vector2.zero; // running kicks keep the momentum
             if (m == Move.ElbowDrop)
             {
@@ -419,6 +426,24 @@ namespace Brawler
             vel = new Vector2(dir * 1.5f, 0f);
             heightVel = 2f;
             if (!Alive) Fx.Blood(ground, 4f, 20, dir, 3f);
+        }
+
+        // swept: feet taken out, flat on the floor where we stand (the boss is too heavy to sweep)
+        public void Trip(int damage, int dir)
+        {
+            if (!CanBeHit) return;
+            if (armored && health > damage) { Damaged(damage); return; }
+            strikePending = false;
+            Release();
+            if (held != null) { held.Drop(); held = null; }
+            Damaged(damage);
+            facing = -dir;
+            Enter(State.Launched);
+            bounced = true; // flat on the floor, no bounce
+            splatted = false;
+            wallBounce = 0;
+            vel = new Vector2(dir * 1f, 0f);
+            heightVel = 2.5f;
         }
 
         // feet out from under us on a spilled drink: down without a blow
@@ -759,7 +784,8 @@ namespace Brawler
                 if ((t.team != team || team != 0 && t != this) && t.state != State.Held && InReach(t, Reach, heightBand, allRound)) // enemies hit mates in the way
                 {
                     if (move == Move.Pound) t.Bury(Damage, facing);
-                    else if (move == Move.Kick && team == 0 && t.state == State.Buried) t.Punt(facing, this);
+                    else if (move is Move.Kick or Move.BodyKick or Move.Roundhouse && team == 0 && t.state == State.Buried) t.Punt(facing, this);
+                    else if (move == Move.Sweep) t.Trip(Damage, facing);
                     else t.TakeHit(Damage, allRound ? (t.ground.x >= ground.x ? 1 : -1) : facing, Launches, Push);
                     if (t.team == team) t.GetComponent<Enemy>()?.HitByMate(this); // may start a fight among themselves
                     if (team == 0 && !t.Alive) { Finish(t); Gore(t); finished = true; }
@@ -831,7 +857,7 @@ namespace Brawler
         void Gore(Fighter t)
         {
             if (t.headless || t.state == State.Buried) return; // punted, or hammered through the floor
-            bool heavy = move is Move.Kick or Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick
+            bool heavy = move is Move.Kick or Move.BodyKick or Move.Roundhouse or Move.Smash or Move.JumpKick or Move.FlyingKick or Move.HangKick
                 || move == Move.Swing && held != null && held.kind != Prop.Kind.Bottle;
             if (heavy) { t.Decapitate(facing, Feel.HeadFlySpeed); return; }
             Fx.Blood(t.ground, t.height + 36f, 20, facing, 3f); // flies off bleeding
@@ -961,7 +987,7 @@ namespace Brawler
                 State.Run => art.Walk[Game.Frame / 3 % art.Walk.Length], // walk cycle, played fast
                 State.Jump => airKick ? art.JumpKick : art.Air,
                 State.GetUp => art.GetUp,
-                State.Grab => art.Punch1,
+                State.Grab => art.Hold,
                 State.Held => art.Hurt,
                 State.Sit => art.Sit,
                 State.Hang => hangKick > 0 ? art.JumpKick : art.ElbowRise, // arms up on the lamp, or kicking
@@ -972,15 +998,18 @@ namespace Brawler
                 {
                     Move.Whip when art.Lash != null => art.Lash[LashFrame()],
                     Move.Whip => WindingUp ? art.WindUp : striking ? art.Punch2 : art.Idle[0],
-                    Move.Smash or Move.Kick or Move.Pound => WindingUp ? art.KickWind : striking ? art.Kick : art.KickRecover,
+                    Move.Smash or Move.BodyKick or Move.Pound => WindingUp ? art.KickWind : striking ? art.Kick : art.KickRecover,
+                    Move.Kick => WindingUp ? art.KickWind : striking ? art.LowKick : art.KickRecover,
+                    Move.Roundhouse => WindingUp ? art.Chamber : striking ? art.HighKick : art.KickRecover,
+                    Move.Sweep => striking ? art.SweepKick : art.Crouch,
                     Move.FlyingKick => striking ? art.JumpKick : art.Crouch,
                     Move.Swing => striking ? art.Punch2 : art.WindUp,
                     Move.ThrowProp => striking ? art.Punch2 : art.WindUp,
                     Move.BicycleKick => striking ? art.Bicycle[stateFrames / 3 % 2] : art.KickWind, // left-right-left
                     Move.ElbowDrop => heightVel > 0f ? art.ElbowRise : art.ElbowDrop, // up with the elbow raised, down flat
-                    Move.Knee => striking ? art.Headbutt : art.Punch1,
+                    Move.Knee => striking ? art.Headbutt : art.Hold,
                     Move.Throw or Move.Rip or Move.HairSlam => art.Throw[WindingUp ? 0 : 1],
-                    Move.LowBlow => striking ? art.KickWind : art.Punch1, // still holding on, then the knee comes up
+                    Move.LowBlow => striking ? art.KickWind : art.Hold, // still holding on, then the knee comes up
                     Move.Special => striking ? art.Kick : art.KickWind,
                     _ => striking ? (punchAlt ? art.Punch2 : art.Punch1) : WindingUp && team != 0 ? art.WindUp : art.Idle[0],
                 },
@@ -989,7 +1018,8 @@ namespace Brawler
                 _ => halved ? art.HalfStays : headless ? art.HeadlessDown : art.Down, // down, dead
             };
             bool spinning = state == State.Attack && move == Move.Special && striking;
-            body.flipX = spinning ? stateFrames / 4 % 2 == 0 : facing < 0; // the kick turns round and round
+            bool turnedAway = state == State.Attack && move == Move.Roundhouse && WindingUp && stateFrames >= Startup / 2;
+            body.flipX = spinning ? stateFrames / 4 % 2 == 0 : turnedAway ? facing > 0 : facing < 0; // the kick turns round and round
             // shakes in place through the hitstop; leans back winding up, lunges into the blow
             float jolt = Game.Frozen && flashFrames > 0 ? (Game.Frame % 2 == 0 ? Feel.HitJolt : -Feel.HitJolt) : 0f;
             float lunge = state != State.Attack || move is Move.FlyingKick or Move.BicycleKick or Move.ElbowDrop or Move.Throw or Move.HairSlam or Move.Special ? 0f

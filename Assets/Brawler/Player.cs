@@ -19,7 +19,7 @@ namespace Brawler
     public class Player : MonoBehaviour
     {
         Fighter f;
-        int combo, lastPunchFrame = -999, attackBuffer, jumpBuffer, kickBuffer, grabHits;
+        int combo, lastPunchFrame = -999, kickCombo, lastKickFrame = -999, attackBuffer, jumpBuffer, kickBuffer, grabHits;
         int lastTapDir, lastTapFrame = -999, runRequested;
         bool attackPressed, jumpPressed, kickPressed;
 
@@ -46,6 +46,7 @@ namespace Brawler
 
             if ((f.state == State.Dead || Game.Won) && attackPressed) Game.RestartRequested = true;
             Game.ShowHelp = HelpHeld();
+            if (MutePressed()) Sfx.Muted = !Sfx.Muted;
         }
 
         void Think()
@@ -129,16 +130,25 @@ namespace Brawler
             }
             else if (attackBuffer > 0 && f.CanAct)
             {
-                combo = Game.SimFrame - lastPunchFrame <= Feel.ComboWindow && f.lastStrikeHit ? combo + 1 : 1; // whiffs don't count
+                bool chained = Game.SimFrame - lastPunchFrame <= Feel.ComboWindow;
+                combo = chained && f.lastStrikeHit ? combo + 1 : 1; // whiffs don't count
                 lastPunchFrame = Game.SimFrame;
                 bool smash = combo >= 3;
                 if (smash) combo = 0;
+                f.punchAlt = chained && !f.punchAlt; // one-two: jab (front hand), straight (back hand), jab... hit or miss
                 f.Attack(smash ? Move.Smash : Move.Punch);
+                kickCombo = 0;
                 attackBuffer = 0;
             }
             else if (kickBuffer > 0 && f.CanAct)
             {
-                f.Attack(Move.Kick);
+                // J-J-L: two punches that landed, then the kick sweeps; else L-L-L: knee, body, spinning roundhouse
+                bool sweep = combo == 2 && Game.SimFrame - lastPunchFrame <= Feel.KickComboWindow && f.lastStrikeHit;
+                kickCombo = !sweep && Game.SimFrame - lastKickFrame <= Feel.KickComboWindow && f.lastStrikeHit ? kickCombo + 1 : 1;
+                lastKickFrame = Game.SimFrame;
+                f.Attack(sweep ? Move.Sweep : kickCombo == 1 ? Move.Kick : kickCombo == 2 ? Move.BodyKick : Move.Roundhouse);
+                if (sweep || kickCombo >= 3) kickCombo = 0;
+                combo = 0;
                 kickBuffer = 0;
             }
             else if (jumpBuffer > 0 && f.CanAct)
@@ -187,6 +197,7 @@ namespace Brawler
         static bool AttackPressed() => Keyboard.current != null && Keyboard.current.jKey.wasPressedThisFrame;
         static bool KickPressed() => Keyboard.current != null && Keyboard.current.lKey.wasPressedThisFrame;
         static bool HelpHeld() => Keyboard.current != null && Keyboard.current.hKey.isPressed;
+        static bool MutePressed() => Keyboard.current != null && Keyboard.current.mKey.wasPressedThisFrame;
 
         static int TapDirection()
         {
@@ -201,6 +212,7 @@ namespace Brawler
         static bool AttackPressed() => Input.GetKeyDown(KeyCode.J);
         static bool KickPressed() => Input.GetKeyDown(KeyCode.L);
         static bool HelpHeld() => Input.GetKey(KeyCode.H);
+        static bool MutePressed() => Input.GetKeyDown(KeyCode.M);
         static int TapDirection() => Input.GetKeyDown(KeyCode.D) ? 1 : Input.GetKeyDown(KeyCode.A) ? -1 : 0;
     #endif
     }

@@ -11,7 +11,7 @@ All runtime art is loaded by path from `Assets/Resources/Art/`:
 | `Club/` | The level now: layers (`bar_view`, `bar_back`, `bar_counter`, `bar_floor`, `bar_pillar`) and `pool_lamp`, `lamp_shade` |
 | `Bar/` | The old pub's layers (switch back with `Art.Level`) and the props, still used (`chair`, `stool`, `bottle`, `table`, `table_flipped`, `pool_table`, `pool_lamp`, `lamp_shade`, `cue`, `ball`) |
 | `Punk/` | Every guy (CC0 "Streets of Fight"): `idle`, `walk`, `punch`, `hurt`, `sit` |
-| `Toad/` | Brick (the toad): `idle`, `walk`, `punch`, `hurt`, `kick`, `elbow`, `sit` |
+| `Toad/` | Brick (the toad): `idle`, `walk`, `punch` (+ second combo punch), `hurt`, `kick`, `elbow`, `sit`, `jump` (crouch, air, get-up), `grab` (hold, headbutt, lift, throw), `kick2` (low kick, roundhouse chamber, sweep); `punch[3]` is the back-hand straight |
 | `Latex/` | Every girl: `idle`, `walk`, `jab`, `punch`, `kick`, `jump`, `jump_kick`, `dive_kick`, `hurt`, `sit` (72 px tall frames, black latex) |
 | `Whip/` | `lash`: WHIP's whip strike, 15 frames 96x79, from Lekha's AnimateDiff clip |
 | `shadow.png` | The shadow under every body |

@@ -23,6 +23,7 @@ BACK_HIP, FRONT_HIP, MID_HIP = (88, HIP_Y), (108, HIP_Y), (98, HIP_Y)
 LEG_SPLIT_X = 97               # back leg left of this, front leg right
 ARM_X, ARM_Y0, ARM_Y1 = 124, 165, 208  # the front arm (the fist) sits right of the jacket
 SHOULDER = (122, 178)
+BACK_ARM_X, BACK_ARM_Y0, BACK_ARM_Y1 = 80, 174, 202  # the back forearm and fist, left of the jacket, under the shoulder pad
 BRIGHTEN = 1.3                 # the clip is dark; he has to read on the club's black floor
 PAD = 120                      # working canvas margin, so turned parts never clip
 
@@ -85,11 +86,15 @@ class Toad:
         self.front_leg = part(big, lambda x, y: y - PAD >= HIP_Y and x - PAD >= LEG_SPLIT_X)
         self.upper = part(big, lambda x, y: y - PAD < HIP_Y and not arm(x, y))
         self.arm = part(big, arm)
+        back_arm = lambda x, y: x - PAD < BACK_ARM_X and BACK_ARM_Y0 <= y - PAD <= BACK_ARM_Y1
+        self.back_arm = part(big, back_arm)
+        self.upper_no_back_arm = part(big, lambda x, y: y - PAD < HIP_Y and not arm(x, y) and not back_arm(x, y))
 
-    def pose(self, lean=0, front=0, back=0, stretch=1.0, raise_arm=0, bob=0, whole=0, lie=False):
+    def pose(self, lean=0, front=0, back=0, stretch=1.0, raise_arm=0, bob=0, whole=0, lie=False, cross=0):
         """lean: upper body back (+) or forward (-); front/back: legs swung forward (+) at the hip;
         stretch: the front arm reaching out (>1) or pulled in (<1); raise_arm: the arm turned up; bob: down (+) or up (-);
-        whole: the whole body tipped back around the feet; lie: tipped flat and laid on the floor."""
+        whole: the whole body tipped back around the feet; lie: tipped flat and laid on the floor;
+        cross: source px the back fist is thrown forward across the chest, in front of everything (the straight right)."""
         P = self.P
         img = Image.new("RGBA", self.size)
         img.alpha_composite(turn(self.back_leg, back, P(BACK_HIP)))
@@ -103,8 +108,10 @@ class Toad:
             arm.paste(piece, (box[0], 0))
         arm = turn(arm, raise_arm, P(SHOULDER))
         upper = Image.new("RGBA", self.size)
-        upper.alpha_composite(self.upper)
+        upper.alpha_composite(self.upper_no_back_arm if cross else self.upper)
         upper.alpha_composite(arm)
+        for dx in ((cross // 2, cross) if cross else ()):  # the forearm drawn twice: a whole arm across the chest
+            upper.alpha_composite(self.back_arm.transform(self.size, Image.AFFINE, (1, 0, -dx, 0, 1, 0)))
         img.alpha_composite(turn(upper, lean, P(MID_HIP)))
         img = turn(img, whole, P((BODY_X, FEET_Y)))
         if bob:
@@ -152,8 +159,23 @@ def main():
     t = Toad(idle[0])
     sheet("idle", [Toad(f).pose() for f in idle])
     sheet("walk", [t.pose(front=18, back=-14), t.pose(bob=-2), t.pose(front=-14, back=18), t.pose(bob=-2)])
-    # same layout as the punk's: [1] wind-up, [2] the punch
-    sheet("punch", [t.pose(), t.pose(lean=6, stretch=0.75), t.pose(lean=-6, stretch=1.9)])
+    # same layout as the punk's: [1] wind-up, [2] the jab (front hand); then [3] the straight from the back hand,
+    # thrown across the chest: the one-two. The body stays upright, the fists do the work
+    sheet("punch", [t.pose(), t.pose(lean=6, stretch=0.75), t.pose(lean=-2, stretch=1.9, front=4, back=-2),
+                    t.pose(lean=-6, stretch=0.7, cross=110, front=12, back=-10)])
+    # kicks of the L-L-L string and the J-J-L sweep: [0] low kick at the knee, [1] the spin (back turned, leg chambered),
+    # [2] the sweep along the floor
+    sheet("kick2", [t.pose(front=62, lean=8, back=-6),
+                    t.pose(front=70, back=-10, lean=10, bob=4),
+                    t.pose(front=96, back=-34, lean=-24, bob=16, raise_arm=-40)])
+    # [0] crouch (take-off, flying kick wind-up), [1] in the air (legs split), [2] getting up off the floor
+    sheet("jump", [t.pose(lean=-12, front=28, back=-24, bob=5), t.pose(lean=-4, front=40, back=-38, raise_arm=40),
+                   t.pose(lean=-38, front=30, back=-32, bob=16, raise_arm=-45)])
+    # [0] holding someone, [1] headbutt, [2] lifting for a throw, [3] the throw
+    sheet("grab", [t.pose(lean=-8, stretch=1.35, raise_arm=8, front=8, back=-6),
+                   t.pose(lean=-42, front=18, back=-18, stretch=0.7, bob=4),
+                   t.pose(lean=18, raise_arm=70, back=12, bob=3),
+                   t.pose(lean=-22, stretch=1.6, raise_arm=35, front=25, back=-20)])
     # [1] hurt, [2] falling, [3] down
     sheet("hurt", [t.pose(whole=6), t.pose(whole=14, lean=6), t.pose(whole=45, front=20, lie=True),
                    t.pose(whole=90, front=10, back=5, lie=True)])
@@ -161,7 +183,7 @@ def main():
     sheet("kick", [t.pose(front=50, lean=4), t.pose(front=88, lean=12, stretch=0.8), t.pose(front=115, lean=20),
                    t.pose(front=92, back=35, lean=16)])
     # elbow drop: up with the arm raised, then flat on the floor face-first
-    sheet("elbow", [t.pose(raise_arm=80, back=20), t.pose(whole=-90, raise_arm=-30, lie=True)])
+    sheet("elbow", [t.pose(raise_arm=105, back=25, front=-10, bob=16), t.pose(whole=-90, raise_arm=-30, lie=True)])
     sheet("sit", [t.pose(front=80, back=80, bob=34)])
 
 

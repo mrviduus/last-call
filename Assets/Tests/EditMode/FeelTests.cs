@@ -147,6 +147,37 @@ namespace Brawler.Tests
         }
 
         [Test]
+        public void KickStringEndsInALaunchingRoundhouse()
+        {
+            var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+            var e = Game.Spawn(1, Art.GruntA, new Vector2(80f, -70f), 100);
+            p.Attack(Move.BodyKick);
+            Run(Feel.BodyKickStartup);
+            Assert.AreEqual(State.Hurt, e.state, "the body kick staggers");
+            Assert.AreEqual(100 - Feel.BodyKickDamage, e.health);
+            Run(60);
+            e.ground = new Vector2(80f, -70f);
+            p.Attack(Move.Roundhouse);
+            Run(Feel.RoundhouseStartup);
+            Assert.AreEqual(State.Launched, e.state, "the roundhouse sends them flying");
+        }
+
+        [Test]
+        public void SweepDropsThemWhereTheyStand()
+        {
+            var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
+            var e = Game.Spawn(1, Art.GruntA, new Vector2(75f, -70f), 100);
+            p.Attack(Move.Sweep);
+            Run(Feel.SweepStartup);
+            Assert.AreEqual(State.Launched, e.state);
+            Assert.AreEqual(100 - Feel.SweepDamage, e.health);
+            int frames = 0;
+            while (e.state != State.Down && frames++ < 120) Game.Simulate();
+            Assert.AreEqual(State.Down, e.state);
+            Assert.Less(Mathf.Abs(e.ground.x - 75f), 20f, "down on the spot, not knocked across the room");
+        }
+
+        [Test]
         public void JumpKickLaunches()
         {
             var p = Game.Spawn(0, Art.Hero, new Vector2(40f, -70f), 100);
@@ -442,6 +473,16 @@ namespace Brawler.Tests
             Run(160);
             Assert.AreNotEqual(State.Sit, patron.state);
             Assert.IsTrue(chair.Pickable, "free once they stand up");
+        }
+
+        [Test]
+        public void BrickHasOwnPosesForEveryMove()
+        {
+            // no stand-ins: each of these used to show the idle frame or the punch
+            var a = Art.For(Art.Hero);
+            Assert.AreNotSame(a.Punch1, a.Punch2, "combo alternates two punches");
+            foreach (var s in new[] { a.Air, a.Crouch, a.GetUp }) Assert.AreNotSame(a.Idle[0], s);
+            foreach (var s in new[] { a.Hold, a.Headbutt, a.Throw[0], a.Throw[1] }) Assert.AreNotSame(a.Punch1, s);
         }
 
         [Test]

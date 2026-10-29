@@ -52,7 +52,7 @@ namespace Brawler
         public class Frames
         {
             public Sprite[] Idle, Walk, Throw, Bicycle, Sinking;
-            public Sprite Punch1, Punch2, KickWind, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
+            public Sprite Punch1, Punch2, Hold, KickWind, LowKick, Chamber, HighKick, SweepKick, Kick, KickRecover, JumpKick, Hurt, Fall, Down, GetUp, Crouch, Air, WindUp, Headbutt;
             public Sprite ElbowRise, ElbowDrop, Sit;
             public Sprite Doubled; // bent over, after a low blow
             public Sprite Head, HeadlessHurt, HeadlessDown, HalfStays, HalfFlies; // gore, cut from the hurt and down poses
@@ -84,7 +84,7 @@ namespace Brawler
             return new Frames
             {
                 Idle = S("idle"), Walk = S("walk"),
-                Punch1 = jab[1], Punch2 = punch[1], KickWind = kick[1], Kick = kick[3], KickRecover = kick[4], JumpKick = dive[3],
+                Punch1 = jab[1], Punch2 = punch[1], Hold = jab[1], LowKick = kick[3], Chamber = kick[1], HighKick = jumpKick[2], SweepKick = kick[3], KickWind = kick[1], Kick = kick[3], KickRecover = kick[4], JumpKick = dive[3],
                 Hurt = hurt[0], Fall = hurt[1], Down = LyingDown(hurt[1]),
                 GetUp = jump[0], Crouch = jump[0], Air = jump[2],
                 WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
@@ -98,7 +98,14 @@ namespace Brawler
         {
             var pivot = FeetPivot(Load("Toad/idle"), FrameW);
             Sprite[] S(string sheet) => Sheet("Toad/" + sheet, pivot);
-            return Male(S("idle"), S("walk"), S("punch"), S("hurt"), S("sit"), S("kick"), S("elbow"));
+            var punch = S("punch"); var jump = S("jump"); var grab = S("grab");
+            var f = Male(S("idle"), S("walk"), punch, S("hurt"), S("sit"), S("kick"), S("elbow"));
+            var kick2 = S("kick2");
+            f.Punch2 = punch[3];
+            f.LowKick = kick2[0]; f.Chamber = kick2[1]; f.SweepKick = kick2[2];
+            f.Crouch = jump[0]; f.Air = jump[1]; f.GetUp = jump[2];
+            f.Hold = grab[0]; f.Headbutt = grab[1]; f.Throw = new[] { grab[2], grab[3] };
+            return f;
         }
 
         // only idle, walk, punch and hurt; the last hurt frame lies on the ground
@@ -120,7 +127,7 @@ namespace Brawler
             return new Frames
             {
                 Idle = idle, Walk = walk,
-                Punch1 = punch[2], Punch2 = punch[2], KickWind = kick[0], Kick = kick[1], KickRecover = idle[0], JumpKick = kick[3],
+                Punch1 = punch[2], Punch2 = punch[2], Hold = punch[2], LowKick = kick[1], Chamber = kick[0], HighKick = kick[2], SweepKick = kick[1], KickWind = kick[0], Kick = kick[1], KickRecover = idle[0], JumpKick = kick[3],
                 Hurt = hurt[1], Fall = hurt[2], Down = hurt[3],
                 GetUp = idle[0], Crouch = idle[0], Air = idle[0],
                 WindUp = punch[1], Headbutt = punch[2], Throw = new[] { punch[1], punch[2] },

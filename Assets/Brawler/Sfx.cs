@@ -9,9 +9,16 @@ namespace Brawler
         static AudioSource source;
         static readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
 
+        // M toggles; remembered between sessions
+        public static bool Muted
+        {
+            get => PlayerPrefs.GetInt("muted", 0) == 1;
+            set { PlayerPrefs.SetInt("muted", value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
         public static void Play(string name, float volume = 1f)
         {
-            if (!Application.isPlaying) return; // edit-mode tests run silent
+            if (!Application.isPlaying || Muted) return; // edit-mode tests run silent
             if (source == null)
             {
                 var go = new GameObject("Sfx");
