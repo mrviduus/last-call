@@ -154,10 +154,12 @@ def main():
     sheet("jump", [g.pose(bob=8, front=25, back=15, lean=-6), g.pose(arm=160, back=20), g.pose(front=45, back=35)])
     sheet("jump_kick", [stand, stand, g.pose(front=70, back=40, lean=10)])
     sheet("dive_kick", [stand, stand, stand, g.pose(front=105, back=30, lean=18)])
-    # [0] hurt, [1] staggering back (her elbow drop), [2] knocked off her feet, legs up, [3] flat on her back
+    # [0] hurt, [1] staggering back, [2] knocked off her feet, legs up, [3] flat on her back,
+    # [4] her elbow drop: flat on her front, the elbow driven into the floor
     sheet("hurt", [g.pose(whole=10, lean=8), g.pose(whole=28, lean=10, front=20),
-                   g.pose(whole=55, lean=12, front=30, back=15, arm=110, bob=-40),
-                   g.pose(whole=90, front=-22, back=4, lie=True)])
+                   g.pose(whole=48, lean=12, front=30, back=15, bob=-40),
+                   g.pose(whole=90, front=-22, back=4, lie=True),
+                   g.pose(whole=-90, front=-10, back=5, arm=90, lie=True)])
     sheet("sit", [g.pose(front=85, back=85, bob=36)])
 
 

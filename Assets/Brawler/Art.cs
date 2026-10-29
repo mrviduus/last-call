@@ -89,7 +89,7 @@ namespace Brawler
                 GetUp = jump[0], Crouch = jump[0], Air = jump[2],
                 WindUp = punch[0], Headbutt = jab[2], Throw = new[] { punch[0], punch[2] },
                 Bicycle = new[] { kick[3], jumpKick[2] },
-                ElbowRise = jump[1], ElbowDrop = hurt[1], Sit = S("sit")[0],
+                ElbowRise = jump[1], ElbowDrop = hurt[4], Sit = S("sit")[0],
             };
         }
 
