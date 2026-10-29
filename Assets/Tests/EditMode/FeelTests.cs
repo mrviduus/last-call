@@ -691,7 +691,6 @@ namespace Brawler.Tests
         [Test]
         public void AtMostTwoEnemiesSwingAtOnce()
         {
-            Random.InitState(1); // a missed whip can hit a mate, who may swing back out of turn: a dice roll
             var p = Game.Spawn(0, Art.Hero, new Vector2(200f, -70f), 1000);
             Game.Hero = p;
             foreach (float x in new[] { 140f, 260f, 150f, 250f }) // whips: long wind-ups would overlap without the cap
@@ -700,7 +699,8 @@ namespace Brawler.Tests
             for (int i = 0; i < 600; i++)
             {
                 Game.Simulate();
-                int n = Game.Fighters.FindAll(f => f.team == 1 && f.state == State.Attack).Count;
+                // at the hero: a missed whip can hit a mate, and settling that grudge doesn't wait for a turn
+                int n = Game.Fighters.FindAll(f => f.team == 1 && f.state == State.Attack && !f.GetComponent<Enemy>().HasGrudge).Count;
                 most = Mathf.Max(most, n);
             }
             Assert.That(most, Is.InRange(1, Feel.MaxAttackers));
@@ -806,8 +806,8 @@ namespace Brawler.Tests
         {
             var p = Game.Spawn(0, Art.Hero, new Vector2(500f, -50f), 1000);
             Game.Hero = p;
-            foreach (float x in new[] { 300f, 320f, 340f, 360f, 380f, 400f })
-                Game.Spawn(1, Art.GruntA, new Vector2(x, -50f), 100).gameObject.AddComponent<Enemy>().Setup();
+            foreach (float x in new[] { 300f, 320f, 340f, 360f, 380f, 400f }) // punchers: missed whips start grudges in a crowd
+                Game.Spawn(1, Art.Guy, new Vector2(x, -50f), 100).gameObject.AddComponent<Enemy>().Setup();
             Run(600);
             int right = Game.Fighters.FindAll(f => f.team == 1 && f.ground.x > p.ground.x).Count;
             Assert.GreaterOrEqual(right, 2, "they all came from the left; some walk round to the right");

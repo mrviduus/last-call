@@ -81,14 +81,14 @@ namespace Brawler
                 else if (jumpBuffer > 0) { f.Attack(Move.Throw); jumpBuffer = 0; }
                 else if (kickBuffer > 0 && !f.grabbed.armless && f.held == null) { f.Attack(Move.Rip); kickBuffer = 0; } // tear an arm off
             }
-            else if (f.held != null && attackBuffer > 0 && f.CanAct && f.held.kind is not (Prop.Kind.Chair or Prop.Kind.Bottle))
+            else if (f.held != null && attackBuffer > 0 && f.CanAct && f.held.kind is not (Prop.Kind.Chair or Prop.Kind.Stool or Prop.Kind.Bottle))
             {
-                f.Attack(Move.Swing); // holding a cue or a stool: swing it
+                f.Attack(Move.Swing); // holding a cue: swing it
                 attackBuffer = 0;
             }
             else if (f.held != null && (kickBuffer > 0 || attackBuffer > 0) && f.CanAct)
             {
-                f.Attack(Move.ThrowProp); // ...or throw it; a chair or a bottle is only ever thrown
+                f.Attack(Move.ThrowProp); // ...or throw it; a chair, stool or bottle is only ever thrown
                 kickBuffer = attackBuffer = 0;
             }
             else if (f.state == State.Jump && attackBuffer > 0 && f.held == null)
